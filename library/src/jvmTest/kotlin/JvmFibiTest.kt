@@ -1,4 +1,4 @@
-package io.github.kotlin.fibonacci
+package org.samfun.ktvine
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

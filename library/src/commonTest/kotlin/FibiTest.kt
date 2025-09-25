@@ -1,12 +1,14 @@
-package io.github.kotlin.fibonacci
+package org.samfun.ktvine
 
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class FibiTest {
 
     @Test
-    fun `test 3rd element`() {
-        assertEquals(firstElement + secondElement, generateFibi().take(3).last())
+    fun `can run PSSH`() {
+        val rawData =
+            "AAAAoXBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAAIEIARIQuLuP/+zYM2Ga0s2MA9iIKBoIY2FzdGxhYnMiWGV5SmhjM05sZEVsa0lqb2laRGhoTURoaU5HVXpaamxoTTJVM01qZzRPVGRpWlRNNU5ETXdaV05oTURBaUxDSjJZWEpwWVc1MFNXUWlPaUpoZG10bGVTSjkyB2RlZmF1bHQ="
+
+        PSSH(rawData).main()
     }
 }

@@ -1,4 +1,4 @@
-package io.github.kotlin.fibonacci
+package org.samfun.ktvine
 
 fun generateFibi() = sequence {
     var a = firstElement
