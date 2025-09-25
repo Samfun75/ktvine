@@ -5,18 +5,30 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.vanniktech.mavenPublish)
+    alias(libs.plugins.wire)
 }
 
 group = "org.samfun.ktvine"
 version = "1.0.0"
 
 kotlin {
-    jvm()
+    applyDefaultHierarchyTemplate()
+
+    jvm {
+        wire.kotlin {
+            android = false
+        }
+    }
+
     androidTarget {
         publishLibraryVariants("release")
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+        }
+
+        wire.kotlin {
+            android = true
         }
     }
 //    iosX64()
@@ -28,6 +40,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 //put your multiplatform dependencies here
+                api(libs.wire.runtime)
+                implementation(libs.cryptography.core)
+                implementation(libs.cryptography.provider.optimal)
+                implementation(libs.isoparser.runtime)
+                implementation(libs.bundles.serialization)
             }
         }
         val commonTest by getting {
@@ -47,6 +64,18 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+wire {
+    sourcePath {
+        srcDirs("src/commonMain/proto")
+    }
+
+    kotlin {
+        buildersOnly = true
+        rpcRole = "server"
+        rpcCallStyle = "suspending"
     }
 }
 
