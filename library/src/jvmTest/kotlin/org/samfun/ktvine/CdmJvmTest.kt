@@ -6,8 +6,11 @@ import org.samfun.ktvine.proto.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import java.security.KeyPairGenerator
 import java.security.SecureRandom
+import java.util.Base64
 import java.util.UUID
 
 class CdmJvmTest {
@@ -135,5 +138,67 @@ class CdmJvmTest {
             cdm.setServiceCertificate(sessionId, randomBytes(64))
         }
     }
-}
 
+    private fun providerIdFromSignedOrWrappedCert(certBytes: ByteArray): String? {
+        val sm = try { SignedMessage.ADAPTER.decode(certBytes) } catch (_: Throwable) { null }
+        val signed: SignedDrmCertificate = if (sm != null && sm.msg != null) {
+            SignedDrmCertificate.ADAPTER.decode(sm.msg)
+        } else {
+            SignedDrmCertificate.ADAPTER.decode(certBytes)
+        }
+        val drm = DrmCertificate.ADAPTER.decode(signed.drm_certificate!!)
+        return drm.provider_id
+    }
+
+    @Test
+    fun license_challenge_privacy_mode_true_uses_encrypted_client_id() {
+        val kpg = KeyPairGenerator.getInstance("RSA").apply { initialize(2048, SecureRandom()) }
+        val kp = kpg.generateKeyPair()
+        val device = makeDevice(kp.private.encoded)
+        val cdm = Cdm.fromDevice(device)
+        val sessionId = cdm.open()
+
+        // Set a valid service certificate (root-signed)
+        val certBytes = Base64.getDecoder().decode(Cdm.common_privacy_cert_b64)
+        val providerId = providerIdFromSignedOrWrappedCert(certBytes)
+        val returnedProvider = cdm.setServiceCertificate(sessionId, certBytes)
+        assertEquals(providerId, returnedProvider)
+
+        val kid = UUID.randomUUID()
+        val psshHeader = WidevinePsshData(key_ids = listOf(kid.toByteArray().toByteString()))
+        val pssh = PSSH(psshHeader.encode())
+
+        val challenge = cdm.getLicenseChallenge(sessionId, pssh, LicenseType.STREAMING, privacyMode = true)
+        val smReq = SignedMessage.ADAPTER.decode(challenge)
+        assertEquals(SignedMessage.MessageType.LICENSE_REQUEST, smReq.type)
+        val lr = LicenseRequest.ADAPTER.decode(smReq.msg!!)
+
+        assertNull(lr.client_id, "client_id must be omitted in privacy mode when service cert is set")
+        assertNotNull(lr.encrypted_client_id, "encrypted_client_id must be present in privacy mode")
+        assertEquals(providerId, lr.encrypted_client_id.provider_id)
+    }
+
+    @Test
+    fun license_challenge_privacy_mode_false_sends_plain_client_id() {
+        val kpg = KeyPairGenerator.getInstance("RSA").apply { initialize(2048, SecureRandom()) }
+        val kp = kpg.generateKeyPair()
+        val device = makeDevice(kp.private.encoded)
+        val cdm = Cdm.fromDevice(device)
+        val sessionId = cdm.open()
+
+        // Even with a certificate set, privacyMode=false should send plain client_id
+        val certBytes = Base64.getDecoder().decode(Cdm.common_privacy_cert_b64)
+        cdm.setServiceCertificate(sessionId, certBytes)
+
+        val kid = UUID.randomUUID()
+        val psshHeader = WidevinePsshData(key_ids = listOf(kid.toByteArray().toByteString()))
+        val pssh = PSSH(psshHeader.encode())
+
+        val challenge = cdm.getLicenseChallenge(sessionId, pssh, LicenseType.STREAMING, privacyMode = false)
+        val smReq = SignedMessage.ADAPTER.decode(challenge)
+        val lr = LicenseRequest.ADAPTER.decode(smReq.msg!!)
+
+        assertNotNull(lr.client_id, "client_id must be present when privacyMode=false")
+        assertNull(lr.encrypted_client_id, "encrypted_client_id must be absent when privacyMode=false")
+    }
+}

@@ -1,10 +1,7 @@
 package org.samfun.ktvine.crypto
 
 import java.security.*
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.RSAPrivateKeySpec
-import java.security.spec.RSAPublicKeySpec
-import java.security.spec.X509EncodedKeySpec
+import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.Mac
 import javax.crypto.SecretKey
@@ -13,7 +10,8 @@ import javax.crypto.spec.SecretKeySpec
 
 actual fun rsaPssSignSha1(privateKeyDer: ByteArray, message: ByteArray): ByteArray {
     val privateKey = loadPrivateKey(privateKeyDer)
-    val sig = Signature.getInstance("SHA1withRSAandMGF1")
+    val sig = Signature.getInstance("RSASSA-PSS")
+    sig.setParameter(PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 20, 1))
     sig.initSign(privateKey)
     sig.update(message)
     return sig.sign()
@@ -21,7 +19,8 @@ actual fun rsaPssSignSha1(privateKeyDer: ByteArray, message: ByteArray): ByteArr
 
 actual fun rsaPssVerifySha1(publicKeyDer: ByteArray, message: ByteArray, signature: ByteArray): Boolean {
     val publicKey = loadPublicKey(publicKeyDer)
-    val sig = Signature.getInstance("SHA1withRSAandMGF1")
+    val sig = Signature.getInstance("RSASSA-PSS")
+    sig.setParameter(PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 20, 1))
     sig.initVerify(publicKey)
     sig.update(message)
     return try { sig.verify(signature) } catch (_: Throwable) { false }
@@ -135,4 +134,3 @@ private class Asn1Reader(private val data: ByteArray) {
         return java.math.BigInteger(1, bytes)
     }
 }
-
