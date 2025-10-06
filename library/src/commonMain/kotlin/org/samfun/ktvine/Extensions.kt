@@ -29,3 +29,5 @@ fun ByteString.uuidFromByteArray(): UUID {
 fun ByteArray.toLittleInt(): Int = ByteBuffer.wrap(this).order(ByteOrder.LITTLE_ENDIAN).int
 
 fun ByteArray.toBuffer(): Buffer = Buffer().write(this)
+
+fun ByteArray.toHexString(): String = joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
