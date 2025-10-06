@@ -21,6 +21,7 @@ class PSSH {
     private var _systemId: ByteArray = PsshBox.WIDEVINE
     private var _content: ByteArray = ByteArray(0)
 
+    val init_data: ByteArray get() = _content
 
     constructor(data: String) {
         val decoded = Base64

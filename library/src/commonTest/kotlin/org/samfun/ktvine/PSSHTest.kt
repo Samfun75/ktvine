@@ -134,5 +134,15 @@ class PSSHTest {
         val reparsed = PSSH(pssh.dump())
         assertEquals(listOf(k2, k3), reparsed.key_ids())
     }
-}
 
+    @Test
+    fun keyIds_fromWidevineHeader() {
+        val kid = UUID.randomUUID()
+        val header = WidevinePsshData(key_ids = listOf(kid.toByteArray().toByteString()))
+        val pssh = PSSH(header.encode())
+
+        val kids = pssh.key_ids()
+        assertEquals(1, kids.size)
+        assertEquals(kid, kids.first())
+    }
+}
