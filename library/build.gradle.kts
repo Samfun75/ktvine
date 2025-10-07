@@ -41,10 +41,9 @@ kotlin {
             dependencies {
                 //put your multiplatform dependencies here
                 api(libs.wire.runtime)
-                implementation(libs.cryptography.core)
-                implementation(libs.cryptography.provider.optimal)
                 implementation(libs.isoparser.runtime)
                 implementation(libs.bundles.serialization)
+                implementation(libs.bundles.cryptography)
             }
         }
         val commonTest by getting {

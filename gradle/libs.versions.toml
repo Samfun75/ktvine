@@ -23,6 +23,7 @@ serialization-xml = { module = "io.github.pdvrieze.xmlutil:serialization", versi
 
 [bundles]
 serialization = ["serialization-xml-core", "serialization-xml"]
+cryptography = ["cryptography-core", "cryptography-provider-optimal"]
 
 [plugins]
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
