@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.vanniktech.mavenPublish)
     alias(libs.plugins.wire)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 group = "org.samfun.ktvine"
@@ -51,6 +52,9 @@ kotlin {
                 implementation(libs.kotlin.test)
             }
         }
+    }
+    sourceSets.jvmTest.dependencies {
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     }
 }
 
