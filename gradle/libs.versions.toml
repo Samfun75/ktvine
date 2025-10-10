@@ -8,8 +8,6 @@ vanniktechMavenPublish = "0.34.0"
 wire = "5.4.0"
 cryptography = "0.5.0"
 isoparser = "1.9.56"
-serialization_version = "1.9.0"
-xml_serialization_version = "0.91.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -20,12 +18,8 @@ cryptography-provider-jdk-bc = { module = "dev.whyoleg.cryptography:cryptography
 
 isoparser-runtime = { module = "org.mp4parser:isoparser", version.ref = "isoparser" }
 
-serialization-kx = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization_version" }
-serialization-xml-core = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xml_serialization_version" }
-serialization-xml = { module = "io.github.pdvrieze.xmlutil:serialization", version.ref = "xml_serialization_version" }
 
 [bundles]
-serialization = ["serialization-kx","serialization-xml-core", "serialization-xml"]
 cryptography = ["cryptography-core", "cryptography-provider-optimal", "cryptography-provider-jdk-bc"]
 
 [plugins]
@@ -33,4 +27,3 @@ androidLibrary = { id = "com.android.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
 wire = { id = "com.squareup.wire", version.ref = "wire" }
-kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

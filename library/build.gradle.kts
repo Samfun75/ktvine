@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.vanniktech.mavenPublish)
     alias(libs.plugins.wire)
-    alias(libs.plugins.kotlinSerialization)
 }
 
 group = "org.samfun.ktvine"
@@ -43,7 +42,6 @@ kotlin {
                 //put your multiplatform dependencies here
                 api(libs.wire.runtime)
                 implementation(libs.isoparser.runtime)
-                implementation(libs.bundles.serialization)
                 implementation(libs.bundles.cryptography)
             }
         }
