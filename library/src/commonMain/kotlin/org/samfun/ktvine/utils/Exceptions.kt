@@ -1,4 +1,4 @@
-package org.samfun.ktvine
+package org.samfun.ktvine.utils
 
 open class KtvineException(message: String) : Exception(message)
 

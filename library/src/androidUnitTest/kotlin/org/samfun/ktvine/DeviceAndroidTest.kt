@@ -5,7 +5,7 @@ import org.samfun.ktvine.proto.DrmCertificate
 import org.samfun.ktvine.proto.SignedDrmCertificate
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.Base64
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -33,7 +33,7 @@ class DeviceAndroidTest {
             .lines()
             .filter { !it.startsWith("---") && it.isNotBlank() }
             .joinToString("")
-        return Base64.getDecoder().decode(base64)
+        return Base64.decode(base64)
     }
 
     @Test
@@ -74,7 +74,7 @@ class DeviceAndroidTest {
         }
 
         // Base64 variant
-        val b64 = Base64.getEncoder().encodeToString(data)
+        val b64 = Base64.encode(data)
         val deviceB64 = Device.loads(b64)
         assertEquals(device.systemId, deviceB64.systemId)
         assertEquals(device.type, deviceB64.type)
@@ -82,4 +82,3 @@ class DeviceAndroidTest {
         assertEquals(device.clientId.encode().toList(), deviceB64.clientId.encode().toList())
     }
 }
-

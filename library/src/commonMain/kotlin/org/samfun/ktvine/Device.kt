@@ -1,6 +1,7 @@
 package org.samfun.ktvine
 
 import okio.ByteString.Companion.decodeBase64
+import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.proto.ClientIdentification
 import org.samfun.ktvine.proto.DrmCertificate
 import org.samfun.ktvine.proto.FileHashes

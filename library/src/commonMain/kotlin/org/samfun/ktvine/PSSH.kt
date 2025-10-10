@@ -5,12 +5,21 @@ import okio.ByteString.Companion.toByteString
 import okio.Buffer
 import org.mp4parser.PropertyBoxParserImpl
 import org.mp4parser.tools.ByteBufferByteChannel
+import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.proto.WidevinePsshData
+import org.samfun.ktvine.utils.PsshBox
+import org.samfun.ktvine.utils.toByteArray
+import org.samfun.ktvine.utils.toHexString
+import org.samfun.ktvine.utils.toLEU16
+import org.samfun.ktvine.utils.toLEU32
+import org.samfun.ktvine.utils.uuidFromByteArray
+import org.samfun.ktvine.utils.uuidFromByteString
+import org.samfun.ktvine.utils.uuidFromHexByteString
 import java.io.ByteArrayOutputStream
 import java.nio.channels.Channels
 import java.nio.channels.WritableByteChannel
-import java.util.Base64
 import java.util.UUID
+import kotlin.io.encoding.Base64
 
 
 class PSSH {
@@ -21,12 +30,10 @@ class PSSH {
     private var _systemId: ByteArray = PsshBox.WIDEVINE
     private var _content: ByteArray = ByteArray(0)
 
-    val init_data: ByteArray get() = _content
+    val initData: ByteArray get() = _content
 
     constructor(data: String) {
-        val decoded = Base64
-            .getDecoder()
-            .decode(data)
+        val decoded = Base64.decode(data)
         val box = parseBox(decoded)
         init(box)
     }
@@ -77,10 +84,10 @@ class PSSH {
      * - WidevineCencHeaders
      * - PlayReadyHeaders (4.0.0.0->4.3.0.0)
      */
-    fun key_ids(): List<UUID> {
+    fun keyIds(): List<UUID> {
         if (_version == 1 && _keyIds.isNotEmpty()) return _keyIds
 
-        // 1) Try Widevine CENC header regardless of system_id (lenient like Python)
+        // 1) Try Widevine CENC header regardless of system_id
         try {
             val header = WidevinePsshData.ADAPTER.decode(_content)
             return header.key_ids.map {
@@ -123,7 +130,7 @@ class PSSH {
                     }
 
                     return keyIdsB64.map { b64 ->
-                        Base64.getDecoder().decode(b64).toByteString().uuidFromByteString()
+                        Base64.decode(b64).toByteString().uuidFromByteString()
                     }
                 }
             }
@@ -156,16 +163,16 @@ class PSSH {
 
     fun dumps(): String {
         // Export the PSSH object as a full PSSH box in base64 form.
-        return Base64.getEncoder().encodeToString(dump())
+        return Base64.encode(dump())
     }
 
     override fun toString(): String = dumps()
 
     // Convert PlayReady PSSH to Widevine PSSH
-    fun to_widevine() {
+    fun toWidevine() {
         if (_systemId.contentEquals(PsshBox.WIDEVINE)) throw ValueException("This is already a Widevine PSSH")
 
-        val kids = key_ids()
+        val kids = keyIds()
         val widevine = WidevinePsshData(
             key_ids = kids.map { it.toByteArray().toByteString() },
             algorithm = WidevinePsshData.Algorithm.AESCTR
@@ -177,17 +184,17 @@ class PSSH {
     }
 
     // Convert Widevine PSSH to PlayReady v4.3.0.0 PSSH
-    fun to_playready(
-        la_url: String? = null,
-        lui_url: String? = null,
-        ds_id: ByteArray? = null,
-        decryptor_setup: String? = null,
-        custom_data: String? = null
+    fun toPlayready(
+        laUrl: String? = null,
+        luiUrl: String? = null,
+        dsId: ByteArray? = null,
+        decryptorSetup: String? = null,
+        customData: String? = null
     ) {
         if (_systemId.contentEquals(PsshBox.PLAYREADY_SYSTEM_ID)) throw ValueException("This is already a PlayReady PSSH")
 
-        val keyIdsXml = key_ids().joinToString("") { kid ->
-            val b64 = Base64.getEncoder().encodeToString(kid.toByteArray())
+        val keyIdsXml = keyIds().joinToString("") { kid ->
+            val b64 = Base64.encode(kid.toByteArray())
             """
             <KID ALGID="AESCTR" VALUE="$b64"></KID>
             """.trimIndent()
@@ -199,24 +206,24 @@ class PSSH {
                 <PROTECTINFO>
                     <KIDS>$keyIdsXml</KIDS>
                 </PROTECTINFO>
-                ${la_url?.let { "<LA_URL>$it</LA_URL>" } ?: ""}
-                ${lui_url?.let { "<LUI_URL>$it</LUI_URL>" } ?: ""}
-                ${ds_id?.let { "<DS_ID>${Base64.getEncoder().encodeToString(it)}</DS_ID>" } ?: ""}
-                ${decryptor_setup?.let { "<DECRYPTORSETUP>$it</DECRYPTORSETUP>" } ?: ""}
-                ${custom_data?.let { "<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>" } ?: ""}
+                ${laUrl?.let { "<LA_URL>$it</LA_URL>" } ?: ""}
+                ${luiUrl?.let { "<LUI_URL>$it</LUI_URL>" } ?: ""}
+                ${dsId?.let { "<DS_ID>${Base64.encode(it)}</DS_ID>" } ?: ""}
+                ${decryptorSetup?.let { "<DECRYPTORSETUP>$it</DECRYPTORSETUP>" } ?: ""}
+                ${customData?.let { "<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>" } ?: ""}
             </DATA>
         </WRMHEADER>
         """.trimIndent().toByteArray(Charsets.UTF_16LE)
 
         val body = ByteArrayOutputStream().apply {
-            write(leU16(1))              // record count
-            write(leU16(0x01))           // type: PlayReadyHeader
-            write(leU16(prrValue.size))  // length
+            write(1.toLEU16())              // record count
+            write(0x01.toLEU16())           // type: PlayReadyHeader
+            write(prrValue.size.toLEU16())  // length
             write(prrValue)
         }.toByteArray()
 
         val pro = ByteArrayOutputStream().apply {
-            write(leU32(body.size + 4))  // total size including this length field
+            write((body.size + 4).toLEU32())  // total size including this length field
             write(body)
         }.toByteArray()
 
@@ -225,7 +232,7 @@ class PSSH {
     }
 
     // Only for Widevine PSSH: overwrite Key IDs in both WV header and, if v1, box field too
-    fun set_key_ids(keyIds: List<UUID>) {
+    fun setKeyIds(keyIds: List<UUID>) {
         if (!_systemId.contentEquals(PsshBox.WIDEVINE))
             throw ValueException("Only Widevine PSSH Boxes are supported, not ${_systemId.toHexString()}")
 
@@ -238,19 +245,19 @@ class PSSH {
         _content = updated.encode()
     }
 
-    // Overload accepting UUID | String(hex/base64) | ByteArray like Python's parse
-    fun set_key_ids_any(keyIds: List<Any>) = set_key_ids(parse_key_ids(keyIds))
+    // Overload accepting UUID | String(hex/base64) | ByteArray
+    fun setKeyIdsAny(keyIds: List<Any>) = setKeyIds(parseKeyIds(keyIds))
 
     companion object {
         // Convert a list of UUID | String(hex/base64) | ByteArray to UUIDs
-        fun parse_key_ids(key_ids: List<Any>): List<UUID> {
-            require(key_ids.all { it is UUID || it is String || it is ByteArray }) { "Some items of key_ids are not a UUID, String, or ByteArray." }
-            return key_ids.map { item ->
+        fun parseKeyIds(keyIds: List<Any>): List<UUID> {
+            require(keyIds.all { it is UUID || it is String || it is ByteArray }) { "Some items of key_ids are not a UUID, String, or ByteArray." }
+            return keyIds.map { item ->
                 when (item) {
                     is UUID -> item
                     is String -> {
                         val isHex = item.all { it in ('0'..'9') || it in ('a'..'f') || it in ('A'..'F') }
-                        val bytes = if (isHex) item.decodeHex().toByteArray() else Base64.getDecoder().decode(item)
+                        val bytes = if (isHex) item.decodeHex().toByteArray() else Base64.decode(item)
                         bytes.toByteString().uuidFromByteString()
                     }
                     is ByteArray -> item.toByteString().uuidFromByteString()
@@ -260,54 +267,45 @@ class PSSH {
         }
 
         fun new(
-            system_id: UUID,
-            key_ids: List<UUID>? = null,
-            init_data: Any? = null,
+            systemId: UUID,
+            keyIds: List<UUID>? = null,
+            initData: Any? = null,
             version: Int = 0,
             flags: Int = 0
         ): PSSH {
             require(version in 0..1) { "Invalid version, must be either 0 or 1, not $version." }
             require(flags >= 0) { "Invalid flags, cannot be less than 0." }
 
-            if (version == 0 && key_ids != null && init_data != null)
+            if (version == 0 && keyIds != null && initData != null)
                 throw ValueException("Version 0 PSSH boxes must use only init_data, not init_data and key_ids.")
-            if (version == 1 && key_ids == null && init_data == null)
+            if (version == 1 && keyIds == null && initData == null)
                 throw ValueException("Version 1 PSSH boxes must use either init_data or key_ids but neither were provided")
 
-            val contentBytes: ByteArray = when (init_data) {
+            val contentBytes: ByteArray = when (initData) {
                 null -> ByteArray(0)
-                is WidevinePsshData -> init_data.encode()
+                is WidevinePsshData -> initData.encode()
                 is String -> {
-                    val isHex = init_data.all { it in ('0'..'9') || it in ('a'..'f') || it in ('A'..'F') }
-                    if (isHex) init_data.decodeHex().toByteArray() else Base64.getDecoder().decode(init_data)
+                    val isHex = initData.all { it in ('0'..'9') || it in ('a'..'f') || it in ('A'..'F') }
+                    if (isHex) initData.decodeHex().toByteArray() else Base64.decode(initData)
                 }
-                is ByteArray -> init_data
-                else -> throw ValueException("Expecting init_data to be WidevinePsshData, hex, base64, or bytes, not ${init_data::class}")
+                is ByteArray -> initData
+                else -> throw ValueException("Expecting init_data to be WidevinePsshData, hex, base64, or bytes, not ${initData::class}")
             }
 
             val box = PsshBox().apply {
                 this.version = version
                 this.flags = flags
-                this.systemId = system_id.toByteArray()
+                this.systemId = systemId.toByteArray()
                 this.content = contentBytes
                 this.keyIds = emptyList()
             }
 
             val pssh = PSSH(box)
-            if (key_ids != null) {
+            if (keyIds != null) {
                 pssh._version = version // reinforce in case
-                pssh.set_key_ids(key_ids)
+                pssh.setKeyIds(keyIds)
             }
             return pssh
         }
     }
 }
-
-// Little-endian helpers
-private fun leU16(v: Int): ByteArray = byteArrayOf((v and 0xFF).toByte(), ((v ushr 8) and 0xFF).toByte())
-private fun leU32(v: Int): ByteArray = byteArrayOf(
-    (v and 0xFF).toByte(),
-    ((v ushr 8) and 0xFF).toByte(),
-    ((v ushr 16) and 0xFF).toByte(),
-    ((v ushr 24) and 0xFF).toByte()
-)

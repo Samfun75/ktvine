@@ -1,90 +1,103 @@
+@file:OptIn(DelicateCryptographyApi::class)
+
 package org.samfun.ktvine.crypto
 
-// Expect/actual crypto API used in common code.
-// AES, RSA, HMAC, CMAC primitives and utilities.
+import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.DelicateCryptographyApi
+import dev.whyoleg.cryptography.algorithms.*
+import java.security.spec.X509EncodedKeySpec
+import kotlin.random.Random
 
-expect fun rsaPssSignSha1(privateKeyDer: ByteArray, message: ByteArray): ByteArray
-expect fun rsaPssVerifySha1(publicKeyDer: ByteArray, message: ByteArray, signature: ByteArray): Boolean
-expect fun rsaOaepDecryptSha1(privateKeyDer: ByteArray, ciphertext: ByteArray): ByteArray
-expect fun rsaOaepEncryptSha1(publicKeyDer: ByteArray, plaintext: ByteArray): ByteArray
+val crypto = CryptographyProvider.Default
 
-expect fun aesCbcEncryptNoPadding(key: ByteArray, iv: ByteArray, plaintextNoPad: ByteArray): ByteArray
-expect fun aesCbcDecryptNoPadding(key: ByteArray, iv: ByteArray, ciphertext: ByteArray): ByteArray
+suspend fun rsaPssSignSha1(privateKeyDer: ByteArray, data: ByteArray): ByteArray {
+    val rsa = crypto.get(RSA.PSS)
+    val privateKey = rsa.privateKeyDecoder(SHA1).decodeFromByteArray(
+        RSA.PrivateKey.Format.DER.PKCS1,
+        privateKeyDer
+    )
+    return privateKey.signatureGenerator().generateSignature(data)
+}
 
-// Single-block AES-ECB encrypt used by CMAC.
-expect fun aesEncryptBlock(key: ByteArray, block16: ByteArray): ByteArray
+suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature: ByteArray): Boolean {
+    val rsa = crypto.get(RSA.PSS)
+    val publicKey =
+        rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
+            RSA.PublicKey.Format.DER,
+            X509EncodedKeySpec(publicKeyDer).encoded
+        )
+    return publicKey.signatureVerifier().tryVerifySignature(data, signature)
+}
 
-expect fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray
-expect fun randomBytes(size: Int): ByteArray
+suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray {
+    val rsa = crypto.get(RSA.OAEP)
+    val publicKey = rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
+        RSA.PublicKey.Format.DER,
+        X509EncodedKeySpec(publicKeyDer).encoded
+    )
+    return publicKey.encryptor().encrypt(data)
+}
 
-// Common helpers implemented in commonMain
+suspend fun rsaOaepDecrypt(privateKeyDer: ByteArray, data: ByteArray): ByteArray {
+    val rsa = crypto.get(RSA.OAEP)
+    val privateKey =
+        rsa.privateKeyDecoder(SHA1).decodeFromByteArray(
+            RSA.PrivateKey.Format.DER.PKCS1,
+            privateKeyDer
+        )
+    return privateKey.decryptor().decrypt(data)
+}
 
+suspend fun aesCmac(key: ByteArray, data: ByteArray): ByteArray {
+    val cmac = crypto.get(AES.CMAC)
+    val generator = cmac.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, key).signatureGenerator()
+    return generator.generateSignature(data)
+}
+
+suspend fun aesCbcDecrypt(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray {
+    val cbc = crypto.get(AES.CBC)
+    val decryptor = cbc.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, key).cipher(false)
+    return decryptor.decryptWithIv(iv, data)
+}
+
+// Alias to match existing call sites expecting explicit no-padding naming
+suspend fun aesCbcDecryptNoPadding(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray =
+    aesCbcDecrypt(key, iv, data)
+
+// AES-CBC encrypt without internal padding. Provide PKCS#7 padded plaintext.
+suspend fun aesCbcEncryptNoPadding(key: ByteArray, iv: ByteArray, plaintextNoPad: ByteArray): ByteArray {
+    val cbc = crypto.get(AES.CBC)
+    val encryptor = cbc.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, key).cipher(padding = false)
+    return encryptor.encryptWithIv(iv, plaintextNoPad)
+}
+
+suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
+    val hmac = crypto.get(HMAC)
+    val generator = hmac.keyDecoder(SHA256).decodeFromByteArray(HMAC.Key.Format.RAW,key).signatureGenerator()
+    return generator.generateSignature(data)
+}
+
+fun randomBytes(count: Int): ByteArray {
+    return Random.nextBytes(count)
+}
+
+// PKCS#7 padding helpers
 fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
-    val pad = (blockSize - (data.size % blockSize)).let { if (it == 0) blockSize else it }
-    return data + ByteArray(pad) { pad.toByte() }
+    require(blockSize in 1..255) { "Invalid block size $blockSize" }
+    val padLen = blockSize - (data.size % blockSize)
+    val padding = ByteArray(padLen) { padLen.toByte() }
+    return data + padding
 }
 
 fun pkcs7Unpad(data: ByteArray, blockSize: Int = 16): ByteArray {
-    require(data.isNotEmpty() && data.size % blockSize == 0) { "Invalid PKCS7 input" }
-    val pad = data.last().toInt() and 0xFF
-    require(pad in 1..blockSize && pad <= data.size) { "Invalid PKCS7 padding" }
-    // constant-time-ish check
-    for (i in 1..pad) require((data[data.size - i].toInt() and 0xFF) == pad) { "Bad PKCS7 padding" }
-    return data.copyOfRange(0, data.size - pad)
-}
-
-private fun leftShiftOneBit(block: ByteArray): ByteArray {
-    val out = ByteArray(block.size)
-    var carry = 0
-    for (i in block.indices.reversed()) {
-        val b = block[i].toInt() and 0xFF
-        out[i] = (((b shl 1) or carry) and 0xFF).toByte()
-        carry = (b ushr 7) and 0x01
+    require(data.isNotEmpty()) { "Cannot unpad empty data" }
+    require(data.size % blockSize == 0) { "Data length must be a multiple of block size" }
+    val padLen = data.last().toInt() and 0xFF
+    for (i in 1..padLen) {
+        if ((data[data.size - i].toInt() and 0xFF) != padLen) {
+            // Not padded, or invalid padding
+            return data
+        }
     }
-    return out
-}
-
-private fun xor(a: ByteArray, b: ByteArray): ByteArray {
-    val out = ByteArray(a.size)
-    for (i in a.indices) out[i] = (a[i].toInt() xor b[i].toInt()).toByte()
-    return out
-}
-
-fun cmacAes(key: ByteArray, data: ByteArray): ByteArray {
-    // RFC 4493
-    val blockSize = 16
-    val zero = ByteArray(blockSize)
-    val L = aesEncryptBlock(key, zero)
-    val Rb = ByteArray(blockSize) { 0 }
-    Rb[blockSize - 1] = 0x87.toByte()
-
-    val K1 = run {
-        val tmp = leftShiftOneBit(L)
-        if ((L[0].toInt() and 0x80) != 0) xor(tmp, Rb) else tmp
-    }
-    val K2 = run {
-        val tmp = leftShiftOneBit(K1)
-        if ((K1[0].toInt() and 0x80) != 0) xor(tmp, Rb) else tmp
-    }
-
-    val n = if (data.isEmpty()) 0 else (data.size + blockSize - 1) / blockSize
-    val lastBlockComplete = (n > 0 && (data.size % blockSize == 0))
-
-    val Mlast = if (n == 0) {
-        xor(pkcs7Pad(ByteArray(0), blockSize), K2)
-    } else {
-        val start = (n - 1) * blockSize
-        val last = data.copyOfRange(start, data.size)
-        if (lastBlockComplete) xor(last, K1) else xor(pkcs7Pad(last, blockSize), K2)
-    }
-
-    var X = ByteArray(blockSize)
-    val rounds = if (n == 0) 0 else (n - 1)
-    for (i in 0 until rounds) {
-        val start = i * blockSize
-        val Mi = data.copyOfRange(start, start + blockSize)
-        X = aesEncryptBlock(key, xor(X, Mi))
-    }
-
-    return aesEncryptBlock(key, xor(X, Mlast))
+    return data.copyOf(data.size - padLen)
 }
