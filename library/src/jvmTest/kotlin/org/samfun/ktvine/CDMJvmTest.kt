@@ -1,19 +1,17 @@
 package org.samfun.ktvine
 
-import MPD
 import dev.whyoleg.cryptography.BinarySize.Companion.bits
 import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.RSA
 import dev.whyoleg.cryptography.algorithms.SHA1
 import kotlinx.coroutines.runBlocking
-import nl.adaptivity.xmlutil.serialization.XML
-import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.cdm.Cdm
+import org.samfun.ktvine.core.Device
+import org.samfun.ktvine.core.PSSH
 import org.samfun.ktvine.crypto.crypto
 import org.samfun.ktvine.crypto.rsaPssSignSha1
 import org.samfun.ktvine.crypto.rsaPssVerifySha1
-import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.proto.LicenseType
 import org.samfun.ktvine.utils.kidToUuid
 import org.samfun.ktvine.utils.toHexString
@@ -24,10 +22,11 @@ import java.nio.file.Paths
 import java.security.SecureRandom
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(DelicateCryptographyApi::class)
-class WidevineProxyJvmTest {
+class CDMJvmTest {
 
     private fun readTestFile(name: String): ByteArray {
         // Try module-relative path first (when working dir is library/)
@@ -45,31 +44,13 @@ class WidevineProxyJvmTest {
 
     private fun readMpd(): String {
         // Relative to module directory
-//        val path = Paths.get("src/commonTest/kotlin/org/samfun/ktvine/playlist/tears.mpd")
-        val path = Paths.get("src/commonTest/kotlin/org/samfun/ktvine/playlist/bitmovin.mpd")
+        val path = Paths.get("src", "commonTest", "kotlin", "org", "samfun", "ktvine", "playlist", "tears.mpd")
         return Files.readString(path)
     }
 
     private fun extractFirstPsshB64(mpdXml: String): String? {
-        val format = XML {
-            autoPolymorphic = true
-            repairNamespaces = true
-
-        }
-        val mpd = format.decodeFromString(MPD.serializer(), mpdXml)
-
-        return mpd.periods
-            .asSequence()
-            .flatMap { it.adaptationSets.asSequence() }
-            .flatMap { it.representations.asSequence() }
-            .filter { rep -> rep.height == 720 }
-            .map { it.contentProtections }
-            .also { println(it.first().first()) }
-            .map { cp -> cp.first { p -> p.cencPssh != null }.cencPssh }
-            .firstOrNull()
-            ?.value
-//        val regex = Regex("<cenc:pssh>([^<]+)</cenc:pssh>")
-//        return regex.find(mpdXml)?.groupValues?.getOrNull(1)?.trim()
+        val regex = Regex("<cenc:pssh\\b[^>]*>([^<]+)</cenc:pssh>")
+        return regex.find(mpdXml)?.groupValues?.getOrNull(1)?.trim()
     }
 
     @Test
@@ -103,15 +84,11 @@ class WidevineProxyJvmTest {
             val mpd = readMpd()
             val psshB64 = requireNotNull(extractFirstPsshB64(mpd)) { "No cenc:pssh found in MPD" }
 
-            // Build PSSH either from header or box
-            val psshHeaderBytes = psshB64.decodeBase64()!!.toByteArray()
-//            val pssh = PSSH(psshHeaderBytes)
             val pssh = PSSH(psshB64)
 
             val challenge = cdm.getLicenseChallenge(sessionId, pssh, LicenseType.STREAMING, privacyMode = false)
 
-//            val url = URI.create("https://proxy.widevine.com/proxy").toURL()
-            val url = URI.create("https://cwip-shaka-proxy.appspot.com/no_auth").toURL()
+            val url = URI.create("https://proxy.widevine.com/proxy").toURL()
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
@@ -127,39 +104,77 @@ class WidevineProxyJvmTest {
 
             // Parse license and assert we have at least one key
             cdm.parseLicense(sessionId, response)
-            val keys = cdm.getKeys(sessionId, License.KeyContainer.KeyType.CONTENT)
+            val keys = cdm.getKeys(sessionId)
             assertTrue(keys.isNotEmpty(), "No decryption keys returned by Widevine proxy")
 
             keys.forEach { key ->
                 println("[${key.type}] ${key.kid} : ${key.key.toHexString()}")
             }
 
+//            MDAwMDAwMDAwMDAwMDAwMQ== 	eKHcBkYRlwfpA1FNigBzXw== 	SD
+//            MDAwMDAwMDAwMDAwMDAwMw== 	QkZshCrBxUObHgwJ+7Th0g== 	HD
+//            MDAwMDAwMDAwMDAwMDAwMg== 	Hzeeo4xw5Af3ayPsZAHK7w== 	HD
+//            MDAwMDAwMDAwMDAwMDAwMA== 	Pwoz80CYueIrwHjgobXoVA== 	AUDIO
+//            MDAwMDAwMDAwMDAwMDAwNA== 	IvCfhLVopdAH5LHRFpQ1gQ== 	SD
+//            MDAwMDAwMDAwMDAwMDAwNQ== 	msMDbgSsnSvpRu1iQFFJvA== 	SD
+//            MDAwMDAwMDAwMDAwMDAwNg== 	MUWYWCQzTsTLSsS9w+K+7w== 	SD
+//            MDAwMDAwMDAwMDAwMDAwNw== 	ebhzT7mNJ1qQempaFQEouw== 	HD
+
             // From https://integration.widevine.com/documentation/content
             val kids = listOf(
-                Pair(
+                Triple(
                     Base64.decode("MDAwMDAwMDAwMDAwMDAwMQ==").toByteString().kidToUuid(),
-                    Base64.decode("eKHcBkYRlwfpA1FNigBzXw==").toHexString()
+                    Base64.decode("eKHcBkYRlwfpA1FNigBzXw==").toHexString(),
+                    "SD"
                 ),
-                Pair(
+                Triple(
                     Base64.decode("MDAwMDAwMDAwMDAwMDAwMw==").toByteString().kidToUuid(),
-                    Base64.decode("QkZshCrBxUObHgwJ+7Th0g==").toHexString()
+                    Base64.decode("QkZshCrBxUObHgwJ+7Th0g==").toHexString(),
+                    "HD"
                 ),
-                Pair(
+                Triple(
                     Base64.decode("MDAwMDAwMDAwMDAwMDAwMg==").toByteString().kidToUuid(),
-                    Base64.decode("Hzeeo4xw5Af3ayPsZAHK7w==").toHexString()
-                )
+                    Base64.decode("Hzeeo4xw5Af3ayPsZAHK7w==").toHexString(),
+                    "HD"
+                ),
+                Triple(
+                    Base64.decode("MDAwMDAwMDAwMDAwMDAwMA==").toByteString().kidToUuid(),
+                    Base64.decode("Pwoz80CYueIrwHjgobXoVA==").toHexString(),
+                    "AUDIO"
+                ),
+                Triple(
+                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNA==").toByteString().kidToUuid(),
+                    Base64.decode("IvCfhLVopdAH5LHRFpQ1gQ==").toHexString(),
+                    "SD"
+                ),
+                Triple(
+                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNQ==").toByteString().kidToUuid(),
+                    Base64.decode("msMDbgSsnSvpRu1iQFFJvA==").toHexString(),
+                    "SD"
+                ),
+                Triple(
+                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNg==").toByteString().kidToUuid(),
+                    Base64.decode("MUWYWCQzTsTLSsS9w+K+7w==").toHexString(),
+                    "SD"
+                ),
+                Triple(
+                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNw==").toByteString().kidToUuid(),
+                    Base64.decode("ebhzT7mNJ1qQempaFQEouw==").toHexString(),
+                    "HD"
+                ),
             )
 
 
-//            kids.forEach { (kid, expectedKeyHex) ->
-//                val key = keys.find { it.kid == kid }
-//                assertTrue(key != null, "Key with KID $kid not found in license")
-//                assertEquals(
-//                    expectedKeyHex,
-//                    key.key.toHexString(),
-//                    "Key mismatch for KID $kid: expected $expectedKeyHex, got ${key.key.toHexString()}"
-//                )
-//            }
+            kids.forEach { (kid, expectedKeyHex, quality) ->
+                println("Verifying KID $kid - $quality")
+                val key = keys.find { it.kid == kid }
+                assertTrue(key != null, "Key with KID $kid not found in license")
+                assertEquals(
+                    expectedKeyHex,
+                    key.key.toHexString(),
+                    "Key mismatch for KID $kid: expected $expectedKeyHex, got ${key.key.toHexString()}"
+                )
+            }
         }
     }
 }

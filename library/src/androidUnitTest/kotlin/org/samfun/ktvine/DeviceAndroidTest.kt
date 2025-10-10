@@ -1,5 +1,7 @@
 package org.samfun.ktvine
 
+import org.samfun.ktvine.core.Device
+import org.samfun.ktvine.core.DeviceTypes
 import org.samfun.ktvine.proto.ClientIdentification
 import org.samfun.ktvine.proto.DrmCertificate
 import org.samfun.ktvine.proto.SignedDrmCertificate

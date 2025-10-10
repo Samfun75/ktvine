@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.samfun.ktvine.proto.WidevinePsshData
 import okio.ByteString.Companion.toByteString
+import org.samfun.ktvine.core.PSSH
 import org.samfun.ktvine.utils.toByteArray
 import java.util.UUID
 import kotlin.io.encoding.Base64

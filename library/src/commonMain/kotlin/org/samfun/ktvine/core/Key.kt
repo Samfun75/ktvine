@@ -1,4 +1,4 @@
-package org.samfun.ktvine
+package org.samfun.ktvine.core
 
 import org.samfun.ktvine.crypto.aesCbcDecryptNoPadding
 import org.samfun.ktvine.crypto.pkcs7Unpad

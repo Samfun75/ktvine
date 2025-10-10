@@ -1,4 +1,4 @@
-package org.samfun.ktvine
+package org.samfun.ktvine.core
 
 import okio.ByteString.Companion.decodeBase64
 import org.samfun.ktvine.utils.ValueException

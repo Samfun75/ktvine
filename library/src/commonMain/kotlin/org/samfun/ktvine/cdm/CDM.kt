@@ -4,14 +4,14 @@ import okio.ByteString
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.utils.DecodeException
-import org.samfun.ktvine.Device
-import org.samfun.ktvine.DeviceTypes
+import org.samfun.ktvine.core.Device
+import org.samfun.ktvine.core.DeviceTypes
 import org.samfun.ktvine.utils.InvalidInitDataException
 import org.samfun.ktvine.utils.InvalidLicenseTypeException
 import org.samfun.ktvine.utils.InvalidSessionException
-import org.samfun.ktvine.Key
-import org.samfun.ktvine.PSSH
-import org.samfun.ktvine.Session
+import org.samfun.ktvine.core.Key
+import org.samfun.ktvine.core.PSSH
+import org.samfun.ktvine.core.Session
 import org.samfun.ktvine.utils.SignatureMismatchException
 import org.samfun.ktvine.utils.TooManySessionsException
 import org.samfun.ktvine.crypto.*
@@ -243,7 +243,7 @@ class Cdm(
                 s.keys.add(Key.fromContainer(kc, encKey))
             } catch (error: Throwable) {
                 // ignore malformed keys
-                error.printStackTrace()
+                println("[ktvine] Error parsing key ${error.localizedMessage}")
             }
         }
         // drop used context for this request
@@ -280,13 +280,13 @@ class Cdm(
         macContext: ByteArray,
         key: ByteArray
     ): Triple<ByteArray, ByteArray, ByteArray> {
-        suspend fun derive(sessionKey: ByteArray, context: ByteArray, counter: Int): ByteArray {
-            return aesCmac(sessionKey, byteArrayOf(counter.toByte()) + context)
+        suspend fun derive(context: ByteArray, counter: Int): ByteArray {
+            return aesCmac(key, byteArrayOf(counter.toByte()) + context)
         }
 
-        val encKey = derive(key, encContext, 1)
-        val macKeyServer = derive(key, macContext, 1) + derive(key, macContext, 2)
-        val macKeyClient = derive(key, macContext, 3) + derive(key, macContext, 4)
+        val encKey = derive( encContext, 1)
+        val macKeyServer = derive(macContext, 1) + derive( macContext, 2)
+        val macKeyClient = derive( macContext, 3) + derive(macContext, 4)
         return Triple(encKey, macKeyServer, macKeyClient)
     }
 

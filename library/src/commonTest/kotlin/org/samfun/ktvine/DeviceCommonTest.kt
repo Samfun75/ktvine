@@ -1,6 +1,7 @@
 package org.samfun.ktvine
 
 import okio.ByteString.Companion.toByteString
+import org.samfun.ktvine.core.Device
 import org.samfun.ktvine.utils.ValueException
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
