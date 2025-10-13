@@ -39,8 +39,12 @@ class DeviceAndroidTest {
     }
 
     @Test
-    fun loads_wvd_v2_from_wvd_file_android() {
-        val data = try { readTestFile("google_avd.wvd") } catch (_: Throwable) { return println("No Device skipping test") }
+    fun `test loads wvd v2 from wvd file android`() {
+        val data = try {
+            readTestFile("google_avd.wvd")
+        } catch (_: Throwable) {
+            return println("No Device skipping test")
+        }
         val device = Device.loads(data)
 
         val clientId = ClientIdentification.ADAPTER.decode(device.clientId.encode())

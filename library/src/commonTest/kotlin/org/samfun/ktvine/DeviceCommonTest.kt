@@ -11,26 +11,26 @@ class DeviceCommonTest {
     // These tests avoid any platform-specific file I/O and validate error handling across all targets.
 
     @Test
-    fun loads_base64_invalid_throws_common() {
+    fun `test loads base64 invalid throws common`() {
         assertFailsWith<ValueException> {
             Device.loads("this is not base64$$$")
         }
     }
 
     @Test
-    fun loads_wrong_magic_throws_common() {
+    fun `test loads wrong magic throws common`() {
         val bad = byteArrayOf('X'.code.toByte(), 'Y'.code.toByte(), 'Z'.code.toByte()) + ByteArray(8) { 0 }
         assertFailsWith<ValueException> { Device.loads(bad) }
     }
 
     @Test
-    fun loads_unsupported_version_throws_common() {
+    fun `test loads unsupported version throws common`() {
         val bytes = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte(), 1) + ByteArray(7) { 0 }
         assertFailsWith<ValueException> { Device.loads(bytes) }
     }
 
     @Test
-    fun loads_unknown_device_type_throws_common() {
+    fun `test loads unknown device type throws common`() {
         val bytes = byteArrayOf(
             'W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte(),
             2, // version
@@ -44,17 +44,16 @@ class DeviceCommonTest {
     }
 
     @Test
-    fun loads_data_too_short_throws_common() {
+    fun `test loads data too short throws common`() {
         val tooShort = byteArrayOf(0, 1, 2, 3, 4, 5)
         assertFailsWith<IllegalArgumentException> { Device.loads(tooShort) }
     }
 
     @Test
-    fun loads_base64_roundtrip_with_random_bytes_still_fails_common() {
+    fun `test loads base64 roundtrip with random bytes still fails common`() {
         // Random bytes made base64: should fail due to wrong magic
         val random = ByteArray(32) { it.toByte() }
         val b64 = random.toByteString().base64()
         assertFailsWith<ValueException> { Device.loads(b64) }
     }
 }
-

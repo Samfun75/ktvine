@@ -54,7 +54,7 @@ class CDMJvmTest {
     }
 
     @Test
-    fun sign_with_rsa_pss_sha1() {
+    fun `test sign with rsa pss sha1`() {
         runBlocking {
             val rsa = CryptographyProvider.Default.get(RSA.PSS)
             val keyPair = rsa.keyPairGenerator(2048.bits, SHA1).generateKey()
@@ -69,7 +69,7 @@ class CDMJvmTest {
     }
 
     @Test
-    fun widevine_proxy_returns_keys_when_device_available() {
+    fun `test widevine proxy returns keys when device available`() {
         runBlocking {
             val data = try {
                 readTestFile("google_avd.wvd")

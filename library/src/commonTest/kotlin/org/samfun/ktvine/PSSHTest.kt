@@ -57,7 +57,7 @@ class PSSHTest {
     }
 
     @Test
-    fun testWidevineV0KeyIdsRoundTrip() {
+    fun `test widevine v0 key ids round trip`() {
         val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
         val k2 = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
         val data = wvData(k1, k2)
@@ -79,7 +79,7 @@ class PSSHTest {
     }
 
     @Test
-    fun testPlayReadyParsingAndToWidevine() {
+    fun `test play ready parsing and to widevine`() {
         val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
         val k2 = UUID.fromString("00112233-4455-6677-8899-aabbccddeeff")
         val xml = makeProXmlV43(k1, k2)
@@ -97,7 +97,7 @@ class PSSHTest {
     }
 
     @Test
-    fun testWidevineToPlayReadyAndBack() {
+    fun `test widevine to play ready and back`() {
         val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
         val data = wvData(k1)
         val pssh = PSSH.new(systemId = WV_UUID, initData = data, version = 0)
@@ -111,7 +111,7 @@ class PSSHTest {
     }
 
     @Test
-    fun testSetKeyIdsVersion1() {
+    fun `test set key ids version1`() {
         val k1 = UUID.fromString("00000000-0000-0000-0000-000000000001")
         val k2 = UUID.fromString("00000000-0000-0000-0000-000000000002")
         val k3 = UUID.fromString("00000000-0000-0000-0000-000000000003")
@@ -128,7 +128,7 @@ class PSSHTest {
     }
 
     @Test
-    fun keyIds_fromWidevineHeader() {
+    fun `test key ids from widevine header`() {
         val kid = UUID.randomUUID()
         val header = WidevinePsshData(key_ids = listOf(kid.toByteArray().toByteString()))
         val pssh = PSSH(header.encode())

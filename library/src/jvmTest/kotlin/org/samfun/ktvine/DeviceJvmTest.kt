@@ -51,7 +51,7 @@ class DeviceJvmTest {
     }
 
     @Test
-    fun loads_wvd_v2_from_client_id_and_private_key() {
+    fun `test loads wvd v2 from client id and private key`() {
         // Skip test if fixtures are not available in this environment
         if (!fileExists("client_id.bin") || !fileExists("private_key.pem")) return
 
@@ -98,7 +98,7 @@ class DeviceJvmTest {
     }
 
     @Test
-    fun loads_wvd_v2_from_wvd_file() {
+    fun `test loads wvd v2 from wvd file`() {
         // Read inputs from provided device test folder
         val data = try { readTestFile("google_avd.wvd") } catch (_: Throwable) { return }
         val device = Device.loads(data)
@@ -148,7 +148,7 @@ class DeviceJvmTest {
     }
 
     @Test
-    fun loads_google_avd_wvd_if_present() {
+    fun `test loads google avd wvd if present`() {
         // Optional test: skip if file missing
         val data = try { readTestFile("google_avd.wvd") } catch (_: Throwable) { return }
         val device = Device.loads(data)
@@ -163,14 +163,14 @@ class DeviceJvmTest {
 
     // Negative tests
     @Test
-    fun loads_base64_invalid_throws() {
+    fun `test loads base64 invalid throws`() {
         assertFailsWith<ValueException> {
             Device.loads("not-base64!!!")
         }
     }
 
     @Test
-    fun loads_wrong_magic_throws() {
+    fun `test loads wrong magic throws`() {
         // 11 bytes minimum length, but wrong magic
         val bad = byteArrayOf('X'.code.toByte(), 'Y'.code.toByte(), 'Z'.code.toByte()) + ByteArray(8) { 0 }
         assertFailsWith<ValueException> {
@@ -179,7 +179,7 @@ class DeviceJvmTest {
     }
 
     @Test
-    fun loads_unsupported_version_throws() {
+    fun `test loads unsupported version throws`() {
         // 'WVD' + version 1 + filler
         val bytes = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte(), 1) + ByteArray(7) { 0 }
         assertFailsWith<ValueException> {
@@ -188,7 +188,7 @@ class DeviceJvmTest {
     }
 
     @Test
-    fun loads_unknown_device_type_throws() {
+    fun `test loads unknown device type throws`() {
         // 'WVD' + version 2 + type 99 + securityLevel + flags + two u16 lengths (zeros)
         val bytes = byteArrayOf(
             'W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte(),
@@ -205,7 +205,7 @@ class DeviceJvmTest {
     }
 
     @Test
-    fun loads_data_too_short_throws() {
+    fun `test loads data too short throws`() {
         val tooShort = byteArrayOf(0, 1, 2, 3, 4, 5)
         assertFailsWith<IllegalArgumentException> {
             Device.loads(tooShort)
