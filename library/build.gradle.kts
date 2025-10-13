@@ -32,12 +32,9 @@ kotlin {
         }
 
         compilations.configureEach {
-            compilerOptions.configure {
-                jvmTarget.set(
-                    JvmTarget.JVM_11
-                )
+            compileTaskProvider.configure {
+                compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
             }
-
         }
 
         wire.kotlin {
@@ -88,7 +85,7 @@ mavenPublishing {
 
     pom {
         name = "ktvine"
-        description = "A KMP library for widevine DRM"
+        description = "A KMP library for widevine DRM ported from python lib pywidevine"
         inceptionYear = "2025"
         url = "https://github.com/samfun75/ktvine/"
         licenses {

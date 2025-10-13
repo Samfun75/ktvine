@@ -17,7 +17,7 @@ Gradle (Kotlin DSL):
 
 ```kotlin
 dependencies {
-    implementation("org.samfun.ktvine:library:1.0.0")
+    implementation("org.samfun.ktvine:library:${version}")
 }
 ```
 
