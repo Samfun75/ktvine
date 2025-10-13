@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "org.samfun.ktvine"
-version = "1.0.0"
+version = "0.0.1"
 
 kotlin {
     applyDefaultHierarchyTemplate()
@@ -50,9 +50,11 @@ kotlin {
                 implementation(libs.kotlin.test)
             }
         }
-    }
-    sourceSets.jvmTest.dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.coroutines.core)
+            }
+        }
     }
 }
 
@@ -94,22 +96,22 @@ mavenPublishing {
         url = "https://github.com/samfun75/ktvine/"
         licenses {
             license {
-                name = "XXX"
-                url = "YYY"
-                distribution = "ZZZ"
+                name = "The Apache License, Version 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                distribution = "https://www.apache.org/licenses/LICENSE-2.0.txt"
             }
         }
         developers {
             developer {
-                id = "XXX"
-                name = "YYY"
-                url = "ZZZ"
+                id = "Samfun75"
+                name = "Samfun"
+                url = "https://github.com/Samfun75/"
             }
         }
         scm {
-            url = "XXX"
-            connection = "YYY"
-            developerConnection = "ZZZ"
+            url = "https://github.com/samfun75/ktvine/"
+            connection = "scm:git:git://github.com/samfun75/ktvine.git"
+            developerConnection = "scm:git:ssh://git@github.com/samfun75/ktvine.git"
         }
     }
 }
