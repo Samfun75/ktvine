@@ -16,6 +16,9 @@ jobs:
           distribution: 'zulu'
           java-version: 21
 
+      - name: Change wrapper permissions
+        run: chmod +x ./gradlew
+
       - name: Publish to MavenCentral
         run: ./gradlew publishToMavenCentral --no-configuration-cache
         env:
