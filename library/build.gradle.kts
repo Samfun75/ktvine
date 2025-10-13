@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.wire)
 }
 
-group = "org.samfun.ktvine"
+group = "io.github.samfun75"
 version = "0.0.1"
 
 kotlin {
