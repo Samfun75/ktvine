@@ -27,6 +27,10 @@ class Device(
     companion object {
         private val MAGIC = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte())
 
+        /**
+         * Parse a raw WVD v2 file from bytes.
+         * @throws ValueException if the data is not a valid WVD v2 blob
+         */
         fun loads(data: ByteArray): Device {
             require(data.size >= 3 + 1 + 1 + 1 + 1 + 2 + 2) { "Data too short to be a WVD v2" }
             var offset = 0
@@ -96,12 +100,20 @@ class Device(
             )
         }
 
+        /**
+         * Parse a Base64-encoded WVD v2 blob.
+         * @throws ValueException if decoding or parsing fails
+         */
         fun loads(data: String): Device {
             val bytes = data.decodeBase64()?.toByteArray()
                 ?: throw ValueException("Device Base64 data is invalid")
             return loads(bytes)
         }
 
+        /**
+         * Build a WVD v2 file (bytes) from parts.
+         * Note: flags are currently not encoded and reserved byte is set to 0.
+         */
         fun buildWvdV2(type: DeviceTypes, securityLevel: Int, privateKeyDer: ByteArray, clientIdBytes: ByteArray): ByteArray {
             val out = ByteArrayOutputStream()
             out.write(byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte()))
@@ -119,4 +131,5 @@ class Device(
     }
 }
 
+/** Types of Widevine devices supported by this library. */
 enum class DeviceTypes(val value: Int) { CHROME(1), ANDROID(2) }

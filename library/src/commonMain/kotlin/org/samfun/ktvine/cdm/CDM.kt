@@ -19,6 +19,22 @@ import org.samfun.ktvine.proto.*
 import java.util.UUID
 import kotlin.random.Random
 
+/**
+ * Widevine CDM helper that can:
+ * - open/close sessions
+ * - build signed license requests from a [PSSH]
+ * - parse signed license responses and expose decrypted [Key]s
+ *
+ * Typical flow:
+ * 1. Construct from a Widevine [Device] via [fromDevice]
+ * 2. [open] a session and optionally [setServiceCertificate]
+ * 3. Build a license challenge with [getLicenseChallenge]
+ * 4. Send the challenge to a license server (not provided by this library)
+ * 5. Parse the response with [parseLicense]
+ * 6. Read keys with [getKeys] and [close] the session
+ *
+ * This class is Kotlin Multiplatform and uses the same protobuf models as pywidevine.
+ */
 class Cdm(
     private val deviceType: DeviceTypes,
     private val clientId: ClientIdentification,
@@ -27,20 +43,15 @@ class Cdm(
     private val sessions = linkedMapOf<ByteString, Session>()
 
     companion object {
-        val uuid: UUID = UUID.nameUUIDFromBytes(
-            byteArrayOf(
-                0xED.toByte(), 0xEF.toByte(), 0x8B.toByte(), 0xA9.toByte(), 0x79, 0xD6.toByte(), 0x4A, 0xCE.toByte(),
-                0xA3.toByte(), 0xC8.toByte(), 0x27, 0xDC.toByte(), 0xD5.toByte(), 0x1D, 0x21, 0xED.toByte()
-            )
-        )
-        val urn = "urn:uuid:$uuid"
-
         private val ROOT_SIGNED_CERT_B64 =
             "CpwDCAASAQAY3ZSIiwUijgMwggGKAoIBgQC0/jnDZZAD2zwRlwnoaM3yw16b8udNI7EQ24dl39z7nzWgVwNTTPZtNX2meNuzNtI/nECplSZyf7i+Zt/FIZh4FRZoXS9GDkPLioQ5q/uwNYAivjQji6tTW3LsS7VIaVM+R1/9Cf2ndhOPD5LWTN+udqm62SIQqZ1xRdbX4RklhZxTmpfrhNfMqIiCIHAmIP1+QFAn4iWTb7w+cqD6wb0ptE2CXMG0y5xyfrDpihc+GWP8/YJIK7eyM7l97Eu6iR8nuJuISISqGJIOZfXIbBH/azbkdDTKjDOx+biOtOYS4AKYeVJeRTP/Edzrw1O6fGAaET0A+9K3qjD6T15Id1sX3HXvb9IZbdy+f7B4j9yCYEy/5CkGXmmMOROtFCXtGbLynwGCDVZEiMg17B8RsyTgWQ035Ec86kt/lzEcgXyUikx9aBWE/6UI/Rjn5yvkRycSEbgj7FiTPKwS0ohtQT3F/hzcufjUUT4H5QNvpxLoEve1zqaWVT94tGSCUNIzX5ECAwEAARKAA1jx1k0ECXvf1+9dOwI5F/oUNnVKOGeFVxKnFO41FtU9v0KG9mkAds2T9Hyy355EzUzUrgkYU0Qy7OBhG+XaE9NVxd0ay5AeflvG6Q8in76FAv6QMcxrA4S9IsRV+vXyCM1lQVjofSnaBFiC9TdpvPNaV4QXezKHcLKwdpyywxXRESYqI3WZPrl3IjINvBoZwdVlkHZVdA8OaU1fTY8Zr9/WFjGUqJJfT7x6Mfiujq0zt+kw0IwKimyDNfiKgbL+HIisKmbF/73mF9BiC9yKRfewPlrIHkokL2yl4xyIFIPVxe9enz2FRXPia1BSV0z7kmxmdYrWDRuu8+yvUSIDXQouY5OcCwEgqKmELhfKrnPsIht5rvagcizfB0fbiIYwFHghESKIrNdUdPnzJsKlVshWTwApHQh7evuVicPumFSePGuUBRMS9nG5qxPDDJtGCHs9Mmpoyh6ckGLF7RC5HxclzpC5bc3ERvWjYhN0AqdipPpV2d7PouaAdFUGSdUCDA=="
         private val ROOT_SIGNED_CERT =
             SignedDrmCertificate.ADAPTER.decode(ROOT_SIGNED_CERT_B64.decodeBase64()!!.toByteArray())
         private val ROOT_CERT = DrmCertificate.ADAPTER.decode(ROOT_SIGNED_CERT.drm_certificate!!)
 
+        /**
+         * Create a [Cdm] instance from a [Device].
+         */
         fun fromDevice(device: Device): Cdm = Cdm(
             deviceType = device.type,
             clientId = device.clientId,
@@ -66,6 +77,11 @@ class Cdm(
         )
     }
 
+    /**
+     * Open a new session.
+     * @return unique session identifier
+     * @throws TooManySessionsException when over 16 sessions are open
+     */
     fun open(): ByteString {
         if (sessions.size > 16) throw TooManySessionsException("Too many Sessions open (16).")
         val s = Session(sessions.size + 1)
@@ -73,10 +89,27 @@ class Cdm(
         return s.id
     }
 
+    /**
+     * Close and remove a session.
+     * @param sessionId id returned by [open]
+     * @throws InvalidSessionException if the id is unknown
+     */
     fun close(sessionId: ByteString) {
         sessions.remove(sessionId) ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
     }
 
+    /**
+     * Set or clear a service certificate for a session.
+     * When set and privacyMode is true in [getLicenseChallenge], the client_id will be
+     * encrypted with this certificate as per Widevine privacy mode.
+     * @param sessionId session id
+     * @param certificate SignedMessage-wrapped SignedDrmCertificate bytes or raw SignedDrmCertificate bytes.
+     *                    Pass null to clear and return the previous provider id.
+     * @return provider id of the certificate if set, or previous provider id when clearing.
+     * @throws InvalidSessionException if the session id is invalid
+     * @throws DecodeException if parsing fails
+     * @throws SignatureMismatchException if the certificate signature is invalid
+     */
     suspend fun setServiceCertificate(sessionId: ByteString, certificate: ByteArray?): String? {
         val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
         if (certificate == null) {
@@ -127,18 +160,35 @@ class Cdm(
         return drmCert.provider_id
     }
 
-    // Overload: accept Base64 certificate string
+    /**
+     * Overload of [setServiceCertificate] accepting a Base64-encoded certificate string.
+     * Pass null to clear the currently set certificate.
+     */
     suspend fun setServiceCertificate(sessionId: ByteString, certificateBase64: String?): String? {
         val bytes = certificateBase64?.decodeBase64()?.toByteArray()
             ?: return setServiceCertificate(sessionId, null as ByteArray?)
         return setServiceCertificate(sessionId, bytes)
     }
 
+    /**
+     * Get the currently configured service certificate for a session, if any.
+     */
     fun getServiceCertificate(sessionId: ByteString): SignedDrmCertificate? {
         val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
         return s.serviceCertificate
     }
 
+    /**
+     * Build and sign a Widevine license request for the provided [pssh].
+     * Stores internal request context needed to later [parseLicense] for this session.
+     * @param sessionId session id from [open]
+     * @param pssh parsed or raw init data holder
+     * @param licenseType type of license to request (e.g., STREAMING)
+     * @param privacyMode if true and a service certificate is set, send encrypted client id
+     * @return the serialized SignedMessage(LICENSE_REQUEST)
+     * @throws InvalidSessionException if the session id is invalid
+     * @throws InvalidInitDataException if pssh init data is empty
+     */
     suspend fun getLicenseChallenge(
         sessionId: ByteString,
         pssh: PSSH,
@@ -152,7 +202,7 @@ class Cdm(
         val requestId: ByteString = if (deviceType == DeviceTypes.ANDROID) {
             // emulate OEMCrypto counter-like request id (upper hex)
             val counter = s.number
-            val prefix = randomBytes(4) + ByteArray(4) { 0x00 }
+            val prefix = randomBytes(4) + ByteArray(4)
             val buf = prefix + ByteArray(8).apply {
                 var v = counter
                 for (i in 0 until 8) {
@@ -201,6 +251,15 @@ class Cdm(
         return sm.encode()
     }
 
+    /**
+     * Parse and verify a Widevine license response for the provided [sessionId].
+     * This consumes the previously stored request context created by [getLicenseChallenge],
+     * decrypts contained keys and stores them on the session.
+     * @throws InvalidSessionException if the session is unknown or no request was made
+     * @throws InvalidLicenseTypeException if the message type is not LICENSE or is empty
+     * @throws DecodeException if parsing fails
+     * @throws SignatureMismatchException if MAC verification fails
+     */
     suspend fun parseLicense(sessionId: ByteString, licenseMessage: ByteArray) {
         val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
         if (licenseMessage.isEmpty()) throw InvalidLicenseTypeException("Cannot parse an empty license_message")
@@ -290,7 +349,9 @@ class Cdm(
         return Triple(encKey, macKeyServer, macKeyClient)
     }
 
-    // Convenience to get loaded keys, optionally filtered by License Key Type
+    /**
+     * Convenience to get decrypted keys for the session. Optionally filter by [License.KeyContainer.KeyType].
+     */
     fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key> {
         val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
         return s.keys.filter { type == null || it.type == type.name }

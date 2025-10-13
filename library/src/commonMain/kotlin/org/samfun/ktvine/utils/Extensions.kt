@@ -12,13 +12,17 @@ import java.util.UUID
 import kotlin.collections.plus
 import kotlin.io.encoding.Base64
 
+/** Convert a [UUID] to raw 16-byte array (big-endian). */
 fun UUID.toByteArray(): ByteArray = UUIDConverter.convert(this)
 
+/** Interpret this [ByteString] as a 16-byte [UUID]. */
 fun ByteString.uuidFromByteString(): UUID = UUIDConverter.convert(this.toByteArray())
 
+/** Interpret this [ByteString] as a hex-encoded [UUID] string. */
 fun ByteString.uuidFromHexByteString(): UUID =
     this.string(Charsets.UTF_8).decodeHex().uuidFromByteString()
 
+/** Interpret this [ByteString] as a big integer numeric [UUID] representation. */
 fun ByteString.uuidFromByteArray(): UUID {
     val bigInt = BigInteger(1, this.toByteArray())
     val (mostSigBits, leastSigBits) = with(bigInt) {
@@ -29,11 +33,13 @@ fun ByteString.uuidFromByteArray(): UUID {
     return UUID(mostSigBits, leastSigBits)
 }
 
+/** Convert this [Int] to little-endian unsigned 16-bit value [ByteArray]. */
 fun Int.toLEU16(): ByteArray = byteArrayOf(
     (this and 0xFF).toByte(),
     ((this ushr 8) and 0xFF).toByte(),
 )
 
+/** Convert this [Int] to little-endian unsigned 32-bit value [ByteArray]. */
 fun Int.toLEU32(): ByteArray = byteArrayOf(
     (this and 0xFF).toByte(),
     ((this ushr 8) and 0xFF).toByte(),
@@ -41,8 +47,13 @@ fun Int.toLEU32(): ByteArray = byteArrayOf(
     ((this ushr 24) and 0xFF).toByte()
 )
 
+/** Convert a [ByteArray] to a lowercase hex string. */
 fun ByteArray.toHexString(): String = joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
+/**
+ * Convert a KID stored in a variety of formats (base64/number/bytes) to a [UUID].
+ * Accepts nullable input and returns UUID(0,0) for missing KIDs.
+ */
 fun ByteString?.kidToUuid(): UUID {
     var kidBytes = this?.toByteArray()
     if (kidBytes == null || kidBytes.isEmpty()) {

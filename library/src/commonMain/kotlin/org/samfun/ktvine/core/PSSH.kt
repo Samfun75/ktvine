@@ -21,7 +21,10 @@ import java.nio.channels.WritableByteChannel
 import java.util.UUID
 import kotlin.io.encoding.Base64
 
-
+/**
+ * Helper for parsing and building PSSH (Protection System Specific Header) boxes.
+ * Supports both Widevine and PlayReady headers and provides conversions.
+ */
 class PSSH {
 
     private var _version: Int = 0
@@ -30,19 +33,23 @@ class PSSH {
     private var _systemId: ByteArray = PsshBox.WIDEVINE
     private var _content: ByteArray = ByteArray(0)
 
+    /** Raw init data contained within the PSSH box. */
     val initData: ByteArray get() = _content
 
+    /** Create from a Base64-encoded PSSH box or header bytes. */
     constructor(data: String) {
         val decoded = Base64.decode(data)
         val box = parseBox(decoded)
         init(box)
     }
 
+    /** Create from raw bytes of a PSSH box or header bytes. */
     constructor(data: ByteArray) {
         val box = parseBox(data)
         init(box)
     }
 
+    /** Create directly from a parsed [PsshBox]. */
     constructor(box: PsshBox) {
         init(box)
     }
@@ -144,6 +151,7 @@ class PSSH {
         throw ValueException("This PSSH is not supported by key_ids(), ${dumps()}")
     }
 
+    /** Export the PSSH object as a full PSSH box in bytes form. */
     fun dump(): ByteArray {
         // Export the PSSH object as a full PSSH box in bytes form.
         val box = PsshBox().apply {
@@ -161,6 +169,7 @@ class PSSH {
         return byteArrayOutputStream.toByteArray()
     }
 
+    /** Export the PSSH object as a full PSSH box in Base64 form. */
     fun dumps(): String {
         // Export the PSSH object as a full PSSH box in base64 form.
         return Base64.encode(dump())
@@ -168,7 +177,7 @@ class PSSH {
 
     override fun toString(): String = dumps()
 
-    // Convert PlayReady PSSH to Widevine PSSH
+    /** Convert PlayReady PSSH to a Widevine PSSH. */
     fun toWidevine() {
         if (_systemId.contentEquals(PsshBox.WIDEVINE)) throw ValueException("This is already a Widevine PSSH")
 
@@ -183,7 +192,10 @@ class PSSH {
         _systemId = PsshBox.WIDEVINE
     }
 
-    // Convert Widevine PSSH to PlayReady v4.3.0.0 PSSH
+    /**
+     * Convert a Widevine PSSH to a PlayReady v4.3.0.0 PSSH.
+     * Optional LA_URL/LUI_URL/DS_ID/DECRYPTORSETUP/CUSTOMDATA fields can be provided.
+     */
     fun toPlayready(
         laUrl: String? = null,
         luiUrl: String? = null,
@@ -231,7 +243,9 @@ class PSSH {
         _systemId = PsshBox.PLAYREADY_SYSTEM_ID
     }
 
-    // Only for Widevine PSSH: overwrite Key IDs in both WV header and, if v1, box field too
+    /**
+     * For Widevine PSSH only: overwrite Key IDs in both WV header and, if v1, box field too.
+     */
     fun setKeyIds(keyIds: List<UUID>) {
         if (!_systemId.contentEquals(PsshBox.WIDEVINE))
             throw ValueException("Only Widevine PSSH Boxes are supported, not ${_systemId.toHexString()}")
@@ -245,11 +259,14 @@ class PSSH {
         _content = updated.encode()
     }
 
-    // Overload accepting UUID | String(hex/base64) | ByteArray
+    /** Overload that accepts a mixed list of UUID | String(hex/base64) | ByteArray. */
     fun setKeyIdsAny(keyIds: List<Any>) = setKeyIds(parseKeyIds(keyIds))
 
     companion object {
-        // Convert a list of UUID | String(hex/base64) | ByteArray to UUIDs
+        /**
+         * Convert a list of UUID | String(hex/base64) | ByteArray to UUIDs.
+         * @throws IllegalArgumentException if any item has an unsupported type
+         */
         fun parseKeyIds(keyIds: List<Any>): List<UUID> {
             require(keyIds.all { it is UUID || it is String || it is ByteArray }) { "Some items of key_ids are not a UUID, String, or ByteArray." }
             return keyIds.map { item ->
@@ -266,6 +283,11 @@ class PSSH {
             }
         }
 
+        /**
+         * Create a new PSSH object.
+         * - For version 0, provide initData only.
+         * - For version 1, provide either keyIds or initData.
+         */
         fun new(
             systemId: UUID,
             keyIds: List<UUID>? = null,

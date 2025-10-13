@@ -6,6 +6,8 @@ import org.samfun.ktvine.proto.WidevinePsshData
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.core.PSSH
 import org.samfun.ktvine.utils.toByteArray
+import org.samfun.ktvine.utils.toLEU16
+import org.samfun.ktvine.utils.toLEU32
 import java.util.UUID
 import kotlin.io.encoding.Base64
 
@@ -46,21 +48,13 @@ class PSSHTest {
     }
 
     private fun proWrapSingleRecord(prHeaderUtf16Le: ByteArray): ByteArray {
-        val recordCount = leU16(1)
-        val type = leU16(0x01)
-        val len = leU16(prHeaderUtf16Le.size)
+        val recordCount = 1.toLEU16()
+        val type = (0x01).toLEU16()
+        val len = prHeaderUtf16Le.size.toLEU16()
         val body = recordCount + type + len + prHeaderUtf16Le
-        val size = leU32(body.size + 4)
+        val size = (body.size + 4).toLEU32()
         return size + body
     }
-
-    private fun leU16(v: Int): ByteArray = byteArrayOf((v and 0xFF).toByte(), ((v ushr 8) and 0xFF).toByte())
-    private fun leU32(v: Int): ByteArray = byteArrayOf(
-        (v and 0xFF).toByte(),
-        ((v ushr 8) and 0xFF).toByte(),
-        ((v ushr 16) and 0xFF).toByte(),
-        ((v ushr 24) and 0xFF).toByte()
-    )
 
     @Test
     fun testWidevineV0KeyIdsRoundTrip() {

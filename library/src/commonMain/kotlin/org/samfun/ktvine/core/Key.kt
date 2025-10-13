@@ -7,6 +7,10 @@ import org.samfun.ktvine.utils.kidToUuid
 import org.samfun.ktvine.utils.toHexString
 import java.util.UUID
 
+/**
+ * Decrypted content key from a Widevine License.
+ * Holds key type, KID (as UUID), raw key bytes, and optional permissions for OPERATOR_SESSION keys.
+ */
 class Key(
     val type: String,
     val kid: UUID,
@@ -17,6 +21,9 @@ class Key(
         "Key(type=$type, kid=$kid, key=${key.toHexString()}, permissions=$permissions)"
 
     companion object {
+        /**
+         * Build a [Key] from a protobuf [License.KeyContainer] using the provided content encryption key.
+         */
         suspend fun fromContainer(container: License.KeyContainer, encKey: ByteArray): Key {
             val perms = mutableListOf<String>()
             if (container.type == License.KeyContainer.KeyType.OPERATOR_SESSION) {
@@ -39,7 +46,5 @@ class Key(
                 permissions = perms
             )
         }
-
-
     }
 }

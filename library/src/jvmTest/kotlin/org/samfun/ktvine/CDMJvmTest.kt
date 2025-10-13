@@ -2,6 +2,7 @@ package org.samfun.ktvine
 
 import dev.whyoleg.cryptography.BinarySize.Companion.bits
 import dev.whyoleg.cryptography.DelicateCryptographyApi
+import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.RSA
 import dev.whyoleg.cryptography.algorithms.SHA1
 import kotlinx.coroutines.runBlocking
@@ -9,7 +10,6 @@ import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.Device
 import org.samfun.ktvine.core.PSSH
-import org.samfun.ktvine.crypto.crypto
 import org.samfun.ktvine.crypto.rsaPssSignSha1
 import org.samfun.ktvine.crypto.rsaPssVerifySha1
 import org.samfun.ktvine.proto.LicenseType
@@ -56,7 +56,7 @@ class CDMJvmTest {
     @Test
     fun sign_with_rsa_pss_sha1() {
         runBlocking {
-            val rsa = crypto.get(RSA.PSS)
+            val rsa = CryptographyProvider.Default.get(RSA.PSS)
             val keyPair = rsa.keyPairGenerator(2048.bits, SHA1).generateKey()
             val private = keyPair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.DER.PKCS1)
             val public = keyPair.publicKey.encodeToByteArray(RSA.PublicKey.Format.DER)
@@ -110,15 +110,6 @@ class CDMJvmTest {
             keys.forEach { key ->
                 println("[${key.type}] ${key.kid} : ${key.key.toHexString()}")
             }
-
-//            MDAwMDAwMDAwMDAwMDAwMQ== 	eKHcBkYRlwfpA1FNigBzXw== 	SD
-//            MDAwMDAwMDAwMDAwMDAwMw== 	QkZshCrBxUObHgwJ+7Th0g== 	HD
-//            MDAwMDAwMDAwMDAwMDAwMg== 	Hzeeo4xw5Af3ayPsZAHK7w== 	HD
-//            MDAwMDAwMDAwMDAwMDAwMA== 	Pwoz80CYueIrwHjgobXoVA== 	AUDIO
-//            MDAwMDAwMDAwMDAwMDAwNA== 	IvCfhLVopdAH5LHRFpQ1gQ== 	SD
-//            MDAwMDAwMDAwMDAwMDAwNQ== 	msMDbgSsnSvpRu1iQFFJvA== 	SD
-//            MDAwMDAwMDAwMDAwMDAwNg== 	MUWYWCQzTsTLSsS9w+K+7w== 	SD
-//            MDAwMDAwMDAwMDAwMDAwNw== 	ebhzT7mNJ1qQempaFQEouw== 	HD
 
             // From https://integration.widevine.com/documentation/content
             val kids = listOf(
