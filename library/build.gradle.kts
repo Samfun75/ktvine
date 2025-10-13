@@ -21,7 +21,7 @@ kotlin {
     }
 
     androidLibrary {
-        namespace = group.toString()
+        namespace = "io.github.samfun75.ktvine"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
