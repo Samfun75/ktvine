@@ -81,7 +81,7 @@ mavenPublishing {
 
     signAllPublications()
 
-    coordinates(group.toString(), "library", version.toString())
+    coordinates(group.toString(), "ktvine", version.toString())
 
     pom {
         name = "ktvine"
