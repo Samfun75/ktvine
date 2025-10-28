@@ -1,5 +1,6 @@
 package org.samfun.ktvine.core
 
+import co.touchlab.kermit.Logger
 import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.toByteString
 import okio.Buffer
@@ -67,19 +68,29 @@ class PSSH {
     }
 
     private fun parseBox(data: ByteArray): PsshBox = try {
-        PropertyBoxParserImpl()
+        (PropertyBoxParserImpl()
             .parseBox(
                 ByteBufferByteChannel(data), null
-            ) as PsshBox
-    } catch (_: Throwable) {
+            ) as PsshBox).also {
+                it.parseDetails()
+                Logger.i("ktvine") { "Parsed data as full PSSH box: ${it.isParsed()}" }
+            }
+    } catch (e: Throwable) {
+        Logger.w("ktvine") {
+            "Error parsing PSSH box structure, assuming raw init data. Error: ${e.message}"
+        }
         val psshData = try { WidevinePsshData.ADAPTER.decode(data) } catch (_: Throwable) { null }
         if (psshData != null && psshData.encode().size == data.size) {
+            Logger.i("ktvine") { "Parsed raw data as Widevine PSSH." }
             PsshBox(PsshBox.WIDEVINE, psshData.encode())
         } else {
+            Logger.w("ktvine") { "Could not parse raw data as Widevine PSSH, checking for PlayReady." }
             val plText = "</WRMHEADER>".encodeToUtf16LE().toHexString()
             if (data.copyOf().toHexString().contains(plText)) {
+                Logger.i("ktvine") { "Parsed raw data as PlayReady PSSH." }
                 PsshBox(PsshBox.PLAYREADY_SYSTEM_ID, data)
             } else {
+                Logger.i("ktvine") { "Defaulting to Widevine PSSH for raw data." }
                 PsshBox(PsshBox.WIDEVINE, data)
             }
         }

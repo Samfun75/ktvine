@@ -59,7 +59,7 @@ class CDMJvmTest {
             val rsa = CryptographyProvider.Default.get(RSA.PSS)
             val keyPair = rsa.keyPairGenerator(2048.bits, SHA1).generateKey()
             val private = keyPair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.DER.PKCS1)
-            val public = keyPair.publicKey.encodeToByteArray(RSA.PublicKey.Format.DER)
+            val public = keyPair.publicKey.encodeToByteArray(RSA.PublicKey.Format.DER.PKCS1)
 
             val data = ByteArray(32) { SecureRandom().nextInt(0, 256).toByte() }
             val signature = rsaPssSignSha1(private, data)
@@ -86,7 +86,7 @@ class CDMJvmTest {
 
             val pssh = PSSH(psshB64)
 
-            val challenge = cdm.getLicenseChallenge(sessionId, pssh, LicenseType.STREAMING, privacyMode = false)
+            val challenge = cdm.getLicenseChallenge(sessionId, pssh, LicenseType.STREAMING)
 
             val url = URI.create("https://proxy.widevine.com/proxy").toURL()
             val conn = (url.openConnection() as HttpURLConnection).apply {

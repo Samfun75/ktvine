@@ -25,7 +25,7 @@ suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature
     val rsa = crypto.get(RSA.PSS)
     val publicKey =
         rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
-            RSA.PublicKey.Format.DER,
+            RSA.PublicKey.Format.DER.PKCS1,
             X509EncodedKeySpec(publicKeyDer).encoded
         )
     return publicKey.signatureVerifier().tryVerifySignature(data, signature)
@@ -35,7 +35,7 @@ suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature
 suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray {
     val rsa = crypto.get(RSA.OAEP)
     val publicKey = rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
-        RSA.PublicKey.Format.DER,
+        RSA.PublicKey.Format.DER.PKCS1,
         X509EncodedKeySpec(publicKeyDer).encoded
     )
     return publicKey.encryptor().encrypt(data)

@@ -53,6 +53,7 @@ kotlin {
                 api(libs.wire.runtime)
                 implementation(libs.isoparser.runtime)
                 implementation(libs.bundles.cryptography)
+                implementation(libs.kermit)
             }
         }
         val commonTest by getting {
