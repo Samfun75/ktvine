@@ -14,6 +14,7 @@ isoparser = "1.9.56"
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutinesCore" }
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
+cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptography" }
 cryptography-provider-optimal = { module = "dev.whyoleg.cryptography:cryptography-provider-optimal", version.ref = "cryptography" }
 cryptography-provider-jdk-bc = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk-bc", version.ref = "cryptography" }
 
@@ -21,7 +22,7 @@ isoparser-runtime = { module = "org.mp4parser:isoparser", version.ref = "isopars
 
 
 [bundles]
-cryptography = ["cryptography-provider-optimal", "cryptography-provider-jdk-bc"]
+cryptography = ["cryptography-core", "cryptography-provider-optimal", "cryptography-provider-jdk-bc"]
 
 [plugins]
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
