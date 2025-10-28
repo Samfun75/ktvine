@@ -80,7 +80,12 @@ wire {
 mavenPublishing {
     publishToMavenCentral()
 
-    signAllPublications()
+    if (System.getenv("SIGNING_KEY_ID") != null) {
+        println("✅ Signing all publications.")
+        signAllPublications()
+    } else {
+        println("⚠️ Skipping signing (JitPack or no signing keys).")
+    }
 
     coordinates(group.toString(), "ktvine", version.toString())
 
