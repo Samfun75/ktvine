@@ -209,8 +209,10 @@ class Cdm(
                     this[i] = (v and 0xFF).toByte(); v = v ushr 8
                 }
             }
-            buf.joinToString(separator = "") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }.uppercase()
-                .toByteArray().toByteString()
+            buf.joinToString(separator = "") { (it.toInt() and 0xFF)
+                .toString(16)
+                .padStart(2, '0')
+            }.uppercase().encodeToByteArray().toByteString()
         } else {
             randomBytes(16).toByteString()
         }
@@ -302,7 +304,8 @@ class Cdm(
                 s.keys.add(Key.fromContainer(kc, encKey))
             } catch (error: Throwable) {
                 // ignore malformed keys
-                println("[ktvine] Error parsing key ${error.localizedMessage}")
+                println("[ktvine] Error parsing key")
+                error.printStackTrace()
             }
         }
         // drop used context for this request

@@ -8,6 +8,8 @@ import org.mp4parser.tools.ByteBufferByteChannel
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.proto.WidevinePsshData
 import org.samfun.ktvine.utils.PsshBox
+import org.samfun.ktvine.utils.decodeToStringUtf16LE
+import org.samfun.ktvine.utils.encodeToUtf16LE
 import org.samfun.ktvine.utils.toByteArray
 import org.samfun.ktvine.utils.toHexString
 import org.samfun.ktvine.utils.toLEU16
@@ -74,7 +76,7 @@ class PSSH {
         if (psshData != null && psshData.encode().size == data.size) {
             PsshBox(PsshBox.WIDEVINE, psshData.encode())
         } else {
-            val plText = "</WRMHEADER>".toByteArray(Charsets.UTF_16LE).toHexString()
+            val plText = "</WRMHEADER>".encodeToUtf16LE().toHexString()
             if (data.copyOf().toHexString().contains(plText)) {
                 PsshBox(PsshBox.PLAYREADY_SYSTEM_ID, data)
             } else {
@@ -120,7 +122,7 @@ class PSSH {
                     val prrValue = proData.readByteArray(prrLength.toLong())
                     if (prrType != 0x01) return@repeat
 
-                    val xml = String(prrValue, Charsets.UTF_16LE)
+                    val xml = prrValue.decodeToStringUtf16LE()
                     val version = Regex("""version=\"([^\"]+)\"""").find(xml)?.groupValues?.get(1)
                         ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
 
@@ -225,7 +227,7 @@ class PSSH {
                 ${customData?.let { "<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>" } ?: ""}
             </DATA>
         </WRMHEADER>
-        """.trimIndent().toByteArray(Charsets.UTF_16LE)
+        """.trimIndent().encodeToUtf16LE()
 
         val body = ByteArrayOutputStream().apply {
             write(1.toLEU16())              // record count

@@ -1,26 +1,28 @@
 package org.samfun.ktvine.utils
 
-import okio.Buffer
 import okio.ByteString
-import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.toByteString
 import org.mp4parser.tools.UUIDConverter
 import java.math.BigInteger
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.UUID
-import kotlin.collections.plus
 import kotlin.io.encoding.Base64
+
+/** Decode [String] to utf 16LE [ByteArray]. */
+expect fun String.encodeToUtf16LE(): ByteArray
+
+/** Decode [ByteArray] to string from utf 16LE. */
+expect fun ByteArray.decodeToStringUtf16LE(): String
+
+/** Interpret this [ByteString] as a hex-encoded [UUID] string. */
+expect fun ByteString.uuidFromHexByteString(): UUID
+
+expect fun ByteArray.toUTF8(): String
 
 /** Convert a [UUID] to raw 16-byte array (big-endian). */
 fun UUID.toByteArray(): ByteArray = UUIDConverter.convert(this)
 
 /** Interpret this [ByteString] as a 16-byte [UUID]. */
 fun ByteString.uuidFromByteString(): UUID = UUIDConverter.convert(this.toByteArray())
-
-/** Interpret this [ByteString] as a hex-encoded [UUID] string. */
-fun ByteString.uuidFromHexByteString(): UUID =
-    this.string(Charsets.UTF_8).decodeHex().uuidFromByteString()
 
 /** Interpret this [ByteString] as a big integer numeric [UUID] representation. */
 fun ByteString.uuidFromByteArray(): UUID {
@@ -66,8 +68,8 @@ fun ByteString?.kidToUuid(): UUID {
         // not base64
     }
 
-    if (kidBytes.toString(Charsets.UTF_8).all { it.isDigit() }) {
-        val bi = BigInteger(kidBytes.toString(Charsets.UTF_8))
+    if (kidBytes.toUTF8().all { it.isDigit() }) {
+        val bi = BigInteger(kidBytes.toUTF8())
         return UUID(bi.shiftRight(64).toLong(), bi.toLong())
     }
 
