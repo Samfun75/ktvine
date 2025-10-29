@@ -51,7 +51,6 @@ kotlin {
             dependencies {
                 //put your multiplatform dependencies here
                 api(libs.wire.runtime)
-                implementation(libs.isoparser.runtime)
                 implementation(libs.bundles.cryptography)
                 implementation(libs.kermit)
             }

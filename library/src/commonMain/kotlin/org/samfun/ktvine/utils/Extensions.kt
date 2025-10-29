@@ -2,8 +2,9 @@ package org.samfun.ktvine.utils
 
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
-import org.mp4parser.tools.UUIDConverter
 import java.math.BigInteger
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.UUID
 import kotlin.io.encoding.Base64
 
@@ -19,10 +20,29 @@ expect fun ByteString.uuidFromHexByteString(): UUID
 expect fun ByteArray.toUTF8(): String
 
 /** Convert a [UUID] to raw 16-byte array (big-endian). */
-fun UUID.toByteArray(): ByteArray = UUIDConverter.convert(this)
+fun UUID.toByteArray(): ByteArray {
+    val msb: Long = this.mostSignificantBits
+    val lsb: Long = this.leastSignificantBits
+    val buffer = ByteArray(16)
+
+    for (i in 0..7) {
+        buffer[i] = (msb ushr 8 * (7 - i)).toByte()
+    }
+    for (i in 8..15) {
+        buffer[i] = (lsb ushr 8 * (7 - i)).toByte()
+    }
+
+    return buffer
+}
+
+fun ByteArray.toUUID(): UUID {
+    val b = ByteBuffer.wrap(this)
+    b.order(ByteOrder.BIG_ENDIAN)
+    return UUID(b.getLong(), b.getLong())
+}
 
 /** Interpret this [ByteString] as a 16-byte [UUID]. */
-fun ByteString.uuidFromByteString(): UUID = UUIDConverter.convert(this.toByteArray())
+fun ByteString.uuidFromByteString(): UUID = this.toByteArray().toUUID()
 
 /** Interpret this [ByteString] as a big integer numeric [UUID] representation. */
 fun ByteString.uuidFromByteArray(): UUID {
