@@ -68,11 +68,11 @@ class PSSH {
     }
 
     private fun parseBox(data: ByteArray): PsshBox = try {
+        Logger.i("ktvine") { "Attempting to parse data as full PSSH box... ${data.toHexString()}" }
         (PropertyBoxParserImpl()
             .parseBox(
                 ByteBufferByteChannel(data), null
             ) as PsshBox).also {
-                it.parseDetails()
                 Logger.i("ktvine") { "Parsed data as full PSSH box: ${it.isParsed()}" }
             }
     } catch (e: Throwable) {
