@@ -5,9 +5,11 @@ import kotlin.test.assertEquals
 import org.samfun.ktvine.proto.WidevinePsshData
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.core.PSSH
+import org.samfun.ktvine.utils.encodeToUtf16LE
 import org.samfun.ktvine.utils.toByteArray
 import org.samfun.ktvine.utils.toLEU16
 import org.samfun.ktvine.utils.toLEU32
+import org.samfun.ktvine.utils.toUUID
 import java.util.UUID
 import kotlin.io.encoding.Base64
 
@@ -43,7 +45,7 @@ class PSSHTest {
                 $extras
             </DATA>
         </WRMHEADER>
-        """.trimIndent().toByteArray(Charsets.UTF_16LE)
+        """.trimIndent().encodeToUtf16LE()
         return xml
     }
 
@@ -69,12 +71,12 @@ class PSSHTest {
         )
         assertEquals(setOf(k1, k2), pssh.keyIds().toSet())
 
-        val b64 = pssh.dumps()
+        val b64 = pssh.exportBase64()
         val pssh2 = PSSH(b64)
         assertEquals(setOf(k1, k2), pssh2.keyIds().toSet())
 
         // Ensure dump is an MP4 PSSH box the parser can read
-        val parsed = PSSH(pssh.dump())
+        val parsed = PSSH(pssh.export())
         assertEquals(setOf(k1, k2), parsed.keyIds().toSet())
     }
 
@@ -85,14 +87,14 @@ class PSSHTest {
         val xml = makeProXmlV43(k1, k2)
         val pro = proWrapSingleRecord(xml)
 
-        val pssh = PSSH(pro)
+        val pssh = PSSH.new(systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(), initData = pro)
         assertEquals(setOf(k1, k2), pssh.keyIds().toSet())
 
         pssh.toWidevine()
         assertEquals(setOf(k1, k2), pssh.keyIds().toSet())
 
         // After conversion, dump and reparse should preserve KIDs
-        val reparsed = PSSH(pssh.dump())
+        val reparsed = PSSH(pssh.export())
         assertEquals(setOf(k1, k2), reparsed.keyIds().toSet())
     }
 
@@ -123,7 +125,7 @@ class PSSHTest {
         assertEquals(listOf(k2, k3), pssh.keyIds())
 
         // WV header content should contain k2,k3 as well
-        val reparsed = PSSH(pssh.dump())
+        val reparsed = PSSH(pssh.export())
         assertEquals(listOf(k2, k3), reparsed.keyIds())
     }
 
@@ -131,7 +133,7 @@ class PSSHTest {
     fun `test key ids from widevine header`() {
         val kid = UUID.randomUUID()
         val header = WidevinePsshData(key_ids = listOf(kid.toByteArray().toByteString()))
-        val pssh = PSSH(header.encode())
+        val pssh = PSSH.new(systemId = WV_UUID, initData = header.encode())
 
         val kids = pssh.keyIds()
         assertEquals(1, kids.size)

@@ -1,22 +1,14 @@
 package org.samfun.ktvine.cdm
 
+import co.touchlab.kermit.Logger
 import okio.ByteString
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
-import org.samfun.ktvine.utils.DecodeException
-import org.samfun.ktvine.core.Device
-import org.samfun.ktvine.core.DeviceTypes
-import org.samfun.ktvine.utils.InvalidInitDataException
-import org.samfun.ktvine.utils.InvalidLicenseTypeException
-import org.samfun.ktvine.utils.InvalidSessionException
-import org.samfun.ktvine.core.Key
-import org.samfun.ktvine.core.PSSH
-import org.samfun.ktvine.core.Session
-import org.samfun.ktvine.utils.SignatureMismatchException
-import org.samfun.ktvine.utils.TooManySessionsException
+import org.samfun.ktvine.cdm.Cdm.Companion.fromDevice
+import org.samfun.ktvine.core.*
 import org.samfun.ktvine.crypto.*
 import org.samfun.ktvine.proto.*
-import java.util.UUID
+import org.samfun.ktvine.utils.*
 import kotlin.random.Random
 
 /**
@@ -199,23 +191,8 @@ class Cdm(
         val init = pssh.initData
         if (init.isEmpty()) throw InvalidInitDataException("A pssh must be provided.")
 
-        val requestId: ByteString = if (deviceType == DeviceTypes.ANDROID) {
-            // emulate OEMCrypto counter-like request id (upper hex)
-            val counter = s.number
-            val prefix = randomBytes(4) + ByteArray(4)
-            val buf = prefix + ByteArray(8).apply {
-                var v = counter
-                for (i in 0 until 8) {
-                    this[i] = (v and 0xFF).toByte(); v = v ushr 8
-                }
-            }
-            buf.joinToString(separator = "") { (it.toInt() and 0xFF)
-                .toString(16)
-                .padStart(2, '0')
-            }.uppercase().encodeToByteArray().toByteString()
-        } else {
-            randomBytes(16).toByteString()
-        }
+        val requestId: ByteString = randomBytes(16).toByteString()
+        val requestTime = System.currentTimeMillis() / 1000
 
         val encryptedClientId = if (s.serviceCertificate != null && privacyMode) {
             val drm = DrmCertificate.ADAPTER.decode(s.serviceCertificate!!.drm_certificate!!)
@@ -232,11 +209,21 @@ class Cdm(
                 )
             ),
             type = LicenseRequest.RequestType.NEW,
-            request_time = System.currentTimeMillis() / 1000,
+            request_time = requestTime,
             protocol_version = ProtocolVersion.VERSION_2_1,
             key_control_nonce = Random.nextInt(),
             encrypted_client_id = encryptedClientId
         )
+
+        Logger.d("ktvine") {
+            "Generating License Request - " +
+            "Session ID: $sessionId, " +
+            "Request ID: $requestId, " +
+            "Request Time: $requestTime, " +
+            "License Type: $licenseType, " +
+            "Privacy Mode: $privacyMode, " +
+            "Encrypted Client ID: ${encryptedClientId != null}"
+        }
 
         val encodedLr = lr.encode()
         val signature = rsaPssSignSha1(privateKeyDer, encodedLr)
@@ -304,7 +291,9 @@ class Cdm(
                 s.keys.add(Key.fromContainer(kc, encKey))
             } catch (error: Throwable) {
                 // ignore malformed keys
-                println("[ktvine] Error parsing key")
+                Logger.e("ktvine") {
+                    "Error parsing key container: ${error.message}"
+                }
                 error.printStackTrace()
             }
         }

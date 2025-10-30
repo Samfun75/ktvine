@@ -51,8 +51,8 @@ kotlin {
             dependencies {
                 //put your multiplatform dependencies here
                 api(libs.wire.runtime)
-                implementation(libs.isoparser.runtime)
                 implementation(libs.bundles.cryptography)
+                implementation(libs.kermit)
             }
         }
         val commonTest by getting {
@@ -79,7 +79,12 @@ wire {
 mavenPublishing {
     publishToMavenCentral()
 
-    signAllPublications()
+    if (System.getenv("SIGNING_KEY_ID") != null) {
+        println("✅ Signing all publications.")
+        signAllPublications()
+    } else {
+        println("⚠️ Skipping signing (JitPack or no signing keys).")
+    }
 
     coordinates(group.toString(), "ktvine", version.toString())
 
