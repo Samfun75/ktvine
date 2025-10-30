@@ -9,6 +9,7 @@ import org.samfun.ktvine.utils.encodeToUtf16LE
 import org.samfun.ktvine.utils.toByteArray
 import org.samfun.ktvine.utils.toLEU16
 import org.samfun.ktvine.utils.toLEU32
+import org.samfun.ktvine.utils.toUUID
 import java.util.UUID
 import kotlin.io.encoding.Base64
 
@@ -86,7 +87,7 @@ class PSSHTest {
         val xml = makeProXmlV43(k1, k2)
         val pro = proWrapSingleRecord(xml)
 
-        val pssh = PSSH(pro)
+        val pssh = PSSH.new(systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(), initData = pro)
         assertEquals(setOf(k1, k2), pssh.keyIds().toSet())
 
         pssh.toWidevine()
@@ -132,7 +133,7 @@ class PSSHTest {
     fun `test key ids from widevine header`() {
         val kid = UUID.randomUUID()
         val header = WidevinePsshData(key_ids = listOf(kid.toByteArray().toByteString()))
-        val pssh = PSSH(header.encode())
+        val pssh = PSSH.new(systemId = WV_UUID, initData = header.encode())
 
         val kids = pssh.keyIds()
         assertEquals(1, kids.size)
