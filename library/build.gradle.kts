@@ -79,7 +79,7 @@ wire {
 mavenPublishing {
     publishToMavenCentral()
 
-    if (System.getenv("SIGNING_KEY_ID") != null) {
+    if (System.getenv("PUBLISH") != null) {
         println("✅ Signing all publications.")
         signAllPublications()
     } else {
