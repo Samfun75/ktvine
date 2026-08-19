@@ -61,6 +61,16 @@ kotlin {
                 implementation(libs.coroutines.core)
             }
         }
+        // Shared by the two JVM-family test source sets so fixture loading is written once.
+        val jvmAndAndroidTest by creating {
+            dependsOn(commonTest)
+        }
+        val jvmTest by getting {
+            dependsOn(jvmAndAndroidTest)
+        }
+        val androidHostTest by getting {
+            dependsOn(jvmAndAndroidTest)
+        }
     }
 }
 

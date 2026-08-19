@@ -17,8 +17,6 @@ import org.samfun.ktvine.utils.kidToUuid
 import org.samfun.ktvine.utils.toHexString
 import java.net.HttpURLConnection
 import java.net.URI
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.security.SecureRandom
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
@@ -27,26 +25,6 @@ import kotlin.test.assertTrue
 
 @OptIn(DelicateCryptographyApi::class)
 class CDMJvmTest {
-
-    private fun readTestFile(name: String): ByteArray {
-        // Try module-relative path first (when working dir is library/)
-        val modulePath = Paths.get(
-            "src", "commonTest", "kotlin", "org", "samfun", "ktvine", "device", name
-        )
-        if (Files.exists(modulePath)) return Files.readAllBytes(modulePath)
-
-        // Fallback to repo-root-relative path
-        val rootPath = Paths.get(
-            "library", "src", "commonTest", "kotlin", "org", "samfun", "ktvine", "device", name
-        )
-        return Files.readAllBytes(rootPath)
-    }
-
-    private fun readMpd(): String {
-        // Relative to module directory
-        val path = Paths.get("src", "commonTest", "kotlin", "org", "samfun", "ktvine", "playlist", "tears.mpd")
-        return Files.readString(path)
-    }
 
     private fun extractFirstPsshB64(mpdXml: String): String? {
         val regex = Regex("<cenc:pssh\\b[^>]*>([^<]+)</cenc:pssh>")
@@ -71,17 +49,13 @@ class CDMJvmTest {
     @Test
     fun `test widevine proxy returns keys when device available`() {
         runBlocking {
-            val data = try {
-                readTestFile("google_avd.wvd")
-            } catch (_: Throwable) {
-                return@runBlocking
-            }
+            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
 
             val device = Device.loads(data)
             val cdm = Cdm.fromDevice(device)
             val sessionId = cdm.open()
 
-            val mpd = readMpd()
+            val mpd = TestFixtures.readText("playlist/tears.mpd")
             val psshB64 = requireNotNull(extractFirstPsshB64(mpd)) { "No cenc:pssh found in MPD" }
 
             val pssh = PSSH(psshB64)
