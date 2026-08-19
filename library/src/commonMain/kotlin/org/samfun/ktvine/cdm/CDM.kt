@@ -257,7 +257,8 @@ class Cdm(
      * decrypts contained keys and stores them on the session.
      * @throws InvalidSessionException if the session is unknown
      * @throws InvalidContextException if no license request was made for this session
-     * @throws InvalidLicenseMessageException if the message is empty or is not a LICENSE
+     * @throws InvalidLicenseMessageException if the message is empty, is an ERROR_RESPONSE,
+     *   or is not a LICENSE
      * @throws DecodeException if parsing fails
      * @throws SignatureMismatchException if MAC verification fails
      */
@@ -270,6 +271,15 @@ class Cdm(
         } catch (e: Throwable) {
             throw DecodeException(
                 "Could not parse license_message as a SignedMessage, $e"
+            )
+        }
+        if (sm.type == SignedMessage.MessageType.ERROR_RESPONSE) {
+            // Neither this vendored schema nor pywidevine's defines LicenseError, so the
+            // payload is reported verbatim for the caller to decode.
+            val detail = sm.msg?.toByteArray()?.toHexString() ?: "<empty>"
+            val version = sm.service_version_info?.let { " (service ${it.license_service_version})" } ?: ""
+            throw InvalidLicenseMessageException(
+                "License server returned an ERROR_RESPONSE$version, payload: $detail"
             )
         }
         if (sm.type != SignedMessage.MessageType.LICENSE)
