@@ -1,16 +1,14 @@
 package org.samfun.ktvine
 
 import kotlinx.coroutines.runBlocking
-import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.Device
 import org.samfun.ktvine.core.PSSH
+import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.proto.LicenseType
-import org.samfun.ktvine.utils.kidToUuid
 import org.samfun.ktvine.utils.toHexString
 import java.net.HttpURLConnection
 import java.net.URI
-import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -64,54 +62,27 @@ class CdmProxyIntegrationTest {
                 println("[${key.type}] ${key.kid} : ${key.key.toHexString()}")
             }
 
-            // From https://integration.widevine.com/documentation/content
+            // Published at https://integration.widevine.com/documentation/content.
+            // These are literals on purpose: deriving them with kidToUuid would make the
+            // test agree with whatever that function does, including being wrong.
             val kids = listOf(
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwMQ==").toByteString().kidToUuid(),
-                    Base64.decode("eKHcBkYRlwfpA1FNigBzXw==").toHexString(),
-                    "SD"
-                ),
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwMw==").toByteString().kidToUuid(),
-                    Base64.decode("QkZshCrBxUObHgwJ+7Th0g==").toHexString(),
-                    "HD"
-                ),
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwMg==").toByteString().kidToUuid(),
-                    Base64.decode("Hzeeo4xw5Af3ayPsZAHK7w==").toHexString(),
-                    "HD"
-                ),
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwMA==").toByteString().kidToUuid(),
-                    Base64.decode("Pwoz80CYueIrwHjgobXoVA==").toHexString(),
-                    "AUDIO"
-                ),
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNA==").toByteString().kidToUuid(),
-                    Base64.decode("IvCfhLVopdAH5LHRFpQ1gQ==").toHexString(),
-                    "SD"
-                ),
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNQ==").toByteString().kidToUuid(),
-                    Base64.decode("msMDbgSsnSvpRu1iQFFJvA==").toHexString(),
-                    "SD"
-                ),
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNg==").toByteString().kidToUuid(),
-                    Base64.decode("MUWYWCQzTsTLSsS9w+K+7w==").toHexString(),
-                    "SD"
-                ),
-                Triple(
-                    Base64.decode("MDAwMDAwMDAwMDAwMDAwNw==").toByteString().kidToUuid(),
-                    Base64.decode("ebhzT7mNJ1qQempaFQEouw==").toHexString(),
-                    "HD"
-                ),
+                Triple("00000000-0000-0000-0000-000000000000", "3f0a33f34098b9e22bc078e0a1b5e854", "AUDIO"),
+                Triple("00000000-0000-0000-0000-000000000001", "78a1dc0646119707e903514d8a00735f", "SD"),
+                Triple("00000000-0000-0000-0000-000000000002", "1f379ea38c70e407f76b23ec6401caef", "HD"),
+                Triple("00000000-0000-0000-0000-000000000003", "42466c842ac1c5439b1e0c09fbb4e1d2", "HD"),
+                Triple("00000000-0000-0000-0000-000000000004", "22f09f84b568a5d007e4b1d116943581", "SD"),
+                Triple("00000000-0000-0000-0000-000000000005", "9ac3036e04ac9d2be946ed62405149bc", "SD"),
+                Triple("00000000-0000-0000-0000-000000000006", "3145985824334ec4cb4ac4bdc3e2beef", "SD"),
+                Triple("00000000-0000-0000-0000-000000000007", "79b8734fb98d275a907a6a5a150128bb", "HD"),
             )
 
+            // Scoped to CONTENT: the license also carries a keyless SIGNING key, whose
+            // absent KID legitimately maps to the nil UUID and would shadow KID ...0000.
+            val contentKeys = cdm.getKeys(sessionId, License.KeyContainer.KeyType.CONTENT)
 
             kids.forEach { (kid, expectedKeyHex, quality) ->
                 println("Verifying KID $kid - $quality")
-                val key = keys.find { it.kid == kid }
+                val key = contentKeys.find { it.kid.toString() == kid }
                 assertTrue(key != null, "Key with KID $kid not found in license")
                 assertEquals(
                     expectedKeyHex,

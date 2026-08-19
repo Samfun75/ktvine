@@ -73,8 +73,14 @@ fun Int.toLEU32(): ByteArray = byteArrayOf(
 fun ByteArray.toHexString(): String = joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
 /**
- * Convert a KID stored in a variety of formats (base64/number/bytes) to a [UUID].
- * Accepts nullable input and returns UUID(0,0) for missing KIDs.
+ * Convert a KID from a License `KeyContainer.id` to a [UUID].
+ *
+ * KID bytes are not always 16 raw bytes: some services send a decimal digit string, and
+ * some send fewer than 16 bytes. They are never Base64 — decoding them as such (as this
+ * did) silently mangles every ASCII or hex-string KID. Use the [String] overload for
+ * Base64 input.
+ *
+ * Returns `UUID(0, 0)` for a missing or empty KID.
  */
 fun ByteString?.kidToUuid(): UUID {
     var kidBytes = this?.toByteArray()
@@ -82,14 +88,9 @@ fun ByteString?.kidToUuid(): UUID {
         return UUID(0, 0)
     }
 
-    try {
-        kidBytes = Base64.decode(kidBytes)
-    } catch (_: IllegalArgumentException) {
-        // not base64
-    }
-
-    if (kidBytes.toUTF8().all { it.isDigit() }) {
-        val bi = BigInteger(kidBytes.toUTF8())
+    val asText = kidBytes.toUTF8()
+    if (asText.isNotEmpty() && asText.all { it.isDigit() }) {
+        val bi = BigInteger(asText)
         return UUID(bi.shiftRight(64).toLong(), bi.toLong())
     }
 
@@ -99,3 +100,6 @@ fun ByteString?.kidToUuid(): UUID {
 
     return kidBytes.toByteString(0, 16).uuidFromByteString()
 }
+
+/** Convert a Base64-encoded KID [String] to a [UUID]. */
+fun String.kidToUuid(): UUID = Base64.decode(this).toByteString().kidToUuid()
