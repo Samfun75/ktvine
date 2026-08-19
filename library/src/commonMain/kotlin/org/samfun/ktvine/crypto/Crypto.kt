@@ -7,7 +7,6 @@ import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.*
 import dev.whyoleg.cryptography.random.CryptographyRandom
 import org.samfun.ktvine.utils.ValueException
-import java.security.spec.X509EncodedKeySpec
 
 private val crypto = CryptographyProvider.Default
 
@@ -27,7 +26,7 @@ suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature
     val publicKey =
         rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
             RSA.PublicKey.Format.DER.PKCS1,
-            X509EncodedKeySpec(publicKeyDer).encoded
+            publicKeyDer
         )
     return publicKey.signatureVerifier().tryVerifySignature(data, signature)
 }
@@ -37,7 +36,7 @@ suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray 
     val rsa = crypto.get(RSA.OAEP)
     val publicKey = rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
         RSA.PublicKey.Format.DER.PKCS1,
-        X509EncodedKeySpec(publicKeyDer).encoded
+        publicKeyDer
     )
     return publicKey.encryptor().encrypt(data)
 }
