@@ -6,6 +6,7 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.*
 import dev.whyoleg.cryptography.random.CryptographyRandom
+import org.samfun.ktvine.utils.ValueException
 import java.security.spec.X509EncodedKeySpec
 
 private val crypto = CryptographyProvider.Default
@@ -98,16 +99,29 @@ fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
     return data + padding
 }
 
-/** Remove PKCS#7 padding if present; returns original [data] if invalid padding is detected. */
+/**
+ * Remove PKCS#7 padding from [data].
+ *
+ * @throws ValueException if the padding is absent or malformed, matching pywidevine's
+ *   `Padding.unpad`. Returning the input unchanged would hand back a failed decrypt as
+ *   if it were a content key.
+ */
 fun pkcs7Unpad(data: ByteArray, blockSize: Int = 16): ByteArray {
-    require(data.isNotEmpty()) { "Cannot unpad empty data" }
-    require(data.size % blockSize == 0) { "Data length must be a multiple of block size" }
+    if (blockSize !in 1..255) throw ValueException("Invalid block size $blockSize")
+    if (data.isEmpty()) throw ValueException("Cannot unpad empty data")
+    if (data.size % blockSize != 0)
+        throw ValueException("Data length ${data.size} is not a multiple of block size $blockSize")
+
     val padLen = data.last().toInt() and 0xFF
-    for (i in 1..padLen) {
-        if ((data[data.size - i].toInt() and 0xFF) != padLen) {
-            // Not padded, or invalid padding
-            return data
-        }
+
+    // Always inspect a full block so a bad decrypt cannot be told apart by timing.
+    var bad = if (padLen in 1..blockSize) 0 else 1
+    for (i in 1..blockSize) {
+        val actual = data[data.size - i].toInt() and 0xFF
+        val inPadding = if (i <= padLen) 1 else 0
+        bad = bad or (inPadding * (actual xor padLen))
     }
+    if (bad != 0) throw ValueException("Invalid PKCS#7 padding")
+
     return data.copyOf(data.size - padLen)
 }
