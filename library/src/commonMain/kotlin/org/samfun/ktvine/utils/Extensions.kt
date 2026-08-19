@@ -127,3 +127,17 @@ fun ByteString?.kidToUuid(): UUID {
 
 /** Convert a Base64-encoded KID [String] to a [UUID]. */
 fun String.kidToUuid(): UUID = Base64.decode(this).toByteString().kidToUuid()
+
+/** Escape the five XML predefined entities so interpolated text cannot break the document. */
+fun escapeXml(value: String): String = buildString(value.length) {
+    for (c in value) {
+        when (c) {
+            '&' -> append("&amp;")
+            '<' -> append("&lt;")
+            '>' -> append("&gt;")
+            '"' -> append("&quot;")
+            '\'' -> append("&apos;")
+            else -> append(c)
+        }
+    }
+}

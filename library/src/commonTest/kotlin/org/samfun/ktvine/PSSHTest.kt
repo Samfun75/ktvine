@@ -2,6 +2,7 @@ package org.samfun.ktvine
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.samfun.ktvine.proto.WidevinePsshData
@@ -14,6 +15,7 @@ import org.samfun.ktvine.utils.toByteArray
 import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.toLEU16
 import org.samfun.ktvine.utils.toLEU32
+import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.toUUID
 import java.util.UUID
 import kotlin.io.encoding.Base64
@@ -216,5 +218,40 @@ class PSSHTest {
         // An unanchored version regex matches the declaration's version="1.0" first and
         // then rejects the header as an unsupported version.
         assertEquals(setOf(k1), pssh.keyIds().toSet())
+    }
+
+    @Test
+    fun `test to play ready escapes urls with query strings`() {
+        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
+
+        // A bare & here produces XML that will not parse.
+        pssh.toPlayready(
+            laUrl = "https://ls.example.com/rights?a=1&b=2",
+            decryptorSetup = "<not a tag>"
+        )
+
+        val xml = readPlayreadyHeader(pssh.initData)
+        assertTrue(
+            xml.contains("<LA_URL>https://ls.example.com/rights?a=1&amp;b=2</LA_URL>"),
+            xml
+        )
+        assertTrue(xml.contains("<DECRYPTORSETUP>&lt;not a tag&gt;</DECRYPTORSETUP>"), xml)
+        assertFalse(
+            Regex("&(?!amp;|lt;|gt;|quot;|apos;)").containsMatchIn(xml),
+            "an unescaped & escaped into the header: " + xml
+        )
+
+        // The KIDs must still survive the escaping pass.
+        assertEquals(setOf(k1), pssh.keyIds().toSet())
+    }
+
+    @Test
+    fun `test to play ready rejects a header over the record size limit`() {
+        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
+
+        // u16 record length: silently truncating here produced a corrupt PRO.
+        assertFailsWith<ValueException> { pssh.toPlayready(laUrl = "x".repeat(40_000)) }
     }
 }

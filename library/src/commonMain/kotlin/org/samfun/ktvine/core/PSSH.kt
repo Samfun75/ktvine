@@ -144,6 +144,11 @@ class PSSH {
     /**
      * Convert a Widevine PSSH to a PlayReady v4.3.0.0 PSSH.
      * Optional LA_URL/LUI_URL/DS_ID/DECRYPTORSETUP/CUSTOMDATA fields can be provided.
+     *
+     * [laUrl], [luiUrl] and [decryptorSetup] are XML-escaped. [customData] is **not** —
+     * the spec has the content author supply raw XML there, so it must already be valid.
+     *
+     * @throws ValueException if the resulting header exceeds the 65535-byte record limit
      */
     fun toPlayready(
         laUrl: String? = null,
@@ -162,14 +167,18 @@ class PSSH {
                 append("<KID ALGID=\"AESCTR\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>")
             }
             append("</KIDS></PROTECTINFO>")
-            laUrl?.let { append("<LA_URL>$it</LA_URL>") }
-            luiUrl?.let { append("<LUI_URL>$it</LUI_URL>") }
+            laUrl?.let { append("<LA_URL>${escapeXml(it)}</LA_URL>") }
+            luiUrl?.let { append("<LUI_URL>${escapeXml(it)}</LUI_URL>") }
             dsId?.let { append("<DS_ID>${Base64.encode(it)}</DS_ID>") }
-            decryptorSetup?.let { append("<DECRYPTORSETUP>$it</DECRYPTORSETUP>") }
+            decryptorSetup?.let { append("<DECRYPTORSETUP>${escapeXml(it)}</DECRYPTORSETUP>") }
             customData?.let { append("<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>") }
             append("</DATA>")
             append("</WRMHEADER>")
         }.encodeToUtf16LE()
+
+        // The record length field is a u16; toLEU16 would silently truncate past 65535.
+        if (prrValue.size > 0xFFFF)
+            throw ValueException("PlayReadyHeader is ${prrValue.size} bytes, over the 65535-byte record limit")
 
         val body = ByteArrayOutputStream().apply {
             write(1.toLEU16())              // record count
