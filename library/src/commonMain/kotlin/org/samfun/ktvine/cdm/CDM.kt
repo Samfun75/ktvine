@@ -82,6 +82,45 @@ class Cdm(
         private val ROOT_CERT = DrmCertificate.ADAPTER.decode(ROOT_SIGNED_CERT.drm_certificate!!)
 
         /**
+         * Unwrap the content keys carried by an ENTITLED_KEY [PSSH] using [entitlementKeys].
+         *
+         * The session-scoped [getKeysFromEntitlement] delegates here; use this directly when
+         * the entitlement keys came from somewhere other than an open session.
+         *
+         * @throws InvalidInitDataException if the PSSH carries no entitled keys
+         * @throws DecodeException if an entitled key is missing a required field
+         * @throws ValueException if no entitlement key matches an entitled key
+         */
+        suspend fun unwrapEntitledKeys(entitlementKeys: List<Key>, entitledPssh: PSSH): List<Key> {
+            val header = try {
+                WidevinePsshData.ADAPTER.decode(entitledPssh.initData)
+            } catch (e: Throwable) {
+                throw DecodeException("Could not parse init data as a WidevineCencHeader, $e")
+            }
+            if (header.entitled_keys.isEmpty())
+                throw InvalidInitDataException("This PSSH carries no entitled_keys.")
+
+            return header.entitled_keys.map { entitled ->
+                val entitlementKeyId = entitled.entitlement_key_id
+                    .orDecodeError("EntitledKey.entitlement_key_id")
+                    .kidToUuid()
+                val wrapping = entitlementKeys.firstOrNull { it.kid == entitlementKeyId }
+                    ?: throw ValueException(
+                        "No ENTITLEMENT key with id $entitlementKeyId was provided."
+                    )
+
+                val wrapped = entitled.key.orDecodeError("EntitledKey.key").toByteArray()
+                val iv = entitled.iv.orDecodeError("EntitledKey.iv").toByteArray()
+
+                Key(
+                    type = License.KeyContainer.KeyType.CONTENT,
+                    kid = entitled.key_id.kidToUuid(),
+                    key = pkcs7Unpad(aesCbcDecryptNoPadding(wrapping.key, iv, wrapped))
+                )
+            }
+        }
+
+        /**
          * Create a [Cdm] instance from a [Device].
          */
         fun fromDevice(device: Device): Cdm = Cdm(
@@ -469,6 +508,36 @@ class Cdm(
         val macKeyServer = derive(macContext, 1) + derive( macContext, 2)
         val macKeyClient = derive( macContext, 3) + derive(macContext, 4)
         return Triple(encKey, macKeyServer, macKeyClient)
+    }
+
+    /**
+     * Unwrap the content keys carried by an ENTITLED_KEY [PSSH].
+     *
+     * Entitlement licensing splits delivery in two: a first license carries `ENTITLEMENT`
+     * keys, and a later `ENTITLED_KEY` PSSH carries content keys each wrapped with one of
+     * them. Each [WidevinePsshData.EntitledKey] names its wrapping key by
+     * `entitlement_key_id` and supplies the AES-CBC `iv`.
+     *
+     * The session must already have parsed a license containing the matching ENTITLEMENT
+     * keys; [getKeys] returns those, this returns the content keys they unlock.
+     *
+     * @param entitledPssh a PSSH whose CENC header is of type ENTITLED_KEY
+     * @return the unwrapped content keys, which are *not* added to the session
+     * @throws InvalidSessionException if the session id is invalid
+     * @throws NoKeysLoadedException if the session holds no ENTITLEMENT keys
+     * @throws InvalidInitDataException if the PSSH carries no entitled keys
+     * @throws DecodeException if an entitled key is missing a required field
+     * @throws ValueException if no entitlement key matches an entitled key
+     */
+    suspend fun getKeysFromEntitlement(sessionId: ByteString, entitledPssh: PSSH): List<Key> {
+        val s = session(sessionId)
+        val entitlementKeys = s.lock.withLock {
+            s.keys.filter { it.type == License.KeyContainer.KeyType.ENTITLEMENT }
+        }
+        if (entitlementKeys.isEmpty())
+            throw NoKeysLoadedException("No ENTITLEMENT keys are loaded for this session.")
+
+        return unwrapEntitledKeys(entitlementKeys, entitledPssh)
     }
 
     /**
