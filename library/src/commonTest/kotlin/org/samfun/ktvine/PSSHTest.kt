@@ -2,7 +2,9 @@ package org.samfun.ktvine
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertContentEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.samfun.ktvine.proto.WidevinePsshData
@@ -15,6 +17,7 @@ import org.samfun.ktvine.utils.toByteArray
 import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.toLEU16
 import org.samfun.ktvine.utils.toLEU32
+import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.toUUID
 import java.util.UUID
@@ -296,5 +299,90 @@ class PSSHTest {
             failure.message!!.contains("9.9.9.9"),
             "the specific version error used to be swallowed into a generic message, got: " + failure.message
         )
+    }
+
+    @Test
+    fun `test bare widevine cenc header is accepted`() {
+        val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
+        val header = wvData(k1).encode()
+
+        val pssh = PSSH(header)
+
+        assertEquals(setOf(k1), pssh.keyIds().toSet())
+        assertContentEquals(header, pssh.initData, "the header must be stored verbatim")
+        // It becomes a real box on the way out.
+        assertEquals(setOf(k1), PSSH(pssh.export()).keyIds().toSet())
+    }
+
+    @Test
+    fun `test bare playready object is accepted`() {
+        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val pro = proWrapSingleRecord(makeProXmlV43(k1))
+
+        val pssh = PSSH(pro)
+
+        assertEquals(setOf(k1), pssh.keyIds().toSet())
+        assertContentEquals(pro, pssh.initData)
+    }
+
+    @Test
+    fun `test unrecognised init data is wrapped in lenient mode and rejected in strict mode`() {
+        // Netflix MSL and similar send init data no standard header describes.
+        val custom = byteArrayOf(-1, -2, -3, -4, -5, -6, -7, -8)
+
+        val lenient = PSSH(custom)
+        assertContentEquals(custom, lenient.initData)
+
+        assertFailsWith<DecodeException> { PSSH(custom, strict = true) }
+    }
+
+    @Test
+    fun `test empty input is rejected`() {
+        assertFailsWith<ValueException> { PSSH(ByteArray(0)) }
+    }
+
+    @Test
+    fun `test parseAll returns every box in a multi-DRM segment`() {
+        val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
+        val k2 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+
+        val widevine = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
+        val playready = PSSH.new(
+            systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
+            initData = proWrapSingleRecord(makeProXmlV43(k2))
+        )
+        val segment = widevine.export() + playready.export()
+
+        val all = PSSH.parseAll(segment)
+        assertEquals(2, all.size, "both boxes must be returned")
+        assertEquals(setOf(k1), all[0].keyIds().toSet())
+        assertEquals(setOf(k2), all[1].keyIds().toSet())
+
+        // The constructors keep taking only the first.
+        assertEquals(setOf(k1), PSSH(segment).keyIds().toSet())
+    }
+
+    @Test
+    fun `test fromInitSegment selects by system id`() {
+        val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
+        val k2 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+
+        val widevine = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
+        val playready = PSSH.new(
+            systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
+            initData = proWrapSingleRecord(makeProXmlV43(k2))
+        )
+        val segment = playready.export() + widevine.export()
+
+        assertEquals(
+            setOf(k1),
+            PSSH.fromInitSegment(segment)!!.keyIds().toSet(),
+            "must pick the Widevine box even though PlayReady comes first"
+        )
+        assertEquals(
+            setOf(k2),
+            PSSH.fromInitSegment(segment, PSSH.PLAYREADY_SYSTEM_ID)!!.keyIds().toSet()
+        )
+        assertNull(PSSH.fromInitSegment(widevine.export(), PSSH.PLAYREADY_SYSTEM_ID))
     }
 }

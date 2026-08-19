@@ -28,12 +28,28 @@ class PSSH {
     /** Raw init data contained within the PSSH box. */
     val initData: ByteArray get() = _content
 
-    /** Create from a Base64-encoded PSSH box or header bytes. */
-    constructor(data: String) : this(Base64.decode(data))
+    /**
+     * Create from a Base64-encoded PSSH box, Widevine CENC header, or PlayReady header.
+     * @see PSSH constructor taking [ByteArray] for how [strict] is applied.
+     */
+    constructor(data: String, strict: Boolean = false) : this(decodeBase64OrThrow(data), strict)
 
-    /** Create from raw bytes of a PSSH box or header bytes. */
-    constructor(data: ByteArray) {
-        val box = parseSinglePssh(data)
+    /**
+     * Create from raw bytes of a PSSH box, Widevine CENC header, or PlayReady header.
+     *
+     * The input is interpreted in this order:
+     * 1. an ISOBMFF box sequence containing a `pssh` box;
+     * 2. a bare `WidevinePsshData` CENC header — accepted only if re-encoding it reproduces
+     *    the input exactly, since protobuf will happily "parse" many non-protobuf blobs;
+     * 3. a bare PlayReady header or PlayReady Object, detected by a UTF-16LE
+     *    `</WRMHEADER>`;
+     * 4. anything else, in lenient mode, is wrapped verbatim as the `init_data` of a v0
+     *    Widevine box. Some services take custom init data (Netflix MSL, for one).
+     *
+     * @param strict reject step 4 with a [DecodeException] instead of wrapping.
+     */
+    constructor(data: ByteArray, strict: Boolean = false) {
+        val box = interpret(data, strict)
         this._systemId = box._systemId
         this._flags = box._flags
         this._version = box._version
@@ -269,90 +285,6 @@ class PSSH {
         return buffer.array()
     }
 
-    private fun parseSinglePssh(bytes: ByteArray): PSSH {
-        Logger.d("ktvine") { "Attempting to parse data as full PSSH box: ${bytes.toHexString()}" }
-        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
-
-        while (buffer.remaining() >= 8) {
-            val startPos = buffer.position()
-            // Standard Box Header (Size + Type)
-            val size = readUint32(buffer)
-            val type = readFourCC(buffer)
-
-            var boxSize = size.toLong()
-
-            // 64-bit Size (BoxSize == 1)
-            if (boxSize == 1L) {
-                if (buffer.remaining() < 8) break
-                boxSize = buffer.long
-                // Last Box Extends to EOF (BoxSize == 0) - common for top-level file
-            } else if (boxSize == 0L) {
-                boxSize = (buffer.limit() - startPos).toLong()
-            }
-
-            if (boxSize < 8) break // Must have at least Size and Type
-
-            val payloadSize = (boxSize - (buffer.position() - startPos)).toInt()
-
-            if (type == "pssh") {
-                Logger.d("ktvine") { "Found PSSH box Attempting to parse data" }
-                if (buffer.remaining() < payloadSize) break
-                val payload = ByteArray(payloadSize)
-                buffer.get(payload)
-                return parsePsshPayload(payload)
-            } else {
-                // Skip the payload of non-pssh box
-                Logger.d("ktvine") { "No PSSH box found skipping" }
-                val skip = payloadSize.coerceAtMost(buffer.remaining())
-                buffer.position(buffer.position() + skip)
-            }
-        }
-
-        throw InvalidBoxException("Could not find valid PSSH box in provided data.")
-    }
-
-    private fun parsePsshPayload(payload: ByteArray): PSSH {
-        val b = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN)
-
-        if (b.remaining() < 20) throw InvalidBoxException("PSSH payload too small to contain required fields.")
-
-        val version = b.get().toInt() and 0xFF
-
-        val flagsBytes = ByteArray(3)
-        b.get(flagsBytes)
-        val flags = (flagsBytes[0].toInt() and 0xFF shl 16) or
-                (flagsBytes[1].toInt() and 0xFF shl 8) or
-                (flagsBytes[2].toInt() and 0xFF)
-
-        val systemId = readUuid(b)
-
-        val keyIds = mutableListOf<UUID>()
-
-        Logger.d("ktvine") { "PSSH box version: $version" }
-        if (version > 1) throw InvalidBoxException("Unsupported PSSH version: $version")
-
-        if (version == 1) {
-            if (b.remaining() < 4) throw InvalidBoxException("PSSH payload too small to contain key ID count")
-
-            val keyCount = readUint32(b).toInt()
-            Logger.d("ktvine") { "PSSH box key count: $keyCount" }
-
-            if (b.remaining() < keyCount * 16) throw InvalidBoxException("PSSH payload too small to contain $keyCount key IDs")
-
-            repeat(keyCount) { keyIds.add(readUuid(b)) }
-        }
-
-        if (b.remaining() < 4) throw InvalidBoxException("PSSH payload too small to contain data size")
-        val dataSize = readUint32(b).toInt()
-
-        if (b.remaining() < dataSize) throw InvalidBoxException("PSSH payload too small to contain data")
-        val data = ByteArray(dataSize)
-        b.get(data)
-
-        Logger.i("ktvine") { "Successfully parsed PSSH box data" }
-        return PSSH(systemId.toByteArray(), version, flags, keyIds, data)
-    }
-
     private fun calculatePsshSize(): Int {
         var size = 8 // Box header (Size + Type)
         size += 1 // Version
@@ -370,28 +302,165 @@ class PSSH {
         return size
     }
 
-    private fun readUint32(buffer: ByteBuffer): Long {
-        return buffer.int.toLong() and 0xFFFFFFFFL
-    }
-
-    private fun readFourCC(buffer: ByteBuffer): String {
-        val chars = ByteArray(4)
-        buffer.get(chars)
-        return chars.toUTF8()
-    }
-
-    private fun readUuid(buffer: ByteBuffer): UUID {
-        val msb = buffer.long
-        val lsb = buffer.long
-        return UUID(msb, lsb)
-    }
-
     private fun writeUuid(buffer: ByteBuffer, uuid: UUID) {
         buffer.putLong(uuid.mostSignificantBits)
         buffer.putLong(uuid.leastSignificantBits)
     }
 
     companion object {
+
+        private val WRMHEADER_CLOSE_TAG = "</WRMHEADER>".encodeToUtf16LE()
+
+        private fun decodeBase64OrThrow(data: String): ByteArray =
+            try {
+                Base64.decode(data)
+            } catch (e: Throwable) {
+                throw DecodeException("Could not decode data as Base64, $e")
+            }
+
+        /** Apply the input cascade documented on the [PSSH] `ByteArray` constructor. */
+        private fun interpret(data: ByteArray, strict: Boolean): PSSH {
+            if (data.isEmpty()) throw ValueException("Data must not be empty.")
+
+            parseBoxes(data).firstOrNull()?.let { return it }
+
+            // A bare WidevinePsshData CENC header. Protobuf accepts a lot of junk, so only
+            // trust the parse when re-encoding round-trips exactly.
+            val cencHeader = runCatching { WidevinePsshData.ADAPTER.decode(data) }.getOrNull()
+            if (cencHeader != null && cencHeader.encode().contentEquals(data)) {
+                return PSSH(WIDEVINE, 0, 0, emptyList(), data)
+            }
+
+            // A bare PlayReady header or PlayReady Object. Stored as-is; keyIds() parses it.
+            if (data.containsSubarray(WRMHEADER_CLOSE_TAG)) {
+                return PSSH(PLAYREADY_SYSTEM_ID, 0, 0, emptyList(), data)
+            }
+
+            if (strict) {
+                throw DecodeException(
+                    "Could not parse data as a PSSH box, a WidevineCencHeader, or a PlayReadyHeader."
+                )
+            }
+
+            // Some license servers accept custom init data (Netflix MSL, for one).
+            Logger.d("ktvine") { "Unrecognised init data, wrapping it in a v0 Widevine box" }
+            return PSSH(WIDEVINE, 0, 0, emptyList(), data)
+        }
+
+        /**
+         * Parse every `pssh` box in an ISOBMFF byte sequence.
+         *
+         * Multi-DRM init segments carry Widevine and PlayReady boxes side by side; the
+         * [PSSH] constructors only ever return the first.
+         */
+        fun parseAll(data: ByteArray): List<PSSH> = parseBoxes(data)
+
+        /** Parse [data] as Base64 and return every `pssh` box in it. */
+        fun parseAll(data: String): List<PSSH> = parseBoxes(decodeBase64OrThrow(data))
+
+        /**
+         * Pick the `pssh` box for one DRM system out of an init segment.
+         * @return the first matching box, or `null` when the segment carries none.
+         */
+        fun fromInitSegment(data: ByteArray, systemId: ByteArray = WIDEVINE): PSSH? =
+            parseBoxes(data).firstOrNull { it._systemId.contentEquals(systemId) }
+
+        /** Walk an ISOBMFF box sequence and return every `pssh` box found, in order. */
+        private fun parseBoxes(bytes: ByteArray): List<PSSH> {
+            Logger.d("ktvine") { "Attempting to parse data as an ISOBMFF box sequence" }
+            val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
+            val found = mutableListOf<PSSH>()
+
+            while (buffer.remaining() >= 8) {
+                val startPos = buffer.position()
+                val size = readUint32(buffer)
+                val type = readFourCC(buffer)
+
+                var boxSize = size.toLong()
+
+                // 64-bit Size (BoxSize == 1)
+                if (boxSize == 1L) {
+                    if (buffer.remaining() < 8) break
+                    boxSize = buffer.long
+                    // Last Box Extends to EOF (BoxSize == 0) - common for top-level file
+                } else if (boxSize == 0L) {
+                    boxSize = (buffer.limit() - startPos).toLong()
+                }
+
+                if (boxSize < 8) break // Must have at least Size and Type
+
+                val payloadSize = (boxSize - (buffer.position() - startPos)).toInt()
+                if (payloadSize < 0 || buffer.remaining() < payloadSize) break
+
+                if (type == "pssh") {
+                    val payload = ByteArray(payloadSize)
+                    buffer.get(payload)
+                    found.add(parsePsshPayload(payload))
+                } else {
+                    buffer.position(buffer.position() + payloadSize)
+                }
+            }
+
+            return found
+        }
+
+        private fun parsePsshPayload(payload: ByteArray): PSSH {
+            val b = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN)
+
+            if (b.remaining() < 20) throw InvalidBoxException("PSSH payload too small to contain required fields.")
+
+            val version = b.get().toInt() and 0xFF
+
+            val flagsBytes = ByteArray(3)
+            b.get(flagsBytes)
+            val flags = (flagsBytes[0].toInt() and 0xFF shl 16) or
+                    (flagsBytes[1].toInt() and 0xFF shl 8) or
+                    (flagsBytes[2].toInt() and 0xFF)
+
+            val systemId = readUuid(b)
+
+            val keyIds = mutableListOf<UUID>()
+
+            Logger.d("ktvine") { "PSSH box version: $version" }
+            if (version > 1) throw InvalidBoxException("Unsupported PSSH version: $version")
+
+            if (version == 1) {
+                if (b.remaining() < 4) throw InvalidBoxException("PSSH payload too small to contain key ID count")
+
+                val keyCount = readUint32(b).toInt()
+                Logger.d("ktvine") { "PSSH box key count: $keyCount" }
+
+                if (b.remaining() < keyCount * 16) throw InvalidBoxException("PSSH payload too small to contain $keyCount key IDs")
+
+                repeat(keyCount) { keyIds.add(readUuid(b)) }
+            }
+
+            if (b.remaining() < 4) throw InvalidBoxException("PSSH payload too small to contain data size")
+            val dataSize = readUint32(b).toInt()
+
+            if (b.remaining() < dataSize) throw InvalidBoxException("PSSH payload too small to contain data")
+            val data = ByteArray(dataSize)
+            b.get(data)
+
+            Logger.i("ktvine") { "Successfully parsed PSSH box data" }
+            return PSSH(systemId.toByteArray(), version, flags, keyIds, data)
+        }
+
+        private fun readUint32(buffer: ByteBuffer): Long {
+            return buffer.int.toLong() and 0xFFFFFFFFL
+        }
+
+        private fun readFourCC(buffer: ByteBuffer): String {
+            val chars = ByteArray(4)
+            buffer.get(chars)
+            return chars.toUTF8()
+        }
+
+        private fun readUuid(buffer: ByteBuffer): UUID {
+            val msb = buffer.long
+            val lsb = buffer.long
+            return UUID(msb, lsb)
+        }
         val WIDEVINE: ByteArray = UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed").toByteArray()
         val PLAYREADY_SYSTEM_ID: ByteArray = UUID.fromString("9A04F079-9840-4286-AB92-E65BE0885F95").toByteArray()
 

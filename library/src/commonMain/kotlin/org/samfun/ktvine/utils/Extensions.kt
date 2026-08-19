@@ -141,3 +141,16 @@ fun escapeXml(value: String): String = buildString(value.length) {
         }
     }
 }
+
+/** True when [needle] occurs anywhere in this array. */
+fun ByteArray.containsSubarray(needle: ByteArray): Boolean {
+    if (needle.isEmpty()) return true
+    if (needle.size > size) return false
+    outer@ for (start in 0..(size - needle.size)) {
+        for (i in needle.indices) {
+            if (this[start + i] != needle[i]) continue@outer
+        }
+        return true
+    }
+    return false
+}
