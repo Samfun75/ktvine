@@ -76,6 +76,13 @@ class CdmProxyIntegrationTest {
                 Triple("00000000-0000-0000-0000-000000000007", "79b8734fb98d275a907a6a5a150128bb", "HD"),
             )
 
+            // The parsed license itself must be reachable, not just its keys.
+            val parsedLicense = cdm.getLicense(sessionId)
+            assertTrue(parsedLicense != null, "parseLicense should retain the decoded License")
+            assertTrue(parsedLicense.key.isNotEmpty(), "license should carry key containers")
+            assertTrue(parsedLicense.policy != null, "license should carry a policy")
+            println("License policy: ${parsedLicense.policy}")
+
             // Scoped to CONTENT: the license also carries a keyless SIGNING key, whose
             // absent KID legitimately maps to the nil UUID and would shadow KID ...0000.
             val contentKeys = cdm.getKeys(sessionId, License.KeyContainer.KeyType.CONTENT)

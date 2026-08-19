@@ -4,6 +4,7 @@ import kotlinx.coroutines.sync.Mutex
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.crypto.randomBytes
+import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.proto.SignedDrmCertificate
 
 /** Internal session state used by [org.samfun.ktvine.cdm.Cdm]. */
@@ -19,4 +20,6 @@ class Session(val number: Int) {
     val context: MutableMap<ByteString, Pair<ByteArray, ByteArray>> = mutableMapOf()
     /** Decrypted keys available after a successful [org.samfun.ktvine.cdm.Cdm.parseLicense] call. */
     val keys: MutableList<Key> = mutableListOf()
+    /** The most recently parsed license, kept so callers can read its policy and id. */
+    var license: License? = null
 }

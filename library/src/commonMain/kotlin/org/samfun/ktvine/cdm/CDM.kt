@@ -380,6 +380,7 @@ class Cdm(
         s.lock.withLock {
             s.keys.clear()
             s.keys.addAll(parsed)
+            s.license = license
             // drop used context for this request
             s.context.remove(requestId)
         }
@@ -437,6 +438,18 @@ class Cdm(
         val macKeyServer = derive(macContext, 1) + derive( macContext, 2)
         val macKeyClient = derive( macContext, 3) + derive(macContext, 4)
         return Triple(encKey, macKeyServer, macKeyClient)
+    }
+
+    /**
+     * The license parsed by the most recent [parseLicense] call for this session, or `null`
+     * when none has been parsed.
+     *
+     * Read `policy` for `can_persist`, `can_renew`, `rental_duration_seconds`,
+     * `renewal_server_url` and friends; offline and download flows need those.
+     */
+    suspend fun getLicense(sessionId: ByteString): License? {
+        val s = session(sessionId)
+        return s.lock.withLock { s.license }
     }
 
     /**
