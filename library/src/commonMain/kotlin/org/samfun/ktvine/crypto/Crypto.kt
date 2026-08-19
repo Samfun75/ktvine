@@ -5,8 +5,8 @@ package org.samfun.ktvine.crypto
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.*
+import dev.whyoleg.cryptography.random.CryptographyRandom
 import java.security.spec.X509EncodedKeySpec
-import kotlin.random.Random
 
 private val crypto = CryptographyProvider.Default
 
@@ -85,9 +85,10 @@ suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
 }
 
 /** Generate [count] cryptographically strong random bytes. */
-fun randomBytes(count: Int): ByteArray {
-    return Random.nextBytes(count)
-}
+fun randomBytes(count: Int): ByteArray = CryptographyRandom.nextBytes(count)
+
+/** Generate a cryptographically strong random [Int] in `[from, until)`. */
+fun randomInt(from: Int, until: Int): Int = CryptographyRandom.nextInt(from, until)
 
 /** Apply PKCS#7 padding to [data] for [blockSize] bytes (default 16). */
 fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {

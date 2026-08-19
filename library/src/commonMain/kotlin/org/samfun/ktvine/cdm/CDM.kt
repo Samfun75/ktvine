@@ -9,7 +9,6 @@ import org.samfun.ktvine.core.*
 import org.samfun.ktvine.crypto.*
 import org.samfun.ktvine.proto.*
 import org.samfun.ktvine.utils.*
-import kotlin.random.Random
 
 /**
  * Widevine CDM helper that can:
@@ -211,7 +210,7 @@ class Cdm(
             type = LicenseRequest.RequestType.NEW,
             request_time = requestTime,
             protocol_version = ProtocolVersion.VERSION_2_1,
-            key_control_nonce = Random.nextInt(),
+            key_control_nonce = randomInt(1, Int.MAX_VALUE),
             encrypted_client_id = encryptedClientId
         )
 
