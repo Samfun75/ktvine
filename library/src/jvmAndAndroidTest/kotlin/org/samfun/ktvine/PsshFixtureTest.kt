@@ -64,4 +64,19 @@ class PsshFixtureTest {
 
         assertEquals(listOf(defaultKidOf(manifest)), pssh.keyIds().map { it.toString() })
     }
+
+    @Test
+    fun `test the playready encryption scheme survives conversion to widevine`() {
+        val pssh = psshFrom("playlist/cr.mpd", "cenc:pssh")
+
+        // cr.mpd carries a document-level <PROTECTINFO><ALGID>AESCTR</ALGID>.
+        assertEquals("AESCTR", pssh.encryptionScheme)
+
+        pssh.toWidevine()
+        assertEquals(
+            "AESCTR",
+            pssh.encryptionScheme,
+            "toWidevine used to drop the scheme and hardcode AESCTR"
+        )
+    }
 }

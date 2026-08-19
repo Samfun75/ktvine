@@ -66,6 +66,39 @@ class PSSH {
     }
 
     /**
+     * Encryption scheme this header declares, e.g. `AESCTR` or `AESCBC`, or `null` when the
+     * header does not say.
+     *
+     * PlayReady spells it `ALGID` — document-level under `<PROTECTINFO>` in v4.0.0.0, and
+     * per-KID from v4.2.0.0 on. Widevine spells it `protection_scheme`, a 4CC packed into a
+     * uint32. It used to be dropped on conversion and replaced with a hardcoded AESCTR.
+     */
+    val encryptionScheme: String?
+        get() = when {
+            _systemId.contentEquals(PLAYREADY_SYSTEM_ID) -> playreadyAlgid()
+            else -> runCatching { widevineScheme() }.getOrNull()
+        }
+
+    private fun playreadyAlgid(): String? {
+        val xml = runCatching { playreadyHeaderXml() }.getOrNull() ?: return null
+        // Per-KID form first (v4.2.0.0+), then the document-level element (v4.0.0.0).
+        return Regex("""<KID\b[^>]*\bALGID=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
+            .find(xml)?.groupValues?.get(1)?.trim()
+            ?: Regex("""<ALGID>([^<]+)</ALGID>""", RegexOption.IGNORE_CASE)
+                .find(xml)?.groupValues?.get(1)?.trim()
+    }
+
+    private fun widevineScheme(): String? {
+        val header = WidevinePsshData.ADAPTER.decode(_content)
+        header.protection_scheme?.let { return fourCcToScheme(it) }
+        return when (header.algorithm) {
+            WidevinePsshData.Algorithm.AESCTR -> "AESCTR"
+            WidevinePsshData.Algorithm.UNENCRYPTED -> "UNENCRYPTED"
+            null -> null
+        }
+    }
+
+    /**
      * Get all Key IDs from within the Box or Init Data, wherever possible.
      *
      * Supports:
@@ -103,7 +136,8 @@ class PSSH {
         }
     }
 
-    private fun playreadyKeyIds(): List<UUID> {
+    /** The record-type 0x01 PlayReady header of this box's PRO, as text. */
+    private fun playreadyHeaderXml(): String {
         val proData = Buffer().write(_content)
         val size = try {
             proData.readIntLe()
@@ -120,35 +154,38 @@ class PSSH {
             val prrValue = proData.readByteArray(prrLength.toLong())
             // Type 0x03 is the Embedded License Store, which this library does not handle.
             if (prrType != 0x01) return@repeat
-
-            val xml = prrValue.decodeToStringUtf16LE()
-            // Anchored to the element: an unanchored `version="..."` matches the
-            // `<?xml version="1.0"?>` declaration many packagers emit.
-            val version = Regex("""<WRMHEADER\b[^>]*\bversion=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
-                .find(xml)?.groupValues?.get(1)
-                ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
-
-            val keyIdsB64: List<String> = when (version) {
-                "4.0.0.0" -> Regex("""<KID[^>]*>([^<]+)</KID>""", RegexOption.IGNORE_CASE)
-                    .findAll(xml)
-                    .map { it.groupValues[1].trim() }
-                    .toList()
-
-                "4.1.0.0", "4.2.0.0", "4.3.0.0" -> Regex(
-                    """<KID\b[^>]*\bVALUE=\"([^\"]+)\"""",
-                    RegexOption.IGNORE_CASE
-                )
-                    .findAll(xml)
-                    .map { it.groupValues[1].trim() }
-                    .toList()
-
-                else -> throw ValueException("Unsupported PlayReadyHeader version $version")
-            }
-
-            return keyIdsB64.map { b64 -> Base64.decode(b64).uuidFromLittleEndian() }
+            return prrValue.decodeToStringUtf16LE()
         }
 
         throw ValueException("no PlayReadyHeader within the object")
+    }
+
+    private fun playreadyKeyIds(): List<UUID> {
+        val xml = playreadyHeaderXml()
+        // Anchored to the element: an unanchored `version="..."` matches the
+        // `<?xml version="1.0"?>` declaration many packagers emit.
+        val version = Regex("""<WRMHEADER\b[^>]*\bversion=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
+            .find(xml)?.groupValues?.get(1)
+            ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
+
+        val keyIdsB64: List<String> = when (version) {
+            "4.0.0.0" -> Regex("""<KID[^>]*>([^<]+)</KID>""", RegexOption.IGNORE_CASE)
+                .findAll(xml)
+                .map { it.groupValues[1].trim() }
+                .toList()
+
+            "4.1.0.0", "4.2.0.0", "4.3.0.0" -> Regex(
+                """<KID\b[^>]*\bVALUE=\"([^\"]+)\"""",
+                RegexOption.IGNORE_CASE
+            )
+                .findAll(xml)
+                .map { it.groupValues[1].trim() }
+                .toList()
+
+            else -> throw ValueException("Unsupported PlayReadyHeader version $version")
+        }
+
+        return keyIdsB64.map { b64 -> Base64.decode(b64).uuidFromLittleEndian() }
     }
 
 
@@ -159,9 +196,14 @@ class PSSH {
         if (_systemId.contentEquals(WIDEVINE)) throw ValueException("This is already a Widevine PSSH")
 
         val kids = keyIds()
+        val scheme = encryptionScheme
         val widevine = WidevinePsshData(
             key_ids = kids.map { it.toByteArray().toByteString() },
-            algorithm = WidevinePsshData.Algorithm.AESCTR
+            // The deprecated `algorithm` enum only knows AESCTR, so anything else is carried
+            // by `protection_scheme` alone.
+            algorithm = if (scheme == null || scheme.equals("AESCTR", ignoreCase = true))
+                WidevinePsshData.Algorithm.AESCTR else null,
+            protection_scheme = schemeToFourCc(scheme)
         )
 
         if (_version == 1) _keyIds = kids
@@ -191,8 +233,9 @@ class PSSH {
             append("<WRMHEADER xmlns=\"http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader\" version=\"4.3.0.0\">")
             append("<DATA>")
             append("<PROTECTINFO><KIDS>")
+            val algid = escapeXml(encryptionScheme ?: "AESCTR")
             keyIds().forEach { kid ->
-                append("<KID ALGID=\"AESCTR\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>")
+                append("<KID ALGID=\"$algid\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>")
             }
             append("</KIDS></PROTECTINFO>")
             laUrl?.let { append("<LA_URL>${escapeXml(it)}</LA_URL>") }
@@ -308,6 +351,28 @@ class PSSH {
     }
 
     companion object {
+
+        // WidevinePsshData.protection_scheme packs a 4CC into a uint32; see the proto.
+        private const val FOURCC_CENC = 0x63656E63 // 'cenc', AES-CTR
+        private const val FOURCC_CBC1 = 0x63626331 // 'cbc1', AES-CBC
+        private const val FOURCC_CENS = 0x63656E73 // 'cens', AES-CTR pattern encryption
+        private const val FOURCC_CBCS = 0x63626373 // 'cbcs', AES-CBC pattern encryption
+
+        private fun fourCcToScheme(fourCc: Int): String? = when (fourCc) {
+            FOURCC_CENC -> "AESCTR"
+            FOURCC_CBC1 -> "AESCBC"
+            FOURCC_CENS -> "AESCTRPATTERN"
+            FOURCC_CBCS -> "AESCBCPATTERN"
+            else -> null
+        }
+
+        private fun schemeToFourCc(scheme: String?): Int? = when (scheme?.uppercase()) {
+            "AESCTR" -> FOURCC_CENC
+            "AESCBC" -> FOURCC_CBC1
+            "AESCTRPATTERN" -> FOURCC_CENS
+            "AESCBCPATTERN" -> FOURCC_CBCS
+            else -> null
+        }
 
         private val WRMHEADER_CLOSE_TAG = "</WRMHEADER>".encodeToUtf16LE()
 

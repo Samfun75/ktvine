@@ -385,4 +385,36 @@ class PSSHTest {
         )
         assertNull(PSSH.fromInitSegment(widevine.export(), PSSH.PLAYREADY_SYSTEM_ID))
     }
+
+    @Test
+    fun `test a non-default encryption scheme is preserved both ways`() {
+        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val cbc = WidevinePsshData(
+            key_ids = listOf(k1.toByteArray().toByteString()),
+            protection_scheme = 0x63626331 // 'cbc1'
+        )
+        val pssh = PSSH.new(systemId = WV_UUID, initData = cbc, version = 0)
+        assertEquals("AESCBC", pssh.encryptionScheme)
+
+        pssh.toPlayready()
+        assertTrue(
+            readPlayreadyHeader(pssh.initData).contains("ALGID=\"AESCBC\""),
+            "toPlayready hardcoded AESCTR: " + readPlayreadyHeader(pssh.initData)
+        )
+        assertEquals("AESCBC", pssh.encryptionScheme)
+
+        pssh.toWidevine()
+        assertEquals("AESCBC", pssh.encryptionScheme, "the scheme must survive the round trip")
+        assertEquals(setOf(k1), pssh.keyIds().toSet())
+    }
+
+    @Test
+    fun `test a header without a scheme reports null`() {
+        val pssh = PSSH.new(
+            systemId = WV_UUID,
+            initData = WidevinePsshData(key_ids = listOf(UUID(0, 1).toByteArray().toByteString())),
+            version = 0
+        )
+        assertNull(pssh.encryptionScheme)
+    }
 }
