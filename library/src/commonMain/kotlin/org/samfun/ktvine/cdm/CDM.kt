@@ -249,7 +249,7 @@ class Cdm(
         val init = pssh.initData
         if (init.isEmpty()) throw InvalidInitDataException("A pssh must be provided.")
 
-        val requestId: ByteString = randomBytes(16).toByteString()
+        val requestId: ByteString = buildRequestId(s.number)
         val requestTime = System.currentTimeMillis() / 1000
 
         val serviceCertificate = s.lock.withLock { s.serviceCertificate }
@@ -383,6 +383,20 @@ class Cdm(
             // drop used context for this request
             s.context.remove(requestId)
         }
+    }
+
+    /**
+     * OEMCrypto on Android emits the request id as an AES-CTR counter block stored as a
+     * 32-character uppercase hex string, e.g. `A0DCE548000000000500000000000000`. Some
+     * services fingerprint that shape, so it is worth reproducing.
+     */
+    private fun buildRequestId(sessionNumber: Int): ByteString {
+        if (deviceType != DeviceTypes.ANDROID) return randomBytes(16).toByteString()
+
+        val counter = ByteArray(8) { i -> (sessionNumber.toLong() ushr (8 * i)).toByte() }
+        val block = randomBytes(4) + ByteArray(4) + counter
+        // 16 bytes of data, but 32 bytes on the wire.
+        return block.toHexString().uppercase().encodeToByteArray().toByteString()
     }
 
     private fun deriveContext(message: ByteArray): Pair<ByteArray, ByteArray> {
