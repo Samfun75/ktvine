@@ -281,7 +281,8 @@ class Cdm(
         // Compute HMAC over optional oemcrypto_core_message prefix + msg, as per OEMCrypto v16+
         val core = sm.oemcrypto_core_message?.toByteArray() ?: ByteArray(0)
         val computedSig = hmacSha256(macKeyServer, core + sm.msg.toByteArray())
-        if (!computedSig.contentEquals(sm.signature!!.toByteArray())) throw SignatureMismatchException("Signature Mismatch on License Message, rejecting license")
+        if (!constantTimeEquals(computedSig, sm.signature!!.toByteArray()))
+            throw SignatureMismatchException("Signature Mismatch on License Message, rejecting license")
 
         // Load Keys from license
         s.keys.clear()

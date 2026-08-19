@@ -91,6 +91,17 @@ fun randomBytes(count: Int): ByteArray = CryptographyRandom.nextBytes(count)
 /** Generate a cryptographically strong random [Int] in `[from, until)`. */
 fun randomInt(from: Int, until: Int): Int = CryptographyRandom.nextInt(from, until)
 
+/**
+ * Compare two byte arrays without an early exit, so the position of the first differing
+ * byte is not observable through timing. Lengths are still compared directly.
+ */
+fun constantTimeEquals(a: ByteArray, b: ByteArray): Boolean {
+    if (a.size != b.size) return false
+    var diff = 0
+    for (i in a.indices) diff = diff or (a[i].toInt() xor b[i].toInt())
+    return diff == 0
+}
+
 /** Apply PKCS#7 padding to [data] for [blockSize] bytes (default 16). */
 fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
     require(blockSize in 1..255) { "Invalid block size $blockSize" }

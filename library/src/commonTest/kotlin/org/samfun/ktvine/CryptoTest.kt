@@ -1,5 +1,6 @@
 package org.samfun.ktvine
 
+import org.samfun.ktvine.crypto.constantTimeEquals
 import org.samfun.ktvine.crypto.pkcs7Pad
 import org.samfun.ktvine.crypto.pkcs7Unpad
 import org.samfun.ktvine.crypto.randomBytes
@@ -9,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CryptoTest {
@@ -77,5 +79,20 @@ class CryptoTest {
     fun `test pkcs7 unpad accepts a full block of padding`() {
         val fullBlock = ByteArray(16) { 16 }
         assertEquals(0, pkcs7Unpad(fullBlock).size)
+    }
+
+    @Test
+    fun `test constant time equals agrees with contentEquals`() {
+        val a = byteArrayOf(1, 2, 3, 4)
+        assertTrue(constantTimeEquals(a, byteArrayOf(1, 2, 3, 4)))
+        assertTrue(constantTimeEquals(ByteArray(0), ByteArray(0)))
+
+        assertFalse(constantTimeEquals(a, byteArrayOf(9, 2, 3, 4)), "differs in the first byte")
+        assertFalse(constantTimeEquals(a, byteArrayOf(1, 2, 3, 9)), "differs in the last byte")
+        assertFalse(constantTimeEquals(a, byteArrayOf(1, 2, 3)), "differs in length")
+        assertFalse(constantTimeEquals(a, ByteArray(0)))
+
+        // Sign extension must not make 0x00 and 0x80 compare equal.
+        assertFalse(constantTimeEquals(byteArrayOf(0), byteArrayOf(0x80.toByte())))
     }
 }
