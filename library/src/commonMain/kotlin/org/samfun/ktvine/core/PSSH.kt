@@ -88,6 +88,8 @@ class PSSH {
                 .find(xml)?.groupValues?.get(1)?.trim()
     }
 
+    // `algorithm` is deprecated in the schema but still the only signal some packagers emit.
+    @Suppress("DEPRECATION")
     private fun widevineScheme(): String? {
         val header = WidevinePsshData.ADAPTER.decode(_content)
         header.protection_scheme?.let { return fourCcToScheme(it) }
@@ -196,6 +198,7 @@ class PSSH {
         if (_systemId.contentEquals(WIDEVINE)) throw ValueException("This is already a Widevine PSSH")
 
         val kids = keyIds()
+        @Suppress("DEPRECATION")
         val scheme = encryptionScheme
         val widevine = WidevinePsshData(
             key_ids = kids.map { it.toByteArray().toByteString() },

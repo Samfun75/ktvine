@@ -1,6 +1,8 @@
 package org.samfun.ktvine.cdm
 
 import co.touchlab.kermit.Logger
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.ByteString
@@ -28,6 +30,7 @@ import org.samfun.ktvine.utils.*
  *
  * This class is Kotlin Multiplatform and uses the same protobuf models as pywidevine.
  */
+@OptIn(ExperimentalTime::class)
 class Cdm(
     private val deviceType: DeviceTypes,
     private val clientId: ClientIdentification,
@@ -282,7 +285,7 @@ class Cdm(
         if (init.isEmpty()) throw InvalidInitDataException("A pssh must be provided.")
 
         val requestId: ByteString = buildRequestId(s.number)
-        val requestTime = System.currentTimeMillis() / 1000
+        val requestTime = Clock.System.now().epochSeconds
 
         val serviceCertificate = s.lock.withLock { s.serviceCertificate }
         val encryptedClientId = if (serviceCertificate != null && privacyMode) {
@@ -417,10 +420,7 @@ class Cdm(
                 parsed.add(Key.fromContainer(kc, encKey))
             } catch (error: Throwable) {
                 // ignore malformed keys
-                Logger.e("ktvine") {
-                    "Error parsing key container: ${error.message}"
-                }
-                error.printStackTrace()
+                Logger.e("ktvine", error) { "Error parsing key container: ${error.message}" }
             }
         }
 
