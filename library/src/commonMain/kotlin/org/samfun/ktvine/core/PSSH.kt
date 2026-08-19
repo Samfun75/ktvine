@@ -87,7 +87,10 @@ class PSSH {
                     if (prrType != 0x01) return@repeat
 
                     val xml = prrValue.decodeToStringUtf16LE()
-                    val version = Regex("""version=\"([^\"]+)\"""").find(xml)?.groupValues?.get(1)
+                    // Anchored to the element: an unanchored `version="..."` matches the
+                    // `<?xml version="1.0"?>` declaration many packagers emit.
+                    val version = Regex("""<WRMHEADER\b[^>]*\bversion=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
+                        .find(xml)?.groupValues?.get(1)
                         ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
 
                     val keyIdsB64: List<String> = when (version) {

@@ -69,6 +69,13 @@ class PSSHTest {
         error("No PlayReadyHeader record in PRO")
     }
 
+    /** Same header, prefixed with the XML declaration many packagers emit. */
+    private fun makeProXmlV43WithDeclaration(vararg kids: UUID): ByteArray {
+        val declared = "<?xml version=" + '"'.toString() + "1.0" + '"'.toString() +
+            " encoding=" + '"'.toString() + "utf-16" + '"'.toString() + "?>"
+        return (declared + makeProXmlV43(*kids).decodeToStringUtf16LE()).encodeToUtf16LE()
+    }
+
     private fun proWrapSingleRecord(prHeaderUtf16Le: ByteArray): ByteArray {
         val recordCount = 1.toLEU16()
         val type = (0x01).toLEU16()
@@ -198,5 +205,16 @@ class PSSHTest {
         val kids = pssh.keyIds()
         assertEquals(1, kids.size)
         assertEquals(kid, kids.first())
+    }
+
+    @Test
+    fun `test play ready header parses despite an xml declaration`() {
+        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val pro = proWrapSingleRecord(makeProXmlV43WithDeclaration(k1))
+        val pssh = PSSH.new(systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(), initData = pro)
+
+        // An unanchored version regex matches the declaration's version="1.0" first and
+        // then rejects the header as an unsupported version.
+        assertEquals(setOf(k1), pssh.keyIds().toSet())
     }
 }
