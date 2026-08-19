@@ -5,8 +5,11 @@ import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.DeviceTypes
 import org.samfun.ktvine.proto.ClientIdentification
 import org.samfun.ktvine.proto.SignedMessage
+import org.samfun.ktvine.utils.KtvineException
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
 class CdmConstantsJvmTest {
@@ -47,6 +50,44 @@ class CdmConstantsJvmTest {
 
             val staging = cdm.open()
             assertEquals("staging.google.com", cdm.setServiceCertificate(staging, Cdm.STAGING_PRIVACY_CERT))
+        }
+    }
+
+    @Test
+    fun `test both wrapped and bare certificates resolve to the same provider`() {
+        runBlocking {
+            val cdm = cdm()
+
+            // The bundled constants are SignedMessage-wrapped SignedDrmCertificates.
+            val wrapped = Base64.decode(Cdm.COMMON_PRIVACY_CERT)
+            val unwrapped = SignedMessage.ADAPTER.decode(wrapped)
+            assertEquals(SignedMessage.MessageType.SERVICE_CERTIFICATE, unwrapped.type)
+            val bare = unwrapped.msg!!.toByteArray()
+
+            val viaWrapper = cdm.open()
+            assertEquals("license.widevine.com", cdm.setServiceCertificate(viaWrapper, wrapped))
+
+            // A bare SignedDrmCertificate also decodes as a SignedMessage; only comparing
+            // the re-encoding against the input keeps this on the right branch.
+            val viaBare = cdm.open()
+            assertEquals("license.widevine.com", cdm.setServiceCertificate(viaBare, bare))
+
+            assertEquals(
+                cdm.getServiceCertificate(viaWrapper),
+                cdm.getServiceCertificate(viaBare),
+                "both forms must store the same SignedDrmCertificate"
+            )
+        }
+    }
+
+    @Test
+    fun `test a corrupt certificate is rejected`() {
+        runBlocking {
+            val cdm = cdm()
+            val sessionId = cdm.open()
+            assertFailsWith<KtvineException> {
+                cdm.setServiceCertificate(sessionId, byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8))
+            }
         }
     }
 }

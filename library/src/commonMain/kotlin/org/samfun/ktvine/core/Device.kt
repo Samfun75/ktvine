@@ -10,8 +10,8 @@ import org.samfun.ktvine.proto.ClientIdentification
 import org.samfun.ktvine.proto.DrmCertificate
 import org.samfun.ktvine.proto.FileHashes
 import org.samfun.ktvine.proto.SignedDrmCertificate
-import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.ValueException
+import org.samfun.ktvine.utils.decodeExact
 import org.samfun.ktvine.utils.orDecodeError
 import java.io.ByteArrayOutputStream
 
@@ -282,28 +282,6 @@ class Device(
             writeU16be(clientIdBytes.size)
             out.write(clientIdBytes)
             return out.toByteArray()
-        }
-
-        /**
-         * Decode a protobuf message and reject a partial parse.
-         *
-         * Wire, like protobuf generally, will happily decode a prefix of a malformed blob;
-         * comparing the re-encoding is how pywidevine catches that.
-         */
-        private inline fun <T> decodeExact(bytes: ByteArray, what: String, decode: (ByteArray) -> T): T {
-            val message = try {
-                decode(bytes)
-            } catch (e: Throwable) {
-                throw DecodeException("Failed to parse $what, $e")
-            }
-            val reEncoded = when (message) {
-                is com.squareup.wire.Message<*, *> -> message.encode()
-                else -> null
-            }
-            if (reEncoded != null && !reEncoded.contentEquals(bytes)) {
-                throw DecodeException("Failed to parse $what, partial parse")
-            }
-            return message
         }
     }
 }

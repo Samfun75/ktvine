@@ -165,37 +165,24 @@ class Cdm(
                 ).provider_id
             }
         }
-        // try parse SignedMessage wrapping SignedDrmCertificate, else direct SignedDrmCertificate
-        val signedOrRaw = try {
-            SignedMessage.ADAPTER.decode(certificate)
-        } catch (_: Throwable) {
-            null
-        }
-        val signedCert = if (signedOrRaw != null && signedOrRaw.msg != null) {
-            try {
-                SignedDrmCertificate.ADAPTER.decode(signedOrRaw.msg)
-            } catch (e: Throwable) {
-                throw DecodeException(
-                    "Could not parse certificate as SignedDrmCertificate in SignedMessage, $e"
-                )
+        // A bare SignedDrmCertificate also decodes as a SignedMessage, so only trust the
+        // wrapper when re-encoding reproduces the input exactly (devine-dl/pywidevine#41).
+        // Checking `msg != null` alone picks the wrong branch for some certificates.
+        val wrapper = decodeExactOrNull(certificate) { SignedMessage.ADAPTER.decode(it) }
+        val signedCert = if (wrapper?.msg != null) {
+            decodeExact(wrapper.msg!!.toByteArray(), "certificate as SignedDrmCertificate in SignedMessage") {
+                SignedDrmCertificate.ADAPTER.decode(it)
             }
         } else {
-            try {
-                SignedDrmCertificate.ADAPTER.decode(certificate)
-            } catch (e: Throwable) {
-                throw DecodeException(
-                    "Could not parse certificate as SignedDrmCertificate, $e"
-                )
+            decodeExact(certificate, "certificate as SignedDrmCertificate") {
+                SignedDrmCertificate.ADAPTER.decode(it)
             }
         }
+
         val certBytes = signedCert.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
         val certSignature = signedCert.signature.orDecodeError("SignedDrmCertificate.signature")
-        val drmCert = try {
-            DrmCertificate.ADAPTER.decode(certBytes)
-        } catch (e: Throwable) {
-            throw DecodeException(
-                "Could not parse signed certificate's message as a DrmCertificate, $e"
-            )
+        val drmCert = decodeExact(certBytes.toByteArray(), "signed certificate's message as a DrmCertificate") {
+            DrmCertificate.ADAPTER.decode(it)
         }
 
         // Verify signature using root cert public key
