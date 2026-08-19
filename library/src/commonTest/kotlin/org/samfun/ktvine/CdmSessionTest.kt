@@ -1,5 +1,6 @@
 package org.samfun.ktvine
 
+import kotlinx.coroutines.test.runTest
 import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.DeviceTypes
 import org.samfun.ktvine.proto.ClientIdentification
@@ -15,7 +16,7 @@ class CdmSessionTest {
     private fun cdm() = Cdm(DeviceTypes.ANDROID, ClientIdentification(), ByteArray(0))
 
     @Test
-    fun `test open refuses more than the documented session limit`() {
+    fun `test open refuses more than the documented session limit`() = runTest {
         val cdm = cdm()
         val ids = List(Cdm.MAX_NUM_OF_SESSIONS) { cdm.open() }
 
@@ -29,7 +30,7 @@ class CdmSessionTest {
     }
 
     @Test
-    fun `test close rejects an unknown session id`() {
+    fun `test close rejects an unknown session id`() = runTest {
         val cdm = cdm()
         val id = cdm.open()
         cdm.close(id)
@@ -37,7 +38,7 @@ class CdmSessionTest {
     }
 
     @Test
-    fun `test getKeys rejects an unknown session id`() {
+    fun `test getKeys rejects an unknown session id`() = runTest {
         assertFailsWith<InvalidSessionException> { cdm().getKeys(cdm().open()) }
     }
 }

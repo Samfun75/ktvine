@@ -1,5 +1,6 @@
 package org.samfun.ktvine.core
 
+import kotlinx.coroutines.sync.Mutex
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.crypto.randomBytes
@@ -7,6 +8,9 @@ import org.samfun.ktvine.proto.SignedDrmCertificate
 
 /** Internal session state used by [org.samfun.ktvine.cdm.Cdm]. */
 class Session(val number: Int) {
+    /** Serialises operations on this session's mutable state. Never held across [Cdm]'s own lock. */
+    internal val lock: Mutex = Mutex()
+
     /** Randomly generated session id. */
     val id: ByteString = randomBytes(16).toByteString()
     /** Optional service certificate configured for privacy mode. */

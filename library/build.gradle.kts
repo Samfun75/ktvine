@@ -53,6 +53,7 @@ kotlin {
                 //put your multiplatform dependencies here
                 api(libs.wire.runtime)
                 implementation(libs.bundles.cryptography)
+                implementation(libs.coroutines.core)
                 implementation(libs.kermit)
             }
         }
@@ -60,6 +61,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.coroutines.core)
+                implementation(libs.coroutines.test)
             }
         }
         // Shared by the two JVM-family test source sets so fixture loading is written once.

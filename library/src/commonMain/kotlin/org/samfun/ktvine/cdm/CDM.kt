@@ -1,6 +1,8 @@
 package org.samfun.ktvine.cdm
 
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okio.ByteString
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
@@ -36,6 +38,14 @@ class Cdm(
     // Monotonic: `sessions.size + 1` repeats a number after any close/open cycle, and the
     // number becomes load-bearing once the Android request id is derived from it.
     private var sessionCounter = 0
+
+    // Guards the map and the counter only. Session-scoped work takes Session.lock instead,
+    // and the two are never held at the same time, so the pair cannot deadlock.
+    private val sessionsLock = Mutex()
+
+    private suspend fun session(sessionId: ByteString): Session =
+        sessionsLock.withLock { sessions[sessionId] }
+            ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
 
     companion object {
         /** Maximum number of concurrently open sessions. */
@@ -83,14 +93,14 @@ class Cdm(
      * @return unique session identifier
      * @throws TooManySessionsException when [MAX_NUM_OF_SESSIONS] sessions are already open
      */
-    fun open(): ByteString {
+    suspend fun open(): ByteString = sessionsLock.withLock {
         // pywidevine compares with `>`, which lets a 17th session through; that is a bug,
         // and diverging from it is deliberate.
         if (sessions.size >= MAX_NUM_OF_SESSIONS)
             throw TooManySessionsException("Too many Sessions open ($MAX_NUM_OF_SESSIONS).")
         val s = Session(++sessionCounter)
         sessions[s.id] = s
-        return s.id
+        s.id
     }
 
     /**
@@ -98,8 +108,11 @@ class Cdm(
      * @param sessionId id returned by [open]
      * @throws InvalidSessionException if the id is unknown
      */
-    fun close(sessionId: ByteString) {
-        sessions.remove(sessionId) ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
+    suspend fun close(sessionId: ByteString) {
+        sessionsLock.withLock {
+            sessions.remove(sessionId)
+                ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
+        }
     }
 
     /**
@@ -115,10 +128,11 @@ class Cdm(
      * @throws SignatureMismatchException if the certificate signature is invalid
      */
     suspend fun setServiceCertificate(sessionId: ByteString, certificate: ByteArray?): String? {
-        val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
+        val s = session(sessionId)
         if (certificate == null) {
-            val prev = s.serviceCertificate
-            s.serviceCertificate = null
+            val prev = s.lock.withLock {
+                s.serviceCertificate.also { s.serviceCertificate = null }
+            }
             return prev?.let {
                 DrmCertificate.ADAPTER.decode(
                     it.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
@@ -166,7 +180,7 @@ class Cdm(
         )
         if (!ok) throw SignatureMismatchException("Signature Mismatch on SignedDrmCertificate, rejecting certificate")
 
-        s.serviceCertificate = signedCert
+        s.lock.withLock { s.serviceCertificate = signedCert }
         return drmCert.provider_id
     }
 
@@ -183,9 +197,9 @@ class Cdm(
     /**
      * Get the currently configured service certificate for a session, if any.
      */
-    fun getServiceCertificate(sessionId: ByteString): SignedDrmCertificate? {
-        val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
-        return s.serviceCertificate
+    suspend fun getServiceCertificate(sessionId: ByteString): SignedDrmCertificate? {
+        val s = session(sessionId)
+        return s.lock.withLock { s.serviceCertificate }
     }
 
     /**
@@ -205,14 +219,14 @@ class Cdm(
         licenseType: LicenseType = LicenseType.STREAMING,
         privacyMode: Boolean = true
     ): ByteArray {
-        val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
+        val s = session(sessionId)
         val init = pssh.initData
         if (init.isEmpty()) throw InvalidInitDataException("A pssh must be provided.")
 
         val requestId: ByteString = randomBytes(16).toByteString()
         val requestTime = System.currentTimeMillis() / 1000
 
-        val serviceCertificate = s.serviceCertificate
+        val serviceCertificate = s.lock.withLock { s.serviceCertificate }
         val encryptedClientId = if (serviceCertificate != null && privacyMode) {
             val drm = DrmCertificate.ADAPTER.decode(
                 serviceCertificate.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
@@ -256,7 +270,7 @@ class Cdm(
         )
 
         val (encCtx, macCtx) = deriveContext(encodedLr)
-        s.context[requestId] = encCtx to macCtx
+        s.lock.withLock { s.context[requestId] = encCtx to macCtx }
 
         return sm.encode()
     }
@@ -273,7 +287,7 @@ class Cdm(
      * @throws SignatureMismatchException if MAC verification fails
      */
     suspend fun parseLicense(sessionId: ByteString, licenseMessage: ByteArray) {
-        val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
+        val s = session(sessionId)
         if (licenseMessage.isEmpty()) throw InvalidLicenseMessageException("Cannot parse an empty license_message")
 
         val sm = try {
@@ -307,7 +321,7 @@ class Cdm(
         // Expect a matching request context from prior getLicenseChallenge
         val requestId = license.id?.request_id
             ?: throw InvalidLicenseMessageException("License is missing its id.request_id")
-        val (encCtx, macCtx) = s.context[requestId]
+        val (encCtx, macCtx) = s.lock.withLock { s.context[requestId] }
             ?: throw InvalidContextException("Cannot parse a license message without first making a license request")
 
         // Unwrap session key and derive enc/mac keys
@@ -324,10 +338,10 @@ class Cdm(
             throw SignatureMismatchException("Signature Mismatch on License Message, rejecting license")
 
         // Load Keys from license
-        s.keys.clear()
+        val parsed = mutableListOf<Key>()
         for (kc in license.key) {
             try {
-                s.keys.add(Key.fromContainer(kc, encKey))
+                parsed.add(Key.fromContainer(kc, encKey))
             } catch (error: Throwable) {
                 // ignore malformed keys
                 Logger.e("ktvine") {
@@ -336,8 +350,13 @@ class Cdm(
                 error.printStackTrace()
             }
         }
-        // drop used context for this request
-        s.context.remove(requestId)
+
+        s.lock.withLock {
+            s.keys.clear()
+            s.keys.addAll(parsed)
+            // drop used context for this request
+            s.context.remove(requestId)
+        }
     }
 
     private fun deriveContext(message: ByteArray): Pair<ByteArray, ByteArray> {
@@ -383,8 +402,8 @@ class Cdm(
     /**
      * Convenience to get decrypted keys for the session. Optionally filter by [License.KeyContainer.KeyType].
      */
-    fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key> {
-        val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
-        return s.keys.filter { type == null || it.type == type.name }
+    suspend fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key> {
+        val s = session(sessionId)
+        return s.lock.withLock { s.keys.filter { type == null || it.type == type.name } }
     }
 }
