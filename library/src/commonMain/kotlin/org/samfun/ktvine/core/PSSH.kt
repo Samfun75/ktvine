@@ -153,27 +153,22 @@ class PSSH {
     ) {
         if (_systemId.contentEquals(PLAYREADY_SYSTEM_ID)) throw ValueException("This is already a PlayReady PSSH")
 
-        val keyIdsXml = keyIds().joinToString("") { kid ->
-            val b64 = Base64.encode(kid.toByteArray())
-            """
-            <KID ALGID="AESCTR" VALUE="$b64"></KID>
-            """.trimIndent()
-        }
-
-        val prrValue = """
-        <WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.3.0.0">
-            <DATA>
-                <PROTECTINFO>
-                    <KIDS>$keyIdsXml</KIDS>
-                </PROTECTINFO>
-                ${laUrl?.let { "<LA_URL>$it</LA_URL>" } ?: ""}
-                ${luiUrl?.let { "<LUI_URL>$it</LUI_URL>" } ?: ""}
-                ${dsId?.let { "<DS_ID>${Base64.encode(it)}</DS_ID>" } ?: ""}
-                ${decryptorSetup?.let { "<DECRYPTORSETUP>$it</DECRYPTORSETUP>" } ?: ""}
-                ${customData?.let { "<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>" } ?: ""}
-            </DATA>
-        </WRMHEADER>
-        """.trimIndent().encodeToUtf16LE()
+        val prrValue = buildString {
+            append("<WRMHEADER xmlns=\"http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader\" version=\"4.3.0.0\">")
+            append("<DATA>")
+            append("<PROTECTINFO><KIDS>")
+            keyIds().forEach { kid ->
+                append("<KID ALGID=\"AESCTR\" VALUE=\"${Base64.encode(kid.toByteArray())}\"></KID>")
+            }
+            append("</KIDS></PROTECTINFO>")
+            laUrl?.let { append("<LA_URL>$it</LA_URL>") }
+            luiUrl?.let { append("<LUI_URL>$it</LUI_URL>") }
+            dsId?.let { append("<DS_ID>${Base64.encode(it)}</DS_ID>") }
+            decryptorSetup?.let { append("<DECRYPTORSETUP>$it</DECRYPTORSETUP>") }
+            customData?.let { append("<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>") }
+            append("</DATA>")
+            append("</WRMHEADER>")
+        }.encodeToUtf16LE()
 
         val body = ByteArrayOutputStream().apply {
             write(1.toLEU16())              // record count

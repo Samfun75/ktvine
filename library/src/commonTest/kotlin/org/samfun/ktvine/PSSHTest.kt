@@ -2,9 +2,13 @@ package org.samfun.ktvine
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.samfun.ktvine.proto.WidevinePsshData
+import okio.Buffer
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.core.PSSH
+import org.samfun.ktvine.utils.decodeToStringUtf16LE
 import org.samfun.ktvine.utils.encodeToUtf16LE
 import org.samfun.ktvine.utils.toByteArray
 import org.samfun.ktvine.utils.toLEU16
@@ -47,6 +51,20 @@ class PSSHTest {
         </WRMHEADER>
         """.trimIndent().encodeToUtf16LE()
         return xml
+    }
+
+    /** Unwrap a PRO and return its record-type 0x01 PlayReady header as text. */
+    private fun readPlayreadyHeader(pro: ByteArray): String {
+        val buf = Buffer().write(pro)
+        assertEquals(pro.size, buf.readIntLe(), "PRO length prefix does not match its own size")
+        val recordCount = buf.readShortLe().toInt() and 0xFFFF
+        repeat(recordCount) {
+            val type = buf.readShortLe().toInt() and 0xFFFF
+            val length = buf.readShortLe().toInt() and 0xFFFF
+            val value = buf.readByteArray(length.toLong())
+            if (type == 0x01) return value.decodeToStringUtf16LE()
+        }
+        error("No PlayReadyHeader record in PRO")
     }
 
     private fun proWrapSingleRecord(prHeaderUtf16Le: ByteArray): ByteArray {
@@ -127,6 +145,46 @@ class PSSHTest {
         // WV header content should contain k2,k3 as well
         val reparsed = PSSH(pssh.export())
         assertEquals(listOf(k2, k3), reparsed.keyIds())
+    }
+
+    @Test
+    fun `test to play ready omits absent optional fields`() {
+        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
+
+        pssh.toPlayready()
+
+        val xml = readPlayreadyHeader(pssh.initData)
+        assertFalse(xml.contains("null"), "Generated PlayReady header leaked a null literal: $xml")
+        assertFalse(xml.contains("<LA_URL>"), "LA_URL emitted despite being absent: $xml")
+        assertFalse(xml.contains("<LUI_URL>"), "LUI_URL emitted despite being absent: $xml")
+        assertFalse(xml.contains("<DS_ID>"), "DS_ID emitted despite being absent: $xml")
+        assertFalse(xml.contains("<DECRYPTORSETUP>"), "DECRYPTORSETUP emitted despite being absent: $xml")
+        assertFalse(xml.contains("<CUSTOMATTRIBUTES"), "CUSTOMATTRIBUTES emitted despite being absent: $xml")
+
+        assertEquals(setOf(k1), pssh.keyIds().toSet())
+    }
+
+    @Test
+    fun `test to play ready emits present optional fields`() {
+        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
+
+        pssh.toPlayready(
+            laUrl = "https://license.example.com",
+            luiUrl = "https://ui.example.com",
+            dsId = byteArrayOf(1, 2, 3, 4),
+            decryptorSetup = "ONDEMAND",
+            customData = "<tag>v</tag>"
+        )
+
+        val xml = readPlayreadyHeader(pssh.initData)
+        assertFalse(xml.contains("null"), "Generated PlayReady header leaked a null literal: $xml")
+        assertTrue(xml.contains("<LA_URL>https://license.example.com</LA_URL>"), xml)
+        assertTrue(xml.contains("<LUI_URL>https://ui.example.com</LUI_URL>"), xml)
+        assertTrue(xml.contains("<DS_ID>${Base64.encode(byteArrayOf(1, 2, 3, 4))}</DS_ID>"), xml)
+        assertTrue(xml.contains("<DECRYPTORSETUP>ONDEMAND</DECRYPTORSETUP>"), xml)
+        assertTrue(xml.contains("<CUSTOMATTRIBUTES xmlns=\"\"><tag>v</tag></CUSTOMATTRIBUTES>"), xml)
     }
 
     @Test
