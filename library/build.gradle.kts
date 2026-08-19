@@ -51,17 +51,18 @@ kotlin {
             android = true
         }
     }
-//    iosX64()
-//    iosArm64()
-//    iosSimulatorArm64()
-//    linuxX64()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+    linuxX64()
 
     sourceSets {
         val commonMain by getting {
             dependencies {
                 //put your multiplatform dependencies here
                 api(libs.wire.runtime)
-                implementation(libs.bundles.cryptography)
+                implementation(libs.cryptography.core)
+                implementation(libs.cryptography.provider.optimal)
                 implementation(libs.coroutines.core)
                 implementation(libs.kermit)
             }

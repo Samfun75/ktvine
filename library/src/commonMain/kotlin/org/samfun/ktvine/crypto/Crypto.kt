@@ -52,11 +52,57 @@ suspend fun rsaOaepDecrypt(privateKeyDer: ByteArray, data: ByteArray): ByteArray
     return privateKey.decryptor().decrypt(data)
 }
 
-/** Compute AES-CMAC over [data] with a raw AES [key]. */
+private val ZERO_IV = ByteArray(16)
+private const val CMAC_RB = 0x87
+
+/**
+ * Compute AES-CMAC (RFC 4493) over [data] with a raw AES [key].
+ *
+ * Implemented here rather than via `AES.CMAC` because no provider offers CMAC on every
+ * target: BouncyCastle covers JVM/Android and OpenSSL3 covers Linux, but neither Apple
+ * provider in cryptography-kotlin 0.5.0 has it. CMAC is CBC-MAC with a tweaked final
+ * block, so AES-CBC — which every provider does have — is enough to build it.
+ */
 suspend fun aesCmac(key: ByteArray, data: ByteArray): ByteArray {
-    val cmac = crypto.get(AES.CMAC)
-    val generator = cmac.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, key).signatureGenerator()
-    return generator.generateSignature(data)
+    // L = AES-ECB(K, 0^128); a single CBC block with a zero IV is the same thing.
+    val l = aesCbcEncryptNoPadding(key, ZERO_IV, ZERO_IV)
+    val k1 = shiftLeftWithRb(l)
+    val k2 = shiftLeftWithRb(k1)
+
+    val complete = data.isNotEmpty() && data.size % 16 == 0
+    val blockCount = if (complete) data.size / 16 else data.size / 16 + 1
+
+    val message = ByteArray(blockCount * 16)
+    data.copyInto(message)
+
+    val lastStart = (blockCount - 1) * 16
+    if (!complete) {
+        // Pad the final partial block with 0x80 then zeros.
+        message[data.size] = 0x80.toByte()
+    }
+    val subkey = if (complete) k1 else k2
+    for (i in 0 until 16) {
+        message[lastStart + i] = (message[lastStart + i].toInt() xor subkey[i].toInt()).toByte()
+    }
+
+    // CBC over the whole message with a zero IV chains the blocks; the MAC is the last one.
+    val encrypted = aesCbcEncryptNoPadding(key, ZERO_IV, message)
+    return encrypted.copyOfRange(encrypted.size - 16, encrypted.size)
+}
+
+/** One-bit left shift, XORing in the Rb constant when the high bit was set (RFC 4493 §2.3). */
+private fun shiftLeftWithRb(input: ByteArray): ByteArray {
+    val out = ByteArray(16)
+    var carry = 0
+    for (i in 15 downTo 0) {
+        val value = input[i].toInt() and 0xFF
+        out[i] = ((value shl 1) or carry).toByte()
+        carry = value ushr 7
+    }
+    if ((input[0].toInt() and 0x80) != 0) {
+        out[15] = (out[15].toInt() xor CMAC_RB).toByte()
+    }
+    return out
 }
 
 /** AES-CBC decrypt with PKCS#7 padding handling determined by cipher. */
