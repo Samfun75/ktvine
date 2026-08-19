@@ -11,3 +11,11 @@ xcuserdata
 .kotlin
 #So we don't accidentally commit our private keys
 *.gpg
+
+# Widevine device fixtures — real provisioning material, never commit
+*.wvd
+*.pem
+client_id.bin
+library/src/commonTest/kotlin/org/samfun/ktvine/device/
+library/src/commonTest/resources/device/*
+!library/src/commonTest/resources/device/README.md
