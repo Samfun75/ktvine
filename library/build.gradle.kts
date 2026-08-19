@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.androidLibrary
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -72,6 +73,30 @@ kotlin {
             dependsOn(jvmAndAndroidTest)
         }
     }
+}
+
+// Tests that reach the network live in *IntegrationTest classes; `check` must stay hermetic.
+val integrationTestPattern = "org.samfun.ktvine.*IntegrationTest"
+
+tasks.named<Test>("jvmTest") {
+    filter {
+        excludeTestsMatching(integrationTestPattern)
+        isFailOnNoMatchingTests = false
+    }
+}
+
+tasks.register<Test>("integrationTest") {
+    group = "verification"
+    description = "Runs tests that talk to live license servers. Requires network access and device fixtures."
+    val jvmTest = tasks.named<Test>("jvmTest")
+    testClassesDirs = files(jvmTest.map { it.testClassesDirs })
+    classpath = files(jvmTest.map { it.classpath })
+    dependsOn("jvmTestClasses")
+    filter {
+        includeTestsMatching(integrationTestPattern)
+        isFailOnNoMatchingTests = false
+    }
+    outputs.upToDateWhen { false }
 }
 
 wire {
