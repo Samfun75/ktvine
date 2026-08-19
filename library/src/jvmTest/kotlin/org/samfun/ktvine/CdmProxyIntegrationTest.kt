@@ -5,7 +5,9 @@ import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.Device
 import org.samfun.ktvine.core.PSSH
 import org.samfun.ktvine.proto.License
+import org.samfun.ktvine.proto.LicenseRequest
 import org.samfun.ktvine.proto.LicenseType
+import org.samfun.ktvine.proto.SignedMessage
 import org.samfun.ktvine.utils.toHexString
 import java.net.HttpURLConnection
 import java.net.URI
@@ -74,6 +76,25 @@ class CdmProxyIntegrationTest {
                 Triple("00000000-0000-0000-0000-000000000005", "9ac3036e04ac9d2be946ed62405149bc", "SD"),
                 Triple("00000000-0000-0000-0000-000000000006", "3145985824334ec4cb4ac4bdc3e2beef", "SD"),
                 Triple("00000000-0000-0000-0000-000000000007", "79b8734fb98d275a907a6a5a150128bb", "HD"),
+            )
+
+            // A renewal must reference the license just parsed, not the content.
+            val renewalChallenge = cdm.getLicenseChallenge(
+                sessionId,
+                pssh,
+                requestType = LicenseRequest.RequestType.RENEWAL
+            )
+            val renewal = LicenseRequest.ADAPTER.decode(
+                SignedMessage.ADAPTER.decode(renewalChallenge).msg!!
+            )
+            assertEquals(LicenseRequest.RequestType.RENEWAL, renewal.type)
+            assertTrue(
+                renewal.content_id!!.widevine_pssh_data == null,
+                "a renewal identifies the license, not the content"
+            )
+            assertEquals(
+                cdm.getLicense(sessionId)!!.id,
+                renewal.content_id!!.existing_license!!.license_id
             )
 
             // The parsed license itself must be reachable, not just its keys.

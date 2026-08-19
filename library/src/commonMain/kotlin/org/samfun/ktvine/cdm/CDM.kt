@@ -235,15 +235,21 @@ class Cdm(
      * @param pssh parsed or raw init data holder
      * @param licenseType type of license to request (e.g., STREAMING)
      * @param privacyMode if true and a service certificate is set, send encrypted client id
+     * @param requestType NEW for a first request; RENEWAL or RELEASE reference the license
+     *   already parsed for this session rather than the content
      * @return the serialized SignedMessage(LICENSE_REQUEST)
      * @throws InvalidSessionException if the session id is invalid
      * @throws InvalidInitDataException if pssh init data is empty
+     * @throws InvalidContextException if a RENEWAL or RELEASE is requested before a license
+     *   has been parsed for this session
+     * @throws ValueException if a RENEWAL is requested but the policy forbids it
      */
     suspend fun getLicenseChallenge(
         sessionId: ByteString,
         pssh: PSSH,
         licenseType: LicenseType = LicenseType.STREAMING,
-        privacyMode: Boolean = true
+        privacyMode: Boolean = true,
+        requestType: LicenseRequest.RequestType = LicenseRequest.RequestType.NEW
     ): ByteArray {
         val s = session(sessionId)
         val init = pssh.initData
@@ -260,16 +266,27 @@ class Cdm(
             encryptClientId(clientId, drm)
         } else null
 
-        val lr = LicenseRequest(
-            client_id = if (encryptedClientId == null) clientId else null,
-            content_id = LicenseRequest.ContentIdentification(
+        val contentId = when (requestType) {
+            LicenseRequest.RequestType.NEW -> LicenseRequest.ContentIdentification(
                 widevine_pssh_data = LicenseRequest.ContentIdentification.WidevinePsshData(
                     pssh_data = listOf(init.toByteString()),
                     license_type = licenseType,
                     request_id = requestId
                 )
-            ),
-            type = LicenseRequest.RequestType.NEW,
+            )
+
+            // RENEWAL and RELEASE identify the license already held, not the content.
+            else -> LicenseRequest.ContentIdentification(
+                existing_license = LicenseRequest.ContentIdentification.ExistingLicense(
+                    license_id = existingLicenseId(s, requestType)
+                )
+            )
+        }
+
+        val lr = LicenseRequest(
+            client_id = if (encryptedClientId == null) clientId else null,
+            content_id = contentId,
+            type = requestType,
             request_time = requestTime,
             protocol_version = ProtocolVersion.VERSION_2_1,
             key_control_nonce = randomInt(1, Int.MAX_VALUE),
@@ -287,6 +304,10 @@ class Cdm(
         }
 
         val encodedLr = lr.encode()
+        // Signed with the device key for every request type: license_protocol.proto says the
+        // algorithm for a request is "determined by the certificate contained in the request",
+        // and the session-key HMAC applies to responses. Renewals are untested against a real
+        // server, so this is deliberately not switched to macKeyClient.
         val signature = rsaPssSignSha1(privateKeyDer, encodedLr)
 
         val sm = SignedMessage(
@@ -355,7 +376,7 @@ class Cdm(
             privateKeyDer,
             sm.session_key.orDecodeError("SignedMessage.session_key").toByteArray()
         )
-        val (encKey, macKeyServer, _) = deriveKeys(encCtx, macCtx, sessionKey)
+        val (encKey, macKeyServer, macKeyClient) = deriveKeys(encCtx, macCtx, sessionKey)
 
         // Compute HMAC over optional oemcrypto_core_message prefix + msg, as per OEMCrypto v16+
         val core = sm.oemcrypto_core_message?.toByteArray() ?: ByteArray(0)
@@ -381,9 +402,32 @@ class Cdm(
             s.keys.clear()
             s.keys.addAll(parsed)
             s.license = license
+            s.macKeyClient = macKeyClient
             // drop used context for this request
             s.context.remove(requestId)
         }
+    }
+
+    /**
+     * The `LicenseIdentification` of the license already held by this session.
+     *
+     * @throws InvalidContextException if no license has been parsed for the session
+     * @throws ValueException if the license's policy does not permit renewal
+     */
+    private suspend fun existingLicenseId(
+        s: Session,
+        requestType: LicenseRequest.RequestType
+    ): LicenseIdentification {
+        val license = s.lock.withLock { s.license }
+            ?: throw InvalidContextException(
+                "A $requestType request needs a parsed license; call parseLicense first."
+            )
+
+        if (requestType == LicenseRequest.RequestType.RENEWAL && license.policy?.can_renew != true) {
+            throw ValueException("This license's policy does not allow renewal.")
+        }
+
+        return license.id.orDecodeError("License.id")
     }
 
     /**
