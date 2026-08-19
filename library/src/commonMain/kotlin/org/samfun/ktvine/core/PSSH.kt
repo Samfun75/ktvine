@@ -60,67 +60,79 @@ class PSSH {
     fun keyIds(): List<UUID> {
         if (_version == 1 && _keyIds.isNotEmpty()) return _keyIds
 
-        // 1) Try Widevine CENC header regardless of system_id
-        try {
-            val header = WidevinePsshData.ADAPTER.decode(_content)
-            return header.key_ids.map {
-                when (it.size) {
-                    16 -> it.uuidFromByteString()
-                    32 -> it.uuidFromHexByteString() // stored as hex
-                    else -> it.uuidFromByteArray() // assuming stored as number
-                }
+        // Dispatch on system_id rather than guessing. Whether a PRO happens to fail
+        // protobuf decoding depends on whether its leading little-endian size byte forms
+        // an invalid tag, so try-Widevine-first only worked by luck.
+        if (_systemId.contentEquals(PLAYREADY_SYSTEM_ID)) return playreadyKeyIds()
+        if (_systemId.contentEquals(WIDEVINE)) return widevineKeyIds()
+
+        // Unknown system id: the box may still carry either header, so try both.
+        return runCatching { widevineKeyIds() }.getOrNull()
+            ?: runCatching { playreadyKeyIds() }.getOrNull()
+            ?: throw ValueException("This PSSH is not supported by key_ids(), ${exportBase64()}")
+    }
+
+    private fun widevineKeyIds(): List<UUID> {
+        val header = try {
+            WidevinePsshData.ADAPTER.decode(_content)
+        } catch (e: Throwable) {
+            throw DecodeException("Could not parse init data as a WidevineCencHeader, $e")
+        }
+        return header.key_ids.map {
+            when (it.size) {
+                16 -> it.uuidFromByteString()
+                32 -> it.uuidFromHexByteString() // stored as hex
+                else -> it.uuidFromByteArray() // assuming stored as number
             }
-        } catch (_: Throwable) {
-            // ignore and try PlayReady
+        }
+    }
+
+    private fun playreadyKeyIds(): List<UUID> {
+        val proData = Buffer().write(_content)
+        val size = try {
+            proData.readIntLe()
+        } catch (e: Throwable) {
+            throw DecodeException("The PlayReadyObject seems to be corrupt, $e")
+        }
+        if (size != _content.size)
+            throw ValueException("The PlayReadyObject seems to be corrupt (declares $size bytes, has ${_content.size})")
+
+        val proRecordCount = proData.readShortLe().toInt() and 0xFFFF
+        repeat(proRecordCount) {
+            val prrType = proData.readShortLe().toInt() and 0xFFFF
+            val prrLength = proData.readShortLe().toInt() and 0xFFFF
+            val prrValue = proData.readByteArray(prrLength.toLong())
+            // Type 0x03 is the Embedded License Store, which this library does not handle.
+            if (prrType != 0x01) return@repeat
+
+            val xml = prrValue.decodeToStringUtf16LE()
+            // Anchored to the element: an unanchored `version="..."` matches the
+            // `<?xml version="1.0"?>` declaration many packagers emit.
+            val version = Regex("""<WRMHEADER\b[^>]*\bversion=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
+                .find(xml)?.groupValues?.get(1)
+                ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
+
+            val keyIdsB64: List<String> = when (version) {
+                "4.0.0.0" -> Regex("""<KID[^>]*>([^<]+)</KID>""", RegexOption.IGNORE_CASE)
+                    .findAll(xml)
+                    .map { it.groupValues[1].trim() }
+                    .toList()
+
+                "4.1.0.0", "4.2.0.0", "4.3.0.0" -> Regex(
+                    """<KID\b[^>]*\bVALUE=\"([^\"]+)\"""",
+                    RegexOption.IGNORE_CASE
+                )
+                    .findAll(xml)
+                    .map { it.groupValues[1].trim() }
+                    .toList()
+
+                else -> throw ValueException("Unsupported PlayReadyHeader version $version")
+            }
+
+            return keyIdsB64.map { b64 -> Base64.decode(b64).uuidFromLittleEndian() }
         }
 
-        // 2) Try PlayReadyObject (PRO)
-        try {
-            val proData = Buffer().write(_content)
-            val size = proData.readIntLe()
-            if (size == _content.size) {
-                val proRecordCount = proData.readShortLe().toInt() and 0xFFFF
-                repeat(proRecordCount) {
-                    val prrType = proData.readShortLe().toInt() and 0xFFFF
-                    val prrLength = proData.readShortLe().toInt() and 0xFFFF
-                    val prrValue = proData.readByteArray(prrLength.toLong())
-                    if (prrType != 0x01) return@repeat
-
-                    val xml = prrValue.decodeToStringUtf16LE()
-                    // Anchored to the element: an unanchored `version="..."` matches the
-                    // `<?xml version="1.0"?>` declaration many packagers emit.
-                    val version = Regex("""<WRMHEADER\b[^>]*\bversion=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
-                        .find(xml)?.groupValues?.get(1)
-                        ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
-
-                    val keyIdsB64: List<String> = when (version) {
-                        "4.0.0.0" -> Regex("""<KID[^>]*>([^<]+)</KID>""", RegexOption.IGNORE_CASE)
-                            .findAll(xml)
-                            .map { it.groupValues[1].trim() }
-                            .toList()
-
-                        "4.1.0.0", "4.2.0.0", "4.3.0.0" -> Regex(
-                            """<KID\b[^>]*\bVALUE=\"([^\"]+)\"""",
-                            RegexOption.IGNORE_CASE
-                        )
-                            .findAll(xml)
-                            .map { it.groupValues[1].trim() }
-                            .toList()
-
-                        else -> throw ValueException("Unsupported PlayReadyHeader version $version")
-                    }
-
-                    return keyIdsB64.map { b64 -> Base64.decode(b64).uuidFromLittleEndian() }
-                }
-            }
-        } catch (_: Throwable) {
-            // ignore and continue
-        }
-
-        // 3) Fallback: if v1 PSSH and key IDs present in box
-        if (_version == 1 && _keyIds.isNotEmpty()) return _keyIds
-
-        throw ValueException("This PSSH is not supported by key_ids(), ${exportBase64()}")
+        throw ValueException("no PlayReadyHeader within the object")
     }
 
 

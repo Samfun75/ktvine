@@ -254,4 +254,47 @@ class PSSHTest {
         // u16 record length: silently truncating here produced a corrupt PRO.
         assertFailsWith<ValueException> { pssh.toPlayready(laUrl = "x".repeat(40_000)) }
     }
+
+    @Test
+    fun `test corrupt playready object reports why`() {
+        // Size prefix disagrees with the actual length.
+        val corrupt = 999.toLEU32() + 1.toLEU16() + (0x01).toLEU16() + 0.toLEU16()
+        val pssh = PSSH.new(systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(), initData = corrupt)
+
+        val failure = assertFailsWith<ValueException> { pssh.keyIds() }
+        assertTrue(
+            failure.message!!.contains("corrupt"),
+            "expected a corrupt-PRO message, got: " + failure.message
+        )
+    }
+
+    @Test
+    fun `test playready object without a header record reports why`() {
+        // One record, but of type 0x03 (Embedded License Store) rather than the header.
+        val body = 1.toLEU16() + (0x03).toLEU16() + 0.toLEU16()
+        val pro = (body.size + 4).toLEU32() + body
+        val pssh = PSSH.new(systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(), initData = pro)
+
+        val failure = assertFailsWith<ValueException> { pssh.keyIds() }
+        assertTrue(
+            failure.message!!.contains("no PlayReadyHeader"),
+            "expected a missing-header message, got: " + failure.message
+        )
+    }
+
+    @Test
+    fun `test unsupported playready version is not swallowed`() {
+        val xml = ("<WRMHEADER version=" + '"'.toString() + "9.9.9.9" + '"'.toString() +
+            "><DATA></DATA></WRMHEADER>").encodeToUtf16LE()
+        val pssh = PSSH.new(
+            systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
+            initData = proWrapSingleRecord(xml)
+        )
+
+        val failure = assertFailsWith<ValueException> { pssh.keyIds() }
+        assertTrue(
+            failure.message!!.contains("9.9.9.9"),
+            "the specific version error used to be swallowed into a generic message, got: " + failure.message
+        )
+    }
 }
