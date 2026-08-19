@@ -33,6 +33,10 @@ class Cdm(
 ) {
     private val sessions = linkedMapOf<ByteString, Session>()
 
+    // Monotonic: `sessions.size + 1` repeats a number after any close/open cycle, and the
+    // number becomes load-bearing once the Android request id is derived from it.
+    private var sessionCounter = 0
+
     companion object {
         /** Maximum number of concurrently open sessions. */
         const val MAX_NUM_OF_SESSIONS: Int = 16
@@ -84,7 +88,7 @@ class Cdm(
         // and diverging from it is deliberate.
         if (sessions.size >= MAX_NUM_OF_SESSIONS)
             throw TooManySessionsException("Too many Sessions open ($MAX_NUM_OF_SESSIONS).")
-        val s = Session(sessions.size + 1)
+        val s = Session(++sessionCounter)
         sessions[s.id] = s
         return s.id
     }
