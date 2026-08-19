@@ -1,6 +1,7 @@
 package org.samfun.ktvine.core
 
 import co.touchlab.kermit.Logger
+import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 import okio.FileSystem
@@ -13,7 +14,6 @@ import org.samfun.ktvine.proto.SignedDrmCertificate
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.decodeExact
 import org.samfun.ktvine.utils.orDecodeError
-import java.io.ByteArrayOutputStream
 
 /**
  * Kotlin Multiplatform representation of a Widevine Device file (WVD).
@@ -270,18 +270,17 @@ class Device(
             clientIdBytes: ByteArray,
             rawFlags: Int = 0
         ): ByteArray {
-            val out = ByteArrayOutputStream()
+            val out = Buffer()
             out.write(MAGIC)
-            out.write(byteArrayOf(2)) // version
-            out.write(byteArrayOf(type.value.toByte()))
-            out.write(byteArrayOf(securityLevel.toByte()))
-            out.write(byteArrayOf(rawFlags.toByte()))
-            fun writeU16be(v: Int) { out.write(byteArrayOf(((v ushr 8) and 0xFF).toByte(), (v and 0xFF).toByte())) }
-            writeU16be(privateKeyDer.size)
+            out.writeByte(2) // version
+            out.writeByte(type.value)
+            out.writeByte(securityLevel)
+            out.writeByte(rawFlags)
+            out.writeShort(privateKeyDer.size)   // okio writes big-endian
             out.write(privateKeyDer)
-            writeU16be(clientIdBytes.size)
+            out.writeShort(clientIdBytes.size)
             out.write(clientIdBytes)
-            return out.toByteArray()
+            return out.readByteArray()
         }
     }
 }

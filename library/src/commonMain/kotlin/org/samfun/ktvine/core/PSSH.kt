@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUuidApi::class)
+
 package org.samfun.ktvine.core
 
 import co.touchlab.kermit.Logger
@@ -7,11 +9,9 @@ import okio.ByteString.Companion.encodeUtf8
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.proto.WidevinePsshData
 import org.samfun.ktvine.utils.*
-import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.UUID
 import kotlin.io.encoding.Base64
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Helper for parsing and building PSSH (Protection System Specific Header) boxes.
@@ -21,7 +21,7 @@ class PSSH {
 
     private var _version: Int = 0
     private var _flags: Int = 0
-    private var _keyIds: List<UUID> = listOf()
+    private var _keyIds: List<Uuid> = listOf()
     private var _systemId: ByteArray = WIDEVINE
     private var _content: ByteArray = ByteArray(0)
 
@@ -57,7 +57,7 @@ class PSSH {
         this._content = box._content
     }
 
-    constructor(systemId: ByteArray, version: Int, flags: Int, keyIds: List<UUID>, content: ByteArray) {
+    constructor(systemId: ByteArray, version: Int, flags: Int, keyIds: List<Uuid>, content: ByteArray) {
         _systemId = systemId
         _flags = flags
         _version = version
@@ -108,7 +108,7 @@ class PSSH {
      * - WidevineCencHeaders
      * - PlayReadyHeaders (4.0.0.0->4.3.0.0)
      */
-    fun keyIds(): List<UUID> {
+    fun keyIds(): List<Uuid> {
         if (_version == 1 && _keyIds.isNotEmpty()) return _keyIds
 
         // Dispatch on system_id rather than guessing. Whether a PRO happens to fail
@@ -123,7 +123,7 @@ class PSSH {
             ?: throw ValueException("This PSSH is not supported by key_ids(), ${exportBase64()}")
     }
 
-    private fun widevineKeyIds(): List<UUID> {
+    private fun widevineKeyIds(): List<Uuid> {
         val header = try {
             WidevinePsshData.ADAPTER.decode(_content)
         } catch (e: Throwable) {
@@ -162,7 +162,7 @@ class PSSH {
         throw ValueException("no PlayReadyHeader within the object")
     }
 
-    private fun playreadyKeyIds(): List<UUID> {
+    private fun playreadyKeyIds(): List<Uuid> {
         val xml = playreadyHeaderXml()
         // Anchored to the element: an unanchored `version="..."` matches the
         // `<?xml version="1.0"?>` declaration many packagers emit.
@@ -253,7 +253,7 @@ class PSSH {
      *
      * @throws ValueException for any other system id
      */
-    fun setKeyIds(keyIds: List<UUID>) {
+    fun setKeyIds(keyIds: List<Uuid>) {
         when {
             _systemId.contentEquals(WIDEVINE) -> {
                 if (_version == 1 || _keyIds.isNotEmpty()) _keyIds = keyIds
@@ -296,38 +296,30 @@ class PSSH {
 
     /** Export the PSSH object as a full PSSH box in bytes form. */
     fun export(): ByteArray {
-        // 1. Calculate the required buffer size
-        val totalSize = calculatePsshSize()
+        val buffer = Buffer()
 
-        // 2. Allocate and set byte order
-        val buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.BIG_ENDIAN)
+        // ISOBMFF Box Header (Size + Type). okio writes big-endian by default.
+        buffer.writeInt(calculatePsshSize())
+        buffer.write("pssh".encodeUtf8())
 
-        // 3. ISOBMFF Box Header (Size + Type)
-        buffer.putInt(totalSize)
-        buffer.put("pssh".encodeUtf8().toByteArray())
+        // FullBox Header (Version + 24-bit Flags)
+        buffer.writeByte(this._version)
+        buffer.writeByte(this._flags shr 16)
+        buffer.writeByte(this._flags shr 8)
+        buffer.writeByte(this._flags)
 
-        // 4. FullBox Header (Version + Flags)
-        buffer.put(this._version.toByte())
+        buffer.write(this._systemId)
 
-        // Write the 24-bit flags
-        buffer.put((this._flags shr 16).toByte())
-        buffer.put((this._flags shr 8).toByte())
-        buffer.put(this._flags.toByte())
-
-        // 5. SystemID
-        writeUuid(buffer, this._systemId.toUUID())
-
-        // 6. Key IDs (Version 1 only)
+        // Key IDs (Version 1 only)
         if (this._version == 1) {
-            buffer.putInt(this._keyIds.size) // KeyIdCount
-            this._keyIds.forEach { writeUuid(buffer, it) }
+            buffer.writeInt(this._keyIds.size)
+            this._keyIds.forEach { buffer.write(it.toByteArray()) }
         }
 
-        // 7. PSSH Data (Size + Data)
-        buffer.putInt(this._content.size) // DataSize
-        buffer.put(this._content)         // Data
+        buffer.writeInt(this._content.size)
+        buffer.write(this._content)
 
-        return buffer.array()
+        return buffer.readByteArray()
     }
 
     private fun calculatePsshSize(): Int {
@@ -345,11 +337,6 @@ class PSSH {
         size += this._content.size // Data bytes
 
         return size
-    }
-
-    private fun writeUuid(buffer: ByteBuffer, uuid: UUID) {
-        buffer.putLong(uuid.mostSignificantBits)
-        buffer.putLong(uuid.leastSignificantBits)
     }
 
     companion object {
@@ -394,7 +381,7 @@ class PSSH {
          * @throws ValueException if the header exceeds the u16 record length limit
          */
         private fun buildPlayreadyPro(
-            keyIds: List<UUID>,
+            keyIds: List<Uuid>,
             algid: String,
             laUrl: String? = null,
             luiUrl: String? = null,
@@ -424,17 +411,17 @@ class PSSH {
             if (prrValue.size > 0xFFFF)
                 throw ValueException("PlayReadyHeader is ${prrValue.size} bytes, over the 65535-byte record limit")
 
-            val body = ByteArrayOutputStream().apply {
-                write(1.toLEU16())              // record count
-                write(0x01.toLEU16())           // type: PlayReadyHeader
-                write(prrValue.size.toLEU16())  // length
+            val body = Buffer().apply {
+                writeShortLe(1)                 // record count
+                writeShortLe(0x01)              // type: PlayReadyHeader
+                writeShortLe(prrValue.size)     // length
                 write(prrValue)
-            }.toByteArray()
+            }.readByteArray()
 
-            return ByteArrayOutputStream().apply {
-                write((body.size + 4).toLEU32())  // total size including this length field
+            return Buffer().apply {
+                writeIntLe(body.size + 4)       // total size including this length field
                 write(body)
-            }.toByteArray()
+            }.readByteArray()
         }
 
         private val WRMHEADER_CLOSE_TAG = "</WRMHEADER>".encodeToUtf16LE()
@@ -495,37 +482,37 @@ class PSSH {
 
         /** Walk an ISOBMFF box sequence and return every `pssh` box found, in order. */
         private fun parseBoxes(bytes: ByteArray): List<PSSH> {
-            Logger.d("ktvine") { "Attempting to parse data as an ISOBMFF box sequence" }
-            val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
+            Logger.v("ktvine") { "Attempting to parse data as an ISOBMFF box sequence" }
+            val buffer = Buffer().write(bytes)
+            val total = bytes.size
             val found = mutableListOf<PSSH>()
 
-            while (buffer.remaining() >= 8) {
-                val startPos = buffer.position()
-                val size = readUint32(buffer)
-                val type = readFourCC(buffer)
+            while (buffer.size >= 8) {
+                val startPos = total - buffer.size
+                val size = buffer.readInt().toLong() and 0xFFFFFFFFL
+                val type = buffer.readByteArray(4).toUTF8()
+                var headerSize = 8L
 
-                var boxSize = size.toLong()
-
-                // 64-bit Size (BoxSize == 1)
+                var boxSize = size
                 if (boxSize == 1L) {
-                    if (buffer.remaining() < 8) break
-                    boxSize = buffer.long
-                    // Last Box Extends to EOF (BoxSize == 0) - common for top-level file
+                    // 64-bit size
+                    if (buffer.size < 8) break
+                    boxSize = buffer.readLong()
+                    headerSize = 16L
                 } else if (boxSize == 0L) {
-                    boxSize = (buffer.limit() - startPos).toLong()
+                    // Last box extends to EOF
+                    boxSize = (total - startPos).toLong()
                 }
 
-                if (boxSize < 8) break // Must have at least Size and Type
+                if (boxSize < headerSize) break
 
-                val payloadSize = (boxSize - (buffer.position() - startPos)).toInt()
-                if (payloadSize < 0 || buffer.remaining() < payloadSize) break
+                val payloadSize = boxSize - headerSize
+                if (payloadSize < 0 || buffer.size < payloadSize) break
 
                 if (type == "pssh") {
-                    val payload = ByteArray(payloadSize)
-                    buffer.get(payload)
-                    found.add(parsePsshPayload(payload))
+                    found.add(parsePsshPayload(buffer.readByteArray(payloadSize)))
                 } else {
-                    buffer.position(buffer.position() + payloadSize)
+                    buffer.skip(payloadSize)
                 }
             }
 
@@ -533,76 +520,58 @@ class PSSH {
         }
 
         private fun parsePsshPayload(payload: ByteArray): PSSH {
-            val b = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN)
+            val b = Buffer().write(payload)
 
-            if (b.remaining() < 20) throw InvalidBoxException("PSSH payload too small to contain required fields.")
+            if (b.size < 20) throw InvalidBoxException("PSSH payload too small to contain required fields.")
 
-            val version = b.get().toInt() and 0xFF
+            val version = b.readByte().toInt() and 0xFF
 
-            val flagsBytes = ByteArray(3)
-            b.get(flagsBytes)
-            val flags = (flagsBytes[0].toInt() and 0xFF shl 16) or
-                    (flagsBytes[1].toInt() and 0xFF shl 8) or
-                    (flagsBytes[2].toInt() and 0xFF)
+            val flags = ((b.readByte().toInt() and 0xFF) shl 16) or
+                ((b.readByte().toInt() and 0xFF) shl 8) or
+                (b.readByte().toInt() and 0xFF)
 
-            val systemId = readUuid(b)
+            val systemId = b.readByteArray(16)
 
-            val keyIds = mutableListOf<UUID>()
+            val keyIds = mutableListOf<Uuid>()
 
-            Logger.d("ktvine") { "PSSH box version: $version" }
+            Logger.v("ktvine") { "PSSH box version: $version" }
             if (version > 1) throw InvalidBoxException("Unsupported PSSH version: $version")
 
             if (version == 1) {
-                if (b.remaining() < 4) throw InvalidBoxException("PSSH payload too small to contain key ID count")
+                if (b.size < 4) throw InvalidBoxException("PSSH payload too small to contain key ID count")
 
-                val keyCount = readUint32(b).toInt()
-                Logger.d("ktvine") { "PSSH box key count: $keyCount" }
+                val keyCount = b.readInt().toLong() and 0xFFFFFFFFL
+                Logger.v("ktvine") { "PSSH box key count: $keyCount" }
 
-                if (b.remaining() < keyCount * 16) throw InvalidBoxException("PSSH payload too small to contain $keyCount key IDs")
+                if (b.size < keyCount * 16) throw InvalidBoxException("PSSH payload too small to contain $keyCount key IDs")
 
-                repeat(keyCount) { keyIds.add(readUuid(b)) }
+                repeat(keyCount.toInt()) { keyIds.add(b.readByteArray(16).toUUID()) }
             }
 
-            if (b.remaining() < 4) throw InvalidBoxException("PSSH payload too small to contain data size")
-            val dataSize = readUint32(b).toInt()
+            if (b.size < 4) throw InvalidBoxException("PSSH payload too small to contain data size")
+            val dataSize = b.readInt().toLong() and 0xFFFFFFFFL
 
-            if (b.remaining() < dataSize) throw InvalidBoxException("PSSH payload too small to contain data")
-            val data = ByteArray(dataSize)
-            b.get(data)
+            if (b.size < dataSize) throw InvalidBoxException("PSSH payload too small to contain data")
+            val data = b.readByteArray(dataSize)
 
-            Logger.i("ktvine") { "Successfully parsed PSSH box data" }
-            return PSSH(systemId.toByteArray(), version, flags, keyIds, data)
+            Logger.v("ktvine") { "Successfully parsed PSSH box data" }
+            return PSSH(systemId, version, flags, keyIds, data)
         }
 
-        private fun readUint32(buffer: ByteBuffer): Long {
-            return buffer.int.toLong() and 0xFFFFFFFFL
-        }
-
-        private fun readFourCC(buffer: ByteBuffer): String {
-            val chars = ByteArray(4)
-            buffer.get(chars)
-            return chars.toUTF8()
-        }
-
-        private fun readUuid(buffer: ByteBuffer): UUID {
-            val msb = buffer.long
-            val lsb = buffer.long
-            return UUID(msb, lsb)
-        }
-        val WIDEVINE: ByteArray = UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed").toByteArray()
-        val PLAYREADY_SYSTEM_ID: ByteArray = UUID.fromString("9A04F079-9840-4286-AB92-E65BE0885F95").toByteArray()
+        val WIDEVINE: ByteArray = Uuid.parse("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed").toByteArray()
+        val PLAYREADY_SYSTEM_ID: ByteArray = Uuid.parse("9A04F079-9840-4286-AB92-E65BE0885F95").toByteArray()
 
 
         /**
          * Convert a list of UUID | String(hex/base64) | ByteArray to UUIDs.
          * @throws ValueException if any item has an unsupported type
          */
-        fun parseKeyIds(keyIds: List<Any>): List<UUID> {
-            if (!keyIds.all { it is UUID || it is String || it is ByteArray })
+        fun parseKeyIds(keyIds: List<Any>): List<Uuid> {
+            if (!keyIds.all { it is Uuid || it is String || it is ByteArray })
                 throw ValueException("Some items of key_ids are not a UUID, String, or ByteArray.")
             return keyIds.map { item ->
                 when (item) {
-                    is UUID -> item
+                    is Uuid -> item
                     is String -> {
                         val isHex = item.all { it in ('0'..'9') || it in ('a'..'f') || it in ('A'..'F') }
                         val bytes = if (isHex) item.decodeHex().toByteArray() else Base64.decode(item)
@@ -621,8 +590,8 @@ class PSSH {
          * - For version 1, provide either keyIds or initData.
          */
         fun new(
-            systemId: UUID,
-            keyIds: List<UUID>? = null,
+            systemId: Uuid,
+            keyIds: List<Uuid>? = null,
             initData: Any? = null,
             version: Int = 0,
             flags: Int = 0

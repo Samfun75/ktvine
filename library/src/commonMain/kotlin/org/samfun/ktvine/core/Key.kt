@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUuidApi::class)
+
 package org.samfun.ktvine.core
 
 import org.samfun.ktvine.crypto.aesCbcDecryptNoPadding
@@ -6,7 +8,8 @@ import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.utils.kidToUuid
 import org.samfun.ktvine.utils.orDecodeError
 import org.samfun.ktvine.utils.toHexString
-import java.util.UUID
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Decrypted content key from a Widevine License.
@@ -14,7 +17,7 @@ import java.util.UUID
  */
 class Key(
     val type: License.KeyContainer.KeyType,
-    val kid: UUID,
+    val kid: Uuid,
     val key: ByteArray,
     val permissions: List<String> = emptyList()
 ) {

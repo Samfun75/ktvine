@@ -1,44 +1,57 @@
+@file:OptIn(ExperimentalUuidApi::class)
+
 package org.samfun.ktvine.utils
 
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
-import java.math.BigInteger
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.UUID
 import kotlin.io.encoding.Base64
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
-/** Decode [String] to utf 16LE [ByteArray]. */
-expect fun String.encodeToUtf16LE(): ByteArray
-
-/** Decode [ByteArray] to string from utf 16LE. */
-expect fun ByteArray.decodeToStringUtf16LE(): String
-
-/** Interpret this [ByteString] as a hex-encoded [UUID] string. */
-expect fun ByteString.uuidFromHexByteString(): UUID
-
-expect fun ByteArray.toUTF8(): String
-
-/** Convert a [UUID] to raw 16-byte array (big-endian). */
-fun UUID.toByteArray(): ByteArray {
-    val msb: Long = this.mostSignificantBits
-    val lsb: Long = this.leastSignificantBits
-    val buffer = ByteArray(16)
-
-    for (i in 0..7) {
-        buffer[i] = (msb ushr 8 * (7 - i)).toByte()
+/** Encode this string as UTF-16LE, two bytes per code unit. */
+fun String.encodeToUtf16LE(): ByteArray {
+    val out = ByteArray(length * 2)
+    for (i in indices) {
+        val c = this[i].code
+        out[i * 2] = (c and 0xFF).toByte()
+        out[i * 2 + 1] = ((c ushr 8) and 0xFF).toByte()
     }
-    for (i in 8..15) {
-        buffer[i] = (lsb ushr 8 * (7 - i)).toByte()
-    }
-
-    return buffer
+    return out
 }
 
-fun ByteArray.toUUID(): UUID {
-    val b = ByteBuffer.wrap(this)
-    b.order(ByteOrder.BIG_ENDIAN)
-    return UUID(b.getLong(), b.getLong())
+/** Decode UTF-16LE bytes back to a string. A trailing odd byte is ignored. */
+fun ByteArray.decodeToStringUtf16LE(): String {
+    val chars = CharArray(size / 2)
+    for (i in chars.indices) {
+        val lo = this[i * 2].toInt() and 0xFF
+        val hi = this[i * 2 + 1].toInt() and 0xFF
+        chars[i] = ((hi shl 8) or lo).toChar()
+    }
+    return chars.concatToString()
+}
+
+/** Interpret this [ByteString] as a hex-encoded [Uuid] string. */
+fun ByteString.uuidFromHexByteString(): Uuid = Uuid.parseHex(utf8())
+
+fun ByteArray.toUTF8(): String = decodeToString()
+
+/** Convert a [Uuid] to raw 16-byte array (big-endian). */
+fun Uuid.toByteArray(): ByteArray = toLongs { most, least ->
+    val buffer = ByteArray(16)
+    for (i in 0..7) {
+        buffer[i] = (most ushr 8 * (7 - i)).toByte()
+        buffer[i + 8] = (least ushr 8 * (7 - i)).toByte()
+    }
+    buffer
+}
+
+fun ByteArray.toUUID(): Uuid {
+    if (size != 16) throw ValueException("A UUID must be exactly 16 bytes, not $size")
+    var most = 0L
+    var least = 0L
+    for (i in 0..7) most = (most shl 8) or (this[i].toLong() and 0xFF)
+    for (i in 8..15) least = (least shl 8) or (this[i].toLong() and 0xFF)
+    return Uuid.fromLongs(most, least)
 }
 
 /**
@@ -59,24 +72,30 @@ fun ByteArray.swapGuidEndianness(): ByteArray {
     return out
 }
 
-/** Read 16 little-endian GUID bytes as a [UUID]. */
-fun ByteArray.uuidFromLittleEndian(): UUID = swapGuidEndianness().toUUID()
+/** Read 16 little-endian GUID bytes as a [Uuid]. */
+fun ByteArray.uuidFromLittleEndian(): Uuid = swapGuidEndianness().toUUID()
 
-/** Write this [UUID] as 16 little-endian GUID bytes. */
-fun UUID.toLittleEndianByteArray(): ByteArray = toByteArray().swapGuidEndianness()
+/** Write this [Uuid] as 16 little-endian GUID bytes. */
+fun Uuid.toLittleEndianByteArray(): ByteArray = toByteArray().swapGuidEndianness()
 
-/** Interpret this [ByteString] as a 16-byte [UUID]. */
-fun ByteString.uuidFromByteString(): UUID = this.toByteArray().toUUID()
+/** Interpret this [ByteString] as a 16-byte [Uuid]. */
+fun ByteString.uuidFromByteString(): Uuid = this.toByteArray().toUUID()
 
-/** Interpret this [ByteString] as a big integer numeric [UUID] representation. */
-fun ByteString.uuidFromByteArray(): UUID {
-    val bigInt = BigInteger(1, this.toByteArray())
-    val (mostSigBits, leastSigBits) = with(bigInt) {
-        val most = shiftRight(64).toLong()
-        val least = and(BigInteger("FFFFFFFFFFFFFFFF", 16)).toLong()
-        most to least
+/**
+ * Interpret this [ByteString] as a big-endian unsigned number widened to a [Uuid].
+ *
+ * Used for KIDs that are neither 16 raw bytes nor 32 hex characters.
+ */
+fun ByteString.uuidFromByteArray(): Uuid {
+    var most = 0L
+    var least = 0L
+    // Only the low 16 bytes fit; anything beyond would overflow a UUID anyway.
+    val bytes = toByteArray().let { if (it.size > 16) it.copyOfRange(it.size - 16, it.size) else it }
+    for (b in bytes) {
+        most = (most shl 8) or (least ushr 56)
+        least = (least shl 8) or (b.toLong() and 0xFF)
     }
-    return UUID(mostSigBits, leastSigBits)
+    return Uuid.fromLongs(most, least)
 }
 
 /** Convert this [Int] to little-endian unsigned 16-bit value [ByteArray]. */
@@ -97,25 +116,24 @@ fun Int.toLEU32(): ByteArray = byteArrayOf(
 fun ByteArray.toHexString(): String = joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
 /**
- * Convert a KID from a License `KeyContainer.id` to a [UUID].
+ * Convert a KID from a License `KeyContainer.id` to a [Uuid].
  *
  * KID bytes are not always 16 raw bytes: some services send a decimal digit string, and
  * some send fewer than 16 bytes. They are never Base64 — decoding them as such (as this
  * did) silently mangles every ASCII or hex-string KID. Use the [String] overload for
  * Base64 input.
  *
- * Returns `UUID(0, 0)` for a missing or empty KID.
+ * Returns the nil UUID for a missing or empty KID.
  */
-fun ByteString?.kidToUuid(): UUID {
+fun ByteString?.kidToUuid(): Uuid {
     var kidBytes = this?.toByteArray()
     if (kidBytes == null || kidBytes.isEmpty()) {
-        return UUID(0, 0)
+        return Uuid.NIL
     }
 
     val asText = kidBytes.toUTF8()
     if (asText.isNotEmpty() && asText.all { it.isDigit() }) {
-        val bi = BigInteger(asText)
-        return UUID(bi.shiftRight(64).toLong(), bi.toLong())
+        return decimalStringToUuid(asText)
     }
 
     if (kidBytes.size < 16) {
@@ -125,8 +143,31 @@ fun ByteString?.kidToUuid(): UUID {
     return kidBytes.toByteString(0, 16).uuidFromByteString()
 }
 
-/** Convert a Base64-encoded KID [String] to a [UUID]. */
-fun String.kidToUuid(): UUID = Base64.decode(this).toByteString().kidToUuid()
+/**
+ * Parse a decimal digit string into a [Uuid], matching pywidevine's `UUID(int=…)`.
+ *
+ * Done by hand across two `Long`s because there is no multiplatform big integer; values
+ * above 2^128 wrap, exactly as truncating to 16 bytes would.
+ */
+private fun decimalStringToUuid(digits: String): Uuid {
+    var most = 0L
+    var least = 0L
+    for (c in digits) {
+        // value = value * 10 + digit, carrying from the low half into the high half.
+        val lo = least and 0xFFFFFFFFL
+        val hi = least ushr 32
+
+        val loProduct = lo * 10L + (c - '0').toLong()
+        val hiProduct = hi * 10L + (loProduct ushr 32)
+
+        least = (hiProduct shl 32) or (loProduct and 0xFFFFFFFFL)
+        most = most * 10L + (hiProduct ushr 32)
+    }
+    return Uuid.fromLongs(most, least)
+}
+
+/** Convert a Base64-encoded KID [String] to a [Uuid]. */
+fun String.kidToUuid(): Uuid = Base64.decode(this).toByteString().kidToUuid()
 
 /** Escape the five XML predefined entities so interpolated text cannot break the document. */
 fun escapeXml(value: String): String = buildString(value.length) {
@@ -140,19 +181,6 @@ fun escapeXml(value: String): String = buildString(value.length) {
             else -> append(c)
         }
     }
-}
-
-/** True when [needle] occurs anywhere in this array. */
-fun ByteArray.containsSubarray(needle: ByteArray): Boolean {
-    if (needle.isEmpty()) return true
-    if (needle.size > size) return false
-    outer@ for (start in 0..(size - needle.size)) {
-        for (i in needle.indices) {
-            if (this[start + i] != needle[i]) continue@outer
-        }
-        return true
-    }
-    return false
 }
 
 /** Reverse of [escapeXml] for the five predefined entities and numeric character references. */
@@ -175,4 +203,17 @@ fun unescapeXml(value: String): String {
             }
         }
     }
+}
+
+/** True when [needle] occurs anywhere in this array. */
+fun ByteArray.containsSubarray(needle: ByteArray): Boolean {
+    if (needle.isEmpty()) return true
+    if (needle.size > size) return false
+    outer@ for (start in 0..(size - needle.size)) {
+        for (i in needle.indices) {
+            if (this[start + i] != needle[i]) continue@outer
+        }
+        return true
+    }
+    return false
 }

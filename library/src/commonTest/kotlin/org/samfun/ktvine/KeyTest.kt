@@ -2,7 +2,7 @@ package org.samfun.ktvine
 
 import org.samfun.ktvine.core.Key
 import org.samfun.ktvine.proto.License
-import java.util.UUID
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 class KeyTest {
 
-    private val kid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private val kid: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000001")
 
     private fun key(
         type: License.KeyContainer.KeyType = License.KeyContainer.KeyType.CONTENT,
@@ -25,7 +25,7 @@ class KeyTest {
 
         assertNotEquals(key(), key(bytes = byteArrayOf(9, 9, 9, 9)))
         assertNotEquals(key(), key(type = License.KeyContainer.KeyType.SIGNING))
-        assertNotEquals(key(), Key(License.KeyContainer.KeyType.CONTENT, UUID(0, 2), byteArrayOf(1, 2, 3, 4)))
+        assertNotEquals(key(), Key(License.KeyContainer.KeyType.CONTENT, Uuid.fromLongs(0, 2), byteArrayOf(1, 2, 3, 4)))
     }
 
     @Test

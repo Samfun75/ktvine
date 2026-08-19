@@ -20,17 +20,17 @@ import org.samfun.ktvine.utils.toLEU32
 import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.toUUID
-import java.util.UUID
+import kotlin.uuid.Uuid
 import kotlin.io.encoding.Base64
 
 class PSSHTest {
 
-    private val WV_UUID: UUID = UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
+    private val WV_UUID: Uuid = Uuid.parse("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
 
-    private fun wvData(vararg kids: UUID): WidevinePsshData =
+    private fun wvData(vararg kids: Uuid): WidevinePsshData =
         WidevinePsshData(key_ids = kids.map { it.toByteArray().toByteString() })
 
-    private fun makeProXmlV43(vararg kids: UUID, withExtras: Boolean = false): ByteArray {
+    private fun makeProXmlV43(vararg kids: Uuid, withExtras: Boolean = false): ByteArray {
         val keyIdsXml = kids.joinToString("") { kid ->
             // Real PlayReady headers carry little-endian GUIDs.
             val b64 = Base64.encode(kid.toLittleEndianByteArray())
@@ -75,7 +75,7 @@ class PSSHTest {
     }
 
     /** Same header, prefixed with the XML declaration many packagers emit. */
-    private fun makeProXmlV43WithDeclaration(vararg kids: UUID): ByteArray {
+    private fun makeProXmlV43WithDeclaration(vararg kids: Uuid): ByteArray {
         val declared = "<?xml version=" + '"'.toString() + "1.0" + '"'.toString() +
             " encoding=" + '"'.toString() + "utf-16" + '"'.toString() + "?>"
         return (declared + makeProXmlV43(*kids).decodeToStringUtf16LE()).encodeToUtf16LE()
@@ -92,8 +92,8 @@ class PSSHTest {
 
     @Test
     fun `test widevine v0 key ids round trip`() {
-        val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
-        val k2 = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        val k1 = Uuid.parse("11111111-2222-3333-4444-555555555555")
+        val k2 = Uuid.parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
         val data = wvData(k1, k2)
 
         val pssh = PSSH.new(
@@ -114,8 +114,8 @@ class PSSHTest {
 
     @Test
     fun `test play ready parsing and to widevine`() {
-        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
-        val k2 = UUID.fromString("00112233-4455-6677-8899-aabbccddeeff")
+        val k1 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
+        val k2 = Uuid.parse("00112233-4455-6677-8899-aabbccddeeff")
         val xml = makeProXmlV43(k1, k2)
         val pro = proWrapSingleRecord(xml)
 
@@ -132,7 +132,7 @@ class PSSHTest {
 
     @Test
     fun `test widevine to play ready and back`() {
-        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val k1 = Uuid.parse("fedcba98-7654-3210-fedc-ba9876543210")
         val data = wvData(k1)
         val pssh = PSSH.new(systemId = WV_UUID, initData = data, version = 0)
 
@@ -146,9 +146,9 @@ class PSSHTest {
 
     @Test
     fun `test set key ids version1`() {
-        val k1 = UUID.fromString("00000000-0000-0000-0000-000000000001")
-        val k2 = UUID.fromString("00000000-0000-0000-0000-000000000002")
-        val k3 = UUID.fromString("00000000-0000-0000-0000-000000000003")
+        val k1 = Uuid.parse("00000000-0000-0000-0000-000000000001")
+        val k2 = Uuid.parse("00000000-0000-0000-0000-000000000002")
+        val k3 = Uuid.parse("00000000-0000-0000-0000-000000000003")
 
         val pssh = PSSH.new(systemId = WV_UUID, keyIds = listOf(k1), version = 1)
         assertEquals(listOf(k1), pssh.keyIds())
@@ -163,7 +163,7 @@ class PSSHTest {
 
     @Test
     fun `test to play ready omits absent optional fields`() {
-        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val k1 = Uuid.parse("fedcba98-7654-3210-fedc-ba9876543210")
         val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
 
         pssh.toPlayready()
@@ -181,7 +181,7 @@ class PSSHTest {
 
     @Test
     fun `test to play ready emits present optional fields`() {
-        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val k1 = Uuid.parse("fedcba98-7654-3210-fedc-ba9876543210")
         val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
 
         pssh.toPlayready(
@@ -203,7 +203,7 @@ class PSSHTest {
 
     @Test
     fun `test key ids from widevine header`() {
-        val kid = UUID.randomUUID()
+        val kid = Uuid.random()
         val header = WidevinePsshData(key_ids = listOf(kid.toByteArray().toByteString()))
         val pssh = PSSH.new(systemId = WV_UUID, initData = header.encode())
 
@@ -214,7 +214,7 @@ class PSSHTest {
 
     @Test
     fun `test play ready header parses despite an xml declaration`() {
-        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val k1 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
         val pro = proWrapSingleRecord(makeProXmlV43WithDeclaration(k1))
         val pssh = PSSH.new(systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(), initData = pro)
 
@@ -225,7 +225,7 @@ class PSSHTest {
 
     @Test
     fun `test to play ready escapes urls with query strings`() {
-        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val k1 = Uuid.parse("fedcba98-7654-3210-fedc-ba9876543210")
         val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
 
         // A bare & here produces XML that will not parse.
@@ -251,7 +251,7 @@ class PSSHTest {
 
     @Test
     fun `test to play ready rejects a header over the record size limit`() {
-        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val k1 = Uuid.parse("fedcba98-7654-3210-fedc-ba9876543210")
         val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
 
         // u16 record length: silently truncating here produced a corrupt PRO.
@@ -303,7 +303,7 @@ class PSSHTest {
 
     @Test
     fun `test bare widevine cenc header is accepted`() {
-        val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
+        val k1 = Uuid.parse("11111111-2222-3333-4444-555555555555")
         val header = wvData(k1).encode()
 
         val pssh = PSSH(header)
@@ -316,7 +316,7 @@ class PSSHTest {
 
     @Test
     fun `test bare playready object is accepted`() {
-        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val k1 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
         val pro = proWrapSingleRecord(makeProXmlV43(k1))
 
         val pssh = PSSH(pro)
@@ -343,8 +343,8 @@ class PSSHTest {
 
     @Test
     fun `test parseAll returns every box in a multi-DRM segment`() {
-        val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
-        val k2 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val k1 = Uuid.parse("11111111-2222-3333-4444-555555555555")
+        val k2 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
 
         val widevine = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
         val playready = PSSH.new(
@@ -364,8 +364,8 @@ class PSSHTest {
 
     @Test
     fun `test fromInitSegment selects by system id`() {
-        val k1 = UUID.fromString("11111111-2222-3333-4444-555555555555")
-        val k2 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val k1 = Uuid.parse("11111111-2222-3333-4444-555555555555")
+        val k2 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
 
         val widevine = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
         val playready = PSSH.new(
@@ -388,7 +388,7 @@ class PSSHTest {
 
     @Test
     fun `test a non-default encryption scheme is preserved both ways`() {
-        val k1 = UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")
+        val k1 = Uuid.parse("fedcba98-7654-3210-fedc-ba9876543210")
         val cbc = WidevinePsshData(
             key_ids = listOf(k1.toByteArray().toByteString()),
             protection_scheme = 0x63626331 // 'cbc1'
@@ -412,7 +412,7 @@ class PSSHTest {
     fun `test a header without a scheme reports null`() {
         val pssh = PSSH.new(
             systemId = WV_UUID,
-            initData = WidevinePsshData(key_ids = listOf(UUID(0, 1).toByteArray().toByteString())),
+            initData = WidevinePsshData(key_ids = listOf(Uuid.fromLongs(0, 1).toByteArray().toByteString())),
             version = 0
         )
         assertNull(pssh.encryptionScheme)
@@ -420,8 +420,8 @@ class PSSHTest {
 
     @Test
     fun `test setKeyIds rewrites a playready header and keeps its other elements`() {
-        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
-        val k2 = UUID.fromString("00112233-4455-6677-8899-aabbccddeeff")
+        val k1 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
+        val k2 = Uuid.parse("00112233-4455-6677-8899-aabbccddeeff")
         val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
         pssh.toPlayready(laUrl = "https://ls.example.com/rights?a=1&b=2", decryptorSetup = "ONDEMAND")
 
@@ -438,7 +438,7 @@ class PSSHTest {
 
     @Test
     fun `test new with playready system id and key ids builds a real PRO`() {
-        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val k1 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
 
         val pssh = PSSH.new(
             systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
@@ -454,7 +454,7 @@ class PSSHTest {
 
     @Test
     fun `test new with widevine system id and key ids builds a cenc header`() {
-        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val k1 = Uuid.parse("01234567-89ab-cdef-0123-456789abcdef")
         val pssh = PSSH.new(systemId = WV_UUID, keyIds = listOf(k1), version = 1)
 
         assertTrue(pssh.initData.isNotEmpty(), "the CENC header should be populated too")
@@ -463,8 +463,8 @@ class PSSHTest {
 
     @Test
     fun `test setKeyIds still rejects an unknown system id`() {
-        val other = UUID.fromString("11111111-1111-1111-1111-111111111111")
+        val other = Uuid.parse("11111111-1111-1111-1111-111111111111")
         val pssh = PSSH.new(systemId = other, initData = byteArrayOf(1, 2, 3))
-        assertFailsWith<ValueException> { pssh.setKeyIds(listOf(UUID(0, 1))) }
+        assertFailsWith<ValueException> { pssh.setKeyIds(listOf(Uuid.fromLongs(0, 1))) }
     }
 }

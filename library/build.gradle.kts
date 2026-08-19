@@ -15,6 +15,15 @@ version = "0.1.0"
 kotlin {
     applyDefaultHierarchyTemplate()
 
+    // kotlin.uuid.Uuid and kotlin.time.Clock are still experimental in Kotlin 2.2, and Uuid
+    // appears in this library's public API, so consumers must opt in as well.
+    compilerOptions {
+        optIn.addAll(
+            "kotlin.uuid.ExperimentalUuidApi",
+            "kotlin.time.ExperimentalTime",
+        )
+    }
+
     jvm {
         wire.kotlin {
             android = false

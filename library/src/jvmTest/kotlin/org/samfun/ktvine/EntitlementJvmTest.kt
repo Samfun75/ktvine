@@ -15,7 +15,7 @@ import org.samfun.ktvine.utils.InvalidInitDataException
 import org.samfun.ktvine.utils.NoKeysLoadedException
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.toByteArray
-import java.util.UUID
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -23,10 +23,10 @@ import kotlin.test.assertFailsWith
 
 class EntitlementJvmTest {
 
-    private val WIDEVINE_UUID: UUID = UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
+    private val WIDEVINE_UUID: Uuid = Uuid.parse("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
 
-    private val entitlementKid: UUID = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-    private val contentKid: UUID = UUID.fromString("11111111-2222-3333-4444-555555555555")
+    private val entitlementKid: Uuid = Uuid.parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+    private val contentKid: Uuid = Uuid.parse("11111111-2222-3333-4444-555555555555")
     private val entitlementKey = ByteArray(16) { (it + 1).toByte() }
     private val contentKey = ByteArray(16) { (0xF0 - it).toByte() }
     private val iv = ByteArray(16) { (it * 3).toByte() }
@@ -81,7 +81,7 @@ class EntitlementJvmTest {
     fun `test a mismatched entitlement key id is rejected`() {
         runBlocking {
             val wrongKey = listOf(
-                Key(License.KeyContainer.KeyType.ENTITLEMENT, UUID(0, 99), entitlementKey)
+                Key(License.KeyContainer.KeyType.ENTITLEMENT, Uuid.fromLongs(0, 99), entitlementKey)
             )
             assertFailsWith<ValueException> { Cdm.unwrapEntitledKeys(wrongKey, entitledPssh()) }
         }
