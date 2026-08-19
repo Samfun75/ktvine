@@ -31,7 +31,11 @@ import org.samfun.ktvine.utils.*
 class Cdm(
     private val deviceType: DeviceTypes,
     private val clientId: ClientIdentification,
-    private val privateKeyDer: ByteArray
+    private val privateKeyDer: ByteArray,
+    /** System id of the device this CDM was built from, or 0 when unknown. */
+    val systemId: Int = 0,
+    /** Security level of the device this CDM was built from, or 0 when unknown. */
+    val securityLevel: Int = 0
 ) {
     private val sessions = linkedMapOf<ByteString, Session>()
 
@@ -83,7 +87,9 @@ class Cdm(
         fun fromDevice(device: Device): Cdm = Cdm(
             deviceType = device.type,
             clientId = device.clientId,
-            privateKeyDer = device.privateKeyDer
+            privateKeyDer = device.privateKeyDer,
+            systemId = device.systemId,
+            securityLevel = device.securityLevel
         )
     }
 

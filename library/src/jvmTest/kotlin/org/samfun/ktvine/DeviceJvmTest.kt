@@ -1,5 +1,6 @@
 package org.samfun.ktvine
 
+import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.Device
 import org.samfun.ktvine.core.DeviceTypes
 import org.samfun.ktvine.utils.ValueException
@@ -178,5 +179,15 @@ class DeviceJvmTest {
         assertFailsWith<ValueException> {
             Device.loads(tooShort)
         }
+    }
+
+    @Test
+    fun `test cdm keeps the device system id and security level`() {
+        val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return
+        val device = Device.loads(data)
+        val cdm = Cdm.fromDevice(device)
+
+        assertEquals(device.systemId, cdm.systemId)
+        assertEquals(device.securityLevel, cdm.securityLevel)
     }
 }
