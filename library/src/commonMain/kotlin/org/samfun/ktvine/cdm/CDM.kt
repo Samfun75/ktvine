@@ -34,6 +34,9 @@ class Cdm(
     private val sessions = linkedMapOf<ByteString, Session>()
 
     companion object {
+        /** Maximum number of concurrently open sessions. */
+        const val MAX_NUM_OF_SESSIONS: Int = 16
+
         private val ROOT_SIGNED_CERT_B64 =
             "CpwDCAASAQAY3ZSIiwUijgMwggGKAoIBgQC0/jnDZZAD2zwRlwnoaM3yw16b8udNI7EQ24dl39z7nzWgVwNTTPZtNX2meNuzNtI/nECplSZyf7i+Zt/FIZh4FRZoXS9GDkPLioQ5q/uwNYAivjQji6tTW3LsS7VIaVM+R1/9Cf2ndhOPD5LWTN+udqm62SIQqZ1xRdbX4RklhZxTmpfrhNfMqIiCIHAmIP1+QFAn4iWTb7w+cqD6wb0ptE2CXMG0y5xyfrDpihc+GWP8/YJIK7eyM7l97Eu6iR8nuJuISISqGJIOZfXIbBH/azbkdDTKjDOx+biOtOYS4AKYeVJeRTP/Edzrw1O6fGAaET0A+9K3qjD6T15Id1sX3HXvb9IZbdy+f7B4j9yCYEy/5CkGXmmMOROtFCXtGbLynwGCDVZEiMg17B8RsyTgWQ035Ec86kt/lzEcgXyUikx9aBWE/6UI/Rjn5yvkRycSEbgj7FiTPKwS0ohtQT3F/hzcufjUUT4H5QNvpxLoEve1zqaWVT94tGSCUNIzX5ECAwEAARKAA1jx1k0ECXvf1+9dOwI5F/oUNnVKOGeFVxKnFO41FtU9v0KG9mkAds2T9Hyy355EzUzUrgkYU0Qy7OBhG+XaE9NVxd0ay5AeflvG6Q8in76FAv6QMcxrA4S9IsRV+vXyCM1lQVjofSnaBFiC9TdpvPNaV4QXezKHcLKwdpyywxXRESYqI3WZPrl3IjINvBoZwdVlkHZVdA8OaU1fTY8Zr9/WFjGUqJJfT7x6Mfiujq0zt+kw0IwKimyDNfiKgbL+HIisKmbF/73mF9BiC9yKRfewPlrIHkokL2yl4xyIFIPVxe9enz2FRXPia1BSV0z7kmxmdYrWDRuu8+yvUSIDXQouY5OcCwEgqKmELhfKrnPsIht5rvagcizfB0fbiIYwFHghESKIrNdUdPnzJsKlVshWTwApHQh7evuVicPumFSePGuUBRMS9nG5qxPDDJtGCHs9Mmpoyh6ckGLF7RC5HxclzpC5bc3ERvWjYhN0AqdipPpV2d7PouaAdFUGSdUCDA=="
         private val ROOT_SIGNED_CERT =
@@ -74,10 +77,13 @@ class Cdm(
     /**
      * Open a new session.
      * @return unique session identifier
-     * @throws TooManySessionsException when over 16 sessions are open
+     * @throws TooManySessionsException when [MAX_NUM_OF_SESSIONS] sessions are already open
      */
     fun open(): ByteString {
-        if (sessions.size > 16) throw TooManySessionsException("Too many Sessions open (16).")
+        // pywidevine compares with `>`, which lets a 17th session through; that is a bug,
+        // and diverging from it is deliberate.
+        if (sessions.size >= MAX_NUM_OF_SESSIONS)
+            throw TooManySessionsException("Too many Sessions open ($MAX_NUM_OF_SESSIONS).")
         val s = Session(sessions.size + 1)
         sessions[s.id] = s
         return s.id
