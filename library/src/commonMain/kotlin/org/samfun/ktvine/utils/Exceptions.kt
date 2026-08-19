@@ -19,3 +19,12 @@ class InvalidLicenseTypeException(message: String) : KtvineException(message)
 class ValueException(message:String): KtvineException(message)
 /** MP4 PSSH box parsing error. */
 class InvalidBoxException(message:String): KtvineException(message)
+
+/**
+ * Require an optional protobuf field that the protocol makes mandatory.
+ *
+ * Everything these guard is attacker-controlled input from a license server, so a missing
+ * field must surface as a [DecodeException] rather than a platform NullPointerException.
+ */
+internal fun <T : Any> T?.orDecodeError(field: String): T =
+    this ?: throw DecodeException("Malformed message: required field '$field' is missing")

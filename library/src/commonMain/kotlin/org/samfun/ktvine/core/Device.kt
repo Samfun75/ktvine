@@ -3,6 +3,7 @@ package org.samfun.ktvine.core
 import co.touchlab.kermit.Logger
 import okio.ByteString.Companion.decodeBase64
 import org.samfun.ktvine.utils.ValueException
+import org.samfun.ktvine.utils.orDecodeError
 import org.samfun.ktvine.proto.ClientIdentification
 import org.samfun.ktvine.proto.DrmCertificate
 import org.samfun.ktvine.proto.FileHashes
@@ -86,9 +87,13 @@ class Device(
                 try { FileHashes.ADAPTER.decode(it) } catch (_: Throwable) { null }
             }
 
-            val signed = SignedDrmCertificate.ADAPTER.decode(clientId.token!!)
-            val drm = DrmCertificate.ADAPTER.decode(signed.drm_certificate!!)
-            val systemId = drm.system_id!!
+            val signed = SignedDrmCertificate.ADAPTER.decode(
+                clientId.token.orDecodeError("ClientIdentification.token")
+            )
+            val drm = DrmCertificate.ADAPTER.decode(
+                signed.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
+            )
+            val systemId = drm.system_id.orDecodeError("DrmCertificate.system_id")
 
             Logger.d("ktvine") { "Loaded WVD v2 device: type=$type, securityLevel=$securityLevel, systemId=$systemId" }
 

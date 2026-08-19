@@ -2,6 +2,9 @@ package org.samfun.ktvine
 
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.core.Device
+import org.samfun.ktvine.core.DeviceTypes
+import org.samfun.ktvine.proto.ClientIdentification
+import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.ValueException
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
@@ -55,5 +58,18 @@ class DeviceCommonTest {
         val random = ByteArray(32) { it.toByte() }
         val b64 = random.toByteString().base64()
         assertFailsWith<ValueException> { Device.loads(b64) }
+    }
+
+    @Test
+    fun `test loads client id without a token reports a decode error`() {
+        // A WVD whose client id parses but carries no certificate token used to escape as
+        // a NullPointerException from `clientId.token!!`.
+        val wvd = Device.buildWvdV2(
+            type = DeviceTypes.ANDROID,
+            securityLevel = 3,
+            privateKeyDer = ByteArray(4),
+            clientIdBytes = ClientIdentification().encode()
+        )
+        assertFailsWith<DecodeException> { Device.loads(wvd) }
     }
 }

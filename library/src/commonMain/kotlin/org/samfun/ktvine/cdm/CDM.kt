@@ -58,7 +58,10 @@ class Cdm(
         val privacyIv = randomBytes(16)
         val padded = pkcs7Pad(client.encode())
         val encryptedClient = aesCbcEncryptNoPadding(privacyKey, privacyIv, padded)
-        val encryptedPrivacyKey = rsaOaepEncrypt(serviceCert.public_key!!.toByteArray(), privacyKey)
+        val encryptedPrivacyKey = rsaOaepEncrypt(
+            serviceCert.public_key.orDecodeError("DrmCertificate.public_key").toByteArray(),
+            privacyKey
+        )
         return EncryptedClientIdentification(
             provider_id = serviceCert.provider_id,
             service_certificate_serial_number = serviceCert.serial_number,
@@ -106,7 +109,11 @@ class Cdm(
         if (certificate == null) {
             val prev = s.serviceCertificate
             s.serviceCertificate = null
-            return prev?.let { DrmCertificate.ADAPTER.decode(it.drm_certificate!!).provider_id }
+            return prev?.let {
+                DrmCertificate.ADAPTER.decode(
+                    it.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
+                ).provider_id
+            }
         }
         // try parse SignedMessage wrapping SignedDrmCertificate, else direct SignedDrmCertificate
         val signedOrRaw = try {
@@ -131,8 +138,10 @@ class Cdm(
                 )
             }
         }
+        val certBytes = signedCert.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
+        val certSignature = signedCert.signature.orDecodeError("SignedDrmCertificate.signature")
         val drmCert = try {
-            DrmCertificate.ADAPTER.decode(signedCert.drm_certificate!!)
+            DrmCertificate.ADAPTER.decode(certBytes)
         } catch (e: Throwable) {
             throw DecodeException(
                 "Could not parse signed certificate's message as a DrmCertificate, $e"
@@ -142,8 +151,8 @@ class Cdm(
         // Verify signature using root cert public key
         val ok = rsaPssVerifySha1(
             ROOT_CERT.public_key!!.toByteArray(),
-            signedCert.drm_certificate.toByteArray(),
-            signedCert.signature!!.toByteArray()
+            certBytes.toByteArray(),
+            certSignature.toByteArray()
         )
         if (!ok) throw SignatureMismatchException("Signature Mismatch on SignedDrmCertificate, rejecting certificate")
 
@@ -193,8 +202,11 @@ class Cdm(
         val requestId: ByteString = randomBytes(16).toByteString()
         val requestTime = System.currentTimeMillis() / 1000
 
-        val encryptedClientId = if (s.serviceCertificate != null && privacyMode) {
-            val drm = DrmCertificate.ADAPTER.decode(s.serviceCertificate!!.drm_certificate!!)
+        val serviceCertificate = s.serviceCertificate
+        val encryptedClientId = if (serviceCertificate != null && privacyMode) {
+            val drm = DrmCertificate.ADAPTER.decode(
+                serviceCertificate.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
+            )
             encryptClientId(clientId, drm)
         } else null
 
@@ -261,8 +273,9 @@ class Cdm(
         }
         if (sm.type != SignedMessage.MessageType.LICENSE) throw InvalidLicenseTypeException("Expecting a LICENSE message, not a '${sm.type}' message.")
 
+        val msg = sm.msg.orDecodeError("SignedMessage.msg")
         val license = try {
-            License.ADAPTER.decode(sm.msg!!)
+            License.ADAPTER.decode(msg)
         } catch (e: Throwable) {
             throw DecodeException(
                 "Could not parse license_message's message as a License, $e"
@@ -275,13 +288,16 @@ class Cdm(
             ?: throw InvalidSessionException("Cannot parse a license message without first making a license request")
 
         // Unwrap session key and derive enc/mac keys
-        val sessionKey = rsaOaepDecrypt(privateKeyDer, sm.session_key!!.toByteArray())
+        val sessionKey = rsaOaepDecrypt(
+            privateKeyDer,
+            sm.session_key.orDecodeError("SignedMessage.session_key").toByteArray()
+        )
         val (encKey, macKeyServer, _) = deriveKeys(encCtx, macCtx, sessionKey)
 
         // Compute HMAC over optional oemcrypto_core_message prefix + msg, as per OEMCrypto v16+
         val core = sm.oemcrypto_core_message?.toByteArray() ?: ByteArray(0)
-        val computedSig = hmacSha256(macKeyServer, core + sm.msg.toByteArray())
-        if (!constantTimeEquals(computedSig, sm.signature!!.toByteArray()))
+        val computedSig = hmacSha256(macKeyServer, core + msg.toByteArray())
+        if (!constantTimeEquals(computedSig, sm.signature.orDecodeError("SignedMessage.signature").toByteArray()))
             throw SignatureMismatchException("Signature Mismatch on License Message, rejecting license")
 
         // Load Keys from license

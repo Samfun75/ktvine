@@ -4,6 +4,7 @@ import org.samfun.ktvine.crypto.aesCbcDecryptNoPadding
 import org.samfun.ktvine.crypto.pkcs7Unpad
 import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.utils.kidToUuid
+import org.samfun.ktvine.utils.orDecodeError
 import org.samfun.ktvine.utils.toHexString
 import java.util.UUID
 
@@ -36,11 +37,15 @@ class Key(
             }
 
             val iv = container.iv?.toByteArray() ?: ByteArray(16)
-            val decrypted = aesCbcDecryptNoPadding(encKey, iv, container.key!!.toByteArray())
+            val decrypted = aesCbcDecryptNoPadding(
+                encKey,
+                iv,
+                container.key.orDecodeError("KeyContainer.key").toByteArray()
+            )
             val unpadded = pkcs7Unpad(decrypted)
 
             return Key(
-                type = container.type!!.name,
+                type = container.type.orDecodeError("KeyContainer.type").name,
                 kid = container.id.kidToUuid(),
                 key = unpadded,
                 permissions = perms
