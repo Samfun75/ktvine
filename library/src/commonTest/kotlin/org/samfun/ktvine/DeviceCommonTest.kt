@@ -49,7 +49,7 @@ class DeviceCommonTest {
     @Test
     fun `test loads data too short throws common`() {
         val tooShort = byteArrayOf(0, 1, 2, 3, 4, 5)
-        assertFailsWith<IllegalArgumentException> { Device.loads(tooShort) }
+        assertFailsWith<ValueException> { Device.loads(tooShort) }
     }
 
     @Test

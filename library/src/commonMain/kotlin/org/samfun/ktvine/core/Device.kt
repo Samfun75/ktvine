@@ -34,7 +34,7 @@ class Device(
          * @throws ValueException if the data is not a valid WVD v2 blob
          */
         fun loads(data: ByteArray): Device {
-            require(data.size >= 3 + 1 + 1 + 1 + 1 + 2 + 2) { "Data too short to be a WVD v2" }
+            if (data.size < 3 + 1 + 1 + 1 + 1 + 2 + 2) throw ValueException("Data too short to be a WVD v2")
             var offset = 0
 
             // magic
@@ -72,12 +72,12 @@ class Device(
             }
 
             val privLen = readU16()
-            require(offset + privLen <= data.size) { "Invalid private key length in WVD" }
+            if (offset + privLen > data.size) throw ValueException("Invalid private key length in WVD")
             val privateKey = data.copyOfRange(offset, offset + privLen)
             offset += privLen
 
             val clientLen = readU16()
-            require(offset + clientLen <= data.size) { "Invalid client id length in WVD" }
+            if (offset + clientLen > data.size) throw ValueException("Invalid client id length in WVD")
             val clientIdBytes = data.copyOfRange(offset, offset + clientLen)
             offset += clientLen
 

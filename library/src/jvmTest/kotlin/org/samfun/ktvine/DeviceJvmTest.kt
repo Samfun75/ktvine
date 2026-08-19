@@ -175,7 +175,7 @@ class DeviceJvmTest {
     @Test
     fun `test loads data too short throws`() {
         val tooShort = byteArrayOf(0, 1, 2, 3, 4, 5)
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<ValueException> {
             Device.loads(tooShort)
         }
     }

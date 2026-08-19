@@ -255,14 +255,15 @@ class Cdm(
      * Parse and verify a Widevine license response for the provided [sessionId].
      * This consumes the previously stored request context created by [getLicenseChallenge],
      * decrypts contained keys and stores them on the session.
-     * @throws InvalidSessionException if the session is unknown or no request was made
-     * @throws InvalidLicenseTypeException if the message type is not LICENSE or is empty
+     * @throws InvalidSessionException if the session is unknown
+     * @throws InvalidContextException if no license request was made for this session
+     * @throws InvalidLicenseMessageException if the message is empty or is not a LICENSE
      * @throws DecodeException if parsing fails
      * @throws SignatureMismatchException if MAC verification fails
      */
     suspend fun parseLicense(sessionId: ByteString, licenseMessage: ByteArray) {
         val s = sessions[sessionId] ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
-        if (licenseMessage.isEmpty()) throw InvalidLicenseTypeException("Cannot parse an empty license_message")
+        if (licenseMessage.isEmpty()) throw InvalidLicenseMessageException("Cannot parse an empty license_message")
 
         val sm = try {
             SignedMessage.ADAPTER.decode(licenseMessage)
@@ -271,7 +272,8 @@ class Cdm(
                 "Could not parse license_message as a SignedMessage, $e"
             )
         }
-        if (sm.type != SignedMessage.MessageType.LICENSE) throw InvalidLicenseTypeException("Expecting a LICENSE message, not a '${sm.type}' message.")
+        if (sm.type != SignedMessage.MessageType.LICENSE)
+            throw InvalidLicenseMessageException("Expecting a LICENSE message, not a '${sm.type}' message.")
 
         val msg = sm.msg.orDecodeError("SignedMessage.msg")
         val license = try {
@@ -283,9 +285,10 @@ class Cdm(
         }
 
         // Expect a matching request context from prior getLicenseChallenge
-        val requestId = license.id?.request_id ?: throw InvalidLicenseTypeException("License is missing request_id")
+        val requestId = license.id?.request_id
+            ?: throw InvalidLicenseMessageException("License is missing its id.request_id")
         val (encCtx, macCtx) = s.context[requestId]
-            ?: throw InvalidSessionException("Cannot parse a license message without first making a license request")
+            ?: throw InvalidContextException("Cannot parse a license message without first making a license request")
 
         // Unwrap session key and derive enc/mac keys
         val sessionKey = rsaOaepDecrypt(

@@ -104,7 +104,7 @@ fun constantTimeEquals(a: ByteArray, b: ByteArray): Boolean {
 
 /** Apply PKCS#7 padding to [data] for [blockSize] bytes (default 16). */
 fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
-    require(blockSize in 1..255) { "Invalid block size $blockSize" }
+    if (blockSize !in 1..255) throw ValueException("Invalid block size $blockSize")
     val padLen = blockSize - (data.size % blockSize)
     val padding = ByteArray(padLen) { padLen.toByte() }
     return data + padding

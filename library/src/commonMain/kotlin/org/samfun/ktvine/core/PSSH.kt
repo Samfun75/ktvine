@@ -376,10 +376,11 @@ class PSSH {
 
         /**
          * Convert a list of UUID | String(hex/base64) | ByteArray to UUIDs.
-         * @throws IllegalArgumentException if any item has an unsupported type
+         * @throws ValueException if any item has an unsupported type
          */
         fun parseKeyIds(keyIds: List<Any>): List<UUID> {
-            require(keyIds.all { it is UUID || it is String || it is ByteArray }) { "Some items of key_ids are not a UUID, String, or ByteArray." }
+            if (!keyIds.all { it is UUID || it is String || it is ByteArray })
+                throw ValueException("Some items of key_ids are not a UUID, String, or ByteArray.")
             return keyIds.map { item ->
                 when (item) {
                     is UUID -> item
@@ -407,8 +408,8 @@ class PSSH {
             version: Int = 0,
             flags: Int = 0
         ): PSSH {
-            require(version in 0..1) { "Invalid version, must be either 0 or 1, not $version." }
-            require(flags >= 0) { "Invalid flags, cannot be less than 0." }
+            if (version !in 0..1) throw ValueException("Invalid version, must be either 0 or 1, not $version.")
+            if (flags < 0) throw ValueException("Invalid flags, cannot be less than 0.")
 
             if (version == 0 && keyIds != null && initData != null)
                 throw ValueException("Version 0 PSSH boxes must use only init_data, not init_data and key_ids.")
