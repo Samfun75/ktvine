@@ -13,13 +13,31 @@ import java.util.UUID
  * Holds key type, KID (as UUID), raw key bytes, and optional permissions for OPERATOR_SESSION keys.
  */
 class Key(
-    val type: String,
+    val type: License.KeyContainer.KeyType,
     val kid: UUID,
     val key: ByteArray,
     val permissions: List<String> = emptyList()
 ) {
     override fun toString(): String =
         "Key(type=$type, kid=$kid, key=${key.toHexString()}, permissions=$permissions)"
+
+    // Written out by hand: a data class would compare `key` by identity.
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Key) return false
+        return type == other.type &&
+            kid == other.kid &&
+            key.contentEquals(other.key) &&
+            permissions == other.permissions
+    }
+
+    override fun hashCode(): Int {
+        var result = type.hashCode()
+        result = 31 * result + kid.hashCode()
+        result = 31 * result + key.contentHashCode()
+        result = 31 * result + permissions.hashCode()
+        return result
+    }
 
     companion object {
         /**
@@ -45,7 +63,7 @@ class Key(
             val unpadded = pkcs7Unpad(decrypted)
 
             return Key(
-                type = container.type.orDecodeError("KeyContainer.type").name,
+                type = container.type.orDecodeError("KeyContainer.type"),
                 kid = container.id.kidToUuid(),
                 key = unpadded,
                 permissions = perms

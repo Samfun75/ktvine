@@ -488,6 +488,6 @@ class Cdm(
      */
     suspend fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key> {
         val s = session(sessionId)
-        return s.lock.withLock { s.keys.filter { type == null || it.type == type.name } }
+        return s.lock.withLock { s.keys.filter { type == null || it.type == type } }
     }
 }
