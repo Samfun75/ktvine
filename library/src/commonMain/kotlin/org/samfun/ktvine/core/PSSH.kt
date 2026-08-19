@@ -107,9 +107,7 @@ class PSSH {
                         else -> throw ValueException("Unsupported PlayReadyHeader version $version")
                     }
 
-                    return keyIdsB64.map { b64 ->
-                        Base64.decode(b64).toByteString().uuidFromByteString()
-                    }
+                    return keyIdsB64.map { b64 -> Base64.decode(b64).uuidFromLittleEndian() }
                 }
             }
         } catch (_: Throwable) {
@@ -158,7 +156,7 @@ class PSSH {
             append("<DATA>")
             append("<PROTECTINFO><KIDS>")
             keyIds().forEach { kid ->
-                append("<KID ALGID=\"AESCTR\" VALUE=\"${Base64.encode(kid.toByteArray())}\"></KID>")
+                append("<KID ALGID=\"AESCTR\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>")
             }
             append("</KIDS></PROTECTINFO>")
             laUrl?.let { append("<LA_URL>$it</LA_URL>") }

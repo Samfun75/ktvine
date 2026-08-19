@@ -11,6 +11,7 @@ import org.samfun.ktvine.core.PSSH
 import org.samfun.ktvine.utils.decodeToStringUtf16LE
 import org.samfun.ktvine.utils.encodeToUtf16LE
 import org.samfun.ktvine.utils.toByteArray
+import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.toLEU16
 import org.samfun.ktvine.utils.toLEU32
 import org.samfun.ktvine.utils.toUUID
@@ -26,7 +27,8 @@ class PSSHTest {
 
     private fun makeProXmlV43(vararg kids: UUID, withExtras: Boolean = false): ByteArray {
         val keyIdsXml = kids.joinToString("") { kid ->
-            val b64 = Base64.encode(kid.toByteArray())
+            // Real PlayReady headers carry little-endian GUIDs.
+            val b64 = Base64.encode(kid.toLittleEndianByteArray())
             """
             <KID ALGID="AESCTR" VALUE="$b64"></KID>
             """.trimIndent()

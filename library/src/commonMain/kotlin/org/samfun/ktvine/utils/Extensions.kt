@@ -41,6 +41,30 @@ fun ByteArray.toUUID(): UUID {
     return UUID(b.getLong(), b.getLong())
 }
 
+/**
+ * Interpret 16 bytes as a little-endian (Microsoft) GUID, as PlayReady stores Key IDs.
+ *
+ * The first three GUID components are byte-reversed relative to the big-endian form used
+ * by `cenc:default_KID` and Widevine. The swap is its own inverse, so this also converts
+ * back. Note pywidevine does **not** swap (`pssh.py:276`) and therefore reports PlayReady
+ * KIDs that disagree with the manifest's own `cenc:default_KID`; the manifest is the
+ * authority, so ktvine diverges here deliberately.
+ */
+fun ByteArray.swapGuidEndianness(): ByteArray {
+    if (size != 16) throw ValueException("A GUID must be exactly 16 bytes, not $size")
+    val out = copyOf()
+    out[0] = this[3]; out[1] = this[2]; out[2] = this[1]; out[3] = this[0]
+    out[4] = this[5]; out[5] = this[4]
+    out[6] = this[7]; out[7] = this[6]
+    return out
+}
+
+/** Read 16 little-endian GUID bytes as a [UUID]. */
+fun ByteArray.uuidFromLittleEndian(): UUID = swapGuidEndianness().toUUID()
+
+/** Write this [UUID] as 16 little-endian GUID bytes. */
+fun UUID.toLittleEndianByteArray(): ByteArray = toByteArray().swapGuidEndianness()
+
 /** Interpret this [ByteString] as a 16-byte [UUID]. */
 fun ByteString.uuidFromByteString(): UUID = this.toByteArray().toUUID()
 
