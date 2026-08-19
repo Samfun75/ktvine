@@ -229,58 +229,57 @@ class PSSH {
     ) {
         if (_systemId.contentEquals(PLAYREADY_SYSTEM_ID)) throw ValueException("This is already a PlayReady PSSH")
 
-        val prrValue = buildString {
-            append("<WRMHEADER xmlns=\"http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader\" version=\"4.3.0.0\">")
-            append("<DATA>")
-            append("<PROTECTINFO><KIDS>")
-            val algid = escapeXml(encryptionScheme ?: "AESCTR")
-            keyIds().forEach { kid ->
-                append("<KID ALGID=\"$algid\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>")
-            }
-            append("</KIDS></PROTECTINFO>")
-            laUrl?.let { append("<LA_URL>${escapeXml(it)}</LA_URL>") }
-            luiUrl?.let { append("<LUI_URL>${escapeXml(it)}</LUI_URL>") }
-            dsId?.let { append("<DS_ID>${Base64.encode(it)}</DS_ID>") }
-            decryptorSetup?.let { append("<DECRYPTORSETUP>${escapeXml(it)}</DECRYPTORSETUP>") }
-            customData?.let { append("<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>") }
-            append("</DATA>")
-            append("</WRMHEADER>")
-        }.encodeToUtf16LE()
-
-        // The record length field is a u16; toLEU16 would silently truncate past 65535.
-        if (prrValue.size > 0xFFFF)
-            throw ValueException("PlayReadyHeader is ${prrValue.size} bytes, over the 65535-byte record limit")
-
-        val body = ByteArrayOutputStream().apply {
-            write(1.toLEU16())              // record count
-            write(0x01.toLEU16())           // type: PlayReadyHeader
-            write(prrValue.size.toLEU16())  // length
-            write(prrValue)
-        }.toByteArray()
-
-        val pro = ByteArrayOutputStream().apply {
-            write((body.size + 4).toLEU32())  // total size including this length field
-            write(body)
-        }.toByteArray()
-
-        _content = pro
+        _content = buildPlayreadyPro(
+            keyIds = keyIds(),
+            algid = encryptionScheme ?: "AESCTR",
+            laUrl = laUrl,
+            luiUrl = luiUrl,
+            dsId = dsId,
+            decryptorSetup = decryptorSetup,
+            customData = customData
+        )
         _systemId = PLAYREADY_SYSTEM_ID
     }
 
     /**
-     * For Widevine PSSH only: overwrite Key IDs in both WV header and, if v1, box field too.
+     * Overwrite the Key IDs of this box.
+     *
+     * For Widevine this rewrites the CENC header (and the v1 box field). For PlayReady the
+     * PRO is rebuilt as a v4.3.0.0 header, carrying over the encryption scheme and the
+     * optional LA_URL / LUI_URL / DS_ID / DECRYPTORSETUP / CUSTOMATTRIBUTES elements.
+     *
+     * @throws ValueException for any other system id
      */
     fun setKeyIds(keyIds: List<UUID>) {
-        if (!_systemId.contentEquals(WIDEVINE))
-            throw ValueException("Only Widevine PSSH Boxes are supported, not ${_systemId.toHexString()}")
+        when {
+            _systemId.contentEquals(WIDEVINE) -> {
+                if (_version == 1 || _keyIds.isNotEmpty()) _keyIds = keyIds
 
-        if (_version == 1 || _keyIds.isNotEmpty()) _keyIds = keyIds
+                val cenc = if (_content.isEmpty()) WidevinePsshData() else WidevinePsshData.ADAPTER.decode(_content)
+                _content = cenc.copy(key_ids = keyIds.map { it.toByteArray().toByteString() }).encode()
+            }
 
-        val cenc = if (_content.isEmpty()) WidevinePsshData() else WidevinePsshData.ADAPTER.decode(_content)
-        val updated = cenc.copy(
-            key_ids = keyIds.map { it.toByteArray().toByteString() }
-        )
-        _content = updated.encode()
+            _systemId.contentEquals(PLAYREADY_SYSTEM_ID) -> {
+                if (_version == 1 || _keyIds.isNotEmpty()) _keyIds = keyIds
+
+                // Regex extraction of the carried-over elements is a stopgap until the header
+                // is parsed as real XML.
+                val xml = runCatching { playreadyHeaderXml() }.getOrNull()
+                _content = buildPlayreadyPro(
+                    keyIds = keyIds,
+                    algid = encryptionScheme ?: "AESCTR",
+                    laUrl = xml?.let { elementText(it, "LA_URL") },
+                    luiUrl = xml?.let { elementText(it, "LUI_URL") },
+                    dsId = xml?.let { elementText(it, "DS_ID") }?.let { Base64.decode(it) },
+                    decryptorSetup = xml?.let { elementText(it, "DECRYPTORSETUP") },
+                    customData = xml?.let { rawElementText(it, "CUSTOMATTRIBUTES") }
+                )
+            }
+
+            else -> throw ValueException(
+                "Only Widevine and PlayReady PSSH Boxes are supported, not ${_systemId.toHexString()}"
+            )
+        }
     }
 
     /** Overload that accepts a mixed list of UUID | String(hex/base64) | ByteArray. */
@@ -372,6 +371,67 @@ class PSSH {
             "AESCTRPATTERN" -> FOURCC_CENS
             "AESCBCPATTERN" -> FOURCC_CBCS
             else -> null
+        }
+
+        /** Text of a simple element, unescaped. Returns `null` when the element is absent. */
+        private fun elementText(xml: String, name: String): String? =
+            rawElementText(xml, name)?.let { unescapeXml(it) }
+
+        /** Text of a simple element, left exactly as written. */
+        private fun rawElementText(xml: String, name: String): String? =
+            Regex("<$name\\b[^>]*>([^<]*)</$name>", RegexOption.IGNORE_CASE)
+                .find(xml)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
+
+        /**
+         * Build a PlayReady Object wrapping a single v4.3.0.0 header record.
+         *
+         * [laUrl], [luiUrl] and [decryptorSetup] are XML-escaped. [customData] is not — the
+         * spec has the content author supply raw XML there.
+         *
+         * @throws ValueException if the header exceeds the u16 record length limit
+         */
+        private fun buildPlayreadyPro(
+            keyIds: List<UUID>,
+            algid: String,
+            laUrl: String? = null,
+            luiUrl: String? = null,
+            dsId: ByteArray? = null,
+            decryptorSetup: String? = null,
+            customData: String? = null
+        ): ByteArray {
+            val prrValue = buildString {
+                append("<WRMHEADER xmlns=\"http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader\" version=\"4.3.0.0\">")
+                append("<DATA>")
+                append("<PROTECTINFO><KIDS>")
+                val escapedAlgid = escapeXml(algid)
+                keyIds.forEach { kid ->
+                    append("<KID ALGID=\"$escapedAlgid\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>")
+                }
+                append("</KIDS></PROTECTINFO>")
+                laUrl?.let { append("<LA_URL>${escapeXml(it)}</LA_URL>") }
+                luiUrl?.let { append("<LUI_URL>${escapeXml(it)}</LUI_URL>") }
+                dsId?.let { append("<DS_ID>${Base64.encode(it)}</DS_ID>") }
+                decryptorSetup?.let { append("<DECRYPTORSETUP>${escapeXml(it)}</DECRYPTORSETUP>") }
+                customData?.let { append("<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>") }
+                append("</DATA>")
+                append("</WRMHEADER>")
+            }.encodeToUtf16LE()
+
+            // The record length field is a u16; toLEU16 would silently truncate past 65535.
+            if (prrValue.size > 0xFFFF)
+                throw ValueException("PlayReadyHeader is ${prrValue.size} bytes, over the 65535-byte record limit")
+
+            val body = ByteArrayOutputStream().apply {
+                write(1.toLEU16())              // record count
+                write(0x01.toLEU16())           // type: PlayReadyHeader
+                write(prrValue.size.toLEU16())  // length
+                write(prrValue)
+            }.toByteArray()
+
+            return ByteArrayOutputStream().apply {
+                write((body.size + 4).toLEU32())  // total size including this length field
+                write(body)
+            }.toByteArray()
         }
 
         private val WRMHEADER_CLOSE_TAG = "</WRMHEADER>".encodeToUtf16LE()
@@ -584,12 +644,24 @@ class PSSH {
                 else -> throw ValueException("Expecting init_data to be WidevinePsshData, hex, base64, or bytes, not ${initData::class}")
             }
 
+            val systemIdBytes = systemId.toByteArray()
+
+            // Key ids alone used to leave _content empty, producing a box no client accepts.
+            val content = when {
+                contentBytes.isNotEmpty() || keyIds.isNullOrEmpty() -> contentBytes
+                systemIdBytes.contentEquals(PLAYREADY_SYSTEM_ID) ->
+                    buildPlayreadyPro(keyIds = keyIds, algid = "AESCTR")
+                systemIdBytes.contentEquals(WIDEVINE) ->
+                    WidevinePsshData(key_ids = keyIds.map { it.toByteArray().toByteString() }).encode()
+                else -> contentBytes
+            }
+
             return PSSH(
-                systemId = systemId.toByteArray(),
+                systemId = systemIdBytes,
                 version = version,
                 flags = flags,
                 keyIds = keyIds ?: emptyList(),
-                content = contentBytes
+                content = content
             )
         }
     }

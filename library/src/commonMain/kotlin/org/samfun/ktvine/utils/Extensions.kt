@@ -154,3 +154,25 @@ fun ByteArray.containsSubarray(needle: ByteArray): Boolean {
     }
     return false
 }
+
+/** Reverse of [escapeXml] for the five predefined entities and numeric character references. */
+fun unescapeXml(value: String): String {
+    if (!value.contains('&')) return value
+    return Regex("&(#x?[0-9A-Fa-f]+|amp|lt|gt|quot|apos);").replace(value) { match ->
+        when (val entity = match.groupValues[1]) {
+            "amp" -> "&"
+            "lt" -> "<"
+            "gt" -> ">"
+            "quot" -> "\""
+            "apos" -> "'"
+            else -> {
+                val code = if (entity.startsWith("#x") || entity.startsWith("#X")) {
+                    entity.drop(2).toIntOrNull(16)
+                } else {
+                    entity.drop(1).toIntOrNull()
+                }
+                code?.let { it.toChar().toString() } ?: match.value
+            }
+        }
+    }
+}

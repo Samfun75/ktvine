@@ -417,4 +417,54 @@ class PSSHTest {
         )
         assertNull(pssh.encryptionScheme)
     }
+
+    @Test
+    fun `test setKeyIds rewrites a playready header and keeps its other elements`() {
+        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val k2 = UUID.fromString("00112233-4455-6677-8899-aabbccddeeff")
+        val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
+        pssh.toPlayready(laUrl = "https://ls.example.com/rights?a=1&b=2", decryptorSetup = "ONDEMAND")
+
+        pssh.setKeyIds(listOf(k2))
+
+        assertEquals(setOf(k2), pssh.keyIds().toSet())
+        val xml = readPlayreadyHeader(pssh.initData)
+        assertTrue(
+            xml.contains("<LA_URL>https://ls.example.com/rights?a=1&amp;b=2</LA_URL>"),
+            "LA_URL should survive a key id rewrite, and stay escaped exactly once: " + xml
+        )
+        assertTrue(xml.contains("<DECRYPTORSETUP>ONDEMAND</DECRYPTORSETUP>"), xml)
+    }
+
+    @Test
+    fun `test new with playready system id and key ids builds a real PRO`() {
+        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+
+        val pssh = PSSH.new(
+            systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
+            keyIds = listOf(k1),
+            version = 1
+        )
+
+        // This used to leave init_data empty, producing a box no PlayReady client accepts.
+        assertTrue(pssh.initData.isNotEmpty(), "a PlayReady box needs a PlayReadyObject")
+        assertTrue(readPlayreadyHeader(pssh.initData).contains("<WRMHEADER"), "expected a WRMHEADER")
+        assertEquals(setOf(k1), PSSH(pssh.export()).keyIds().toSet())
+    }
+
+    @Test
+    fun `test new with widevine system id and key ids builds a cenc header`() {
+        val k1 = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef")
+        val pssh = PSSH.new(systemId = WV_UUID, keyIds = listOf(k1), version = 1)
+
+        assertTrue(pssh.initData.isNotEmpty(), "the CENC header should be populated too")
+        assertEquals(setOf(k1), PSSH(pssh.export()).keyIds().toSet())
+    }
+
+    @Test
+    fun `test setKeyIds still rejects an unknown system id`() {
+        val other = UUID.fromString("11111111-1111-1111-1111-111111111111")
+        val pssh = PSSH.new(systemId = other, initData = byteArrayOf(1, 2, 3))
+        assertFailsWith<ValueException> { pssh.setKeyIds(listOf(UUID(0, 1))) }
+    }
 }
