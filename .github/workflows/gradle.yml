@@ -1,11 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-
-name: Java CI with Gradle
+name: Build
 
 on:
   push:
@@ -19,34 +12,53 @@ permissions:
 
 jobs:
   build:
+    name: ${{ matrix.name }}
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - target: iosSimulatorArm64Test
+          # `check` covers jvmTest, testAndroidHostTest, linuxX64Test, ktlintCheck and apiCheck.
+          - name: check (jvm, android, linux)
+            os: ubuntu-latest
+            target: check
+          # Apple targets can only be run on macOS.
+          - name: iosSimulatorArm64Test
             os: macos-latest
-          - target: linuxX64Test
-            os: ubuntu-latest
-          - target: jvmTest
-            os: ubuntu-latest
-          - target: testAndroidHostTest
-            os: ubuntu-latest
+            target: iosSimulatorArm64Test
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - uses: actions/cache@v4
+
+      - name: Cache Kotlin/Native toolchain
+        uses: actions/cache@v4
         with:
-          path: |
-            ~/.konan
-          key: ${{ runner.os }}-${{ hashFiles('**/.lock') }}
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
-      - name: Build with Gradle
-        uses: gradle/gradle-build-action@ce999babab2de1c4b649dc15f0ee67e6246c994f
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: ./gradlew ${{ matrix.target }} --stacktrace
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          arguments: ${{ matrix.target }}
+          name: test-reports-${{ matrix.os }}
+          path: |
+            library/build/reports/tests/
+            library/build/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
