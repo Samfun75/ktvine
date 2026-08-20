@@ -13,6 +13,7 @@ vanniktechMavenPublish = "0.34.0"
 
 binaryCompatibilityValidator = "0.18.1"
 dokka = "2.0.0"
+xmlutil = "0.91.2"
 ktlintGradle = "12.1.2"
 wire = "5.4.0"
 cryptography = "0.5.0"
@@ -23,6 +24,7 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutinesCore" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesCore" }
 wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wire" }
+xmlutil-core = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlutil" }
 cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptography" }
 cryptography-provider-optimal = { module = "dev.whyoleg.cryptography:cryptography-provider-optimal", version.ref = "cryptography" }
 

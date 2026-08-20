@@ -70,6 +70,7 @@ kotlin {
                 implementation(libs.cryptography.provider.optimal)
                 implementation(libs.coroutines.core)
                 implementation(libs.kermit)
+                implementation(libs.xmlutil.core)
             }
         }
         val commonTest by getting {

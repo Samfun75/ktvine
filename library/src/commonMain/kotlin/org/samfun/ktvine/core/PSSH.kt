@@ -14,16 +14,12 @@ import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.containsSubarray
 import org.samfun.ktvine.utils.decodeToStringUtf16LE
 import org.samfun.ktvine.utils.encodeToUtf16LE
-import org.samfun.ktvine.utils.escapeXml
 import org.samfun.ktvine.utils.toHexString
-import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.toUTF8
 import org.samfun.ktvine.utils.toUUID
-import org.samfun.ktvine.utils.unescapeXml
 import org.samfun.ktvine.utils.uuidFromByteArray
 import org.samfun.ktvine.utils.uuidFromByteString
 import org.samfun.ktvine.utils.uuidFromHexByteString
-import org.samfun.ktvine.utils.uuidFromLittleEndian
 import kotlin.io.encoding.Base64
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -94,14 +90,8 @@ public class PSSH {
             else -> runCatching { widevineScheme() }.getOrNull()
         }
 
-    private fun playreadyAlgid(): String? {
-        val xml = runCatching { playreadyHeaderXml() }.getOrNull() ?: return null
-        // Per-KID form first (v4.2.0.0+), then the document-level element (v4.0.0.0).
-        return Regex("""<KID\b[^>]*\bALGID=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
-            .find(xml)?.groupValues?.get(1)?.trim()
-            ?: Regex("""<ALGID>([^<]+)</ALGID>""", RegexOption.IGNORE_CASE)
-                .find(xml)?.groupValues?.get(1)?.trim()
-    }
+    private fun playreadyAlgid(): String? =
+        runCatching { PlayreadyHeader.parse(playreadyHeaderXml()) }.getOrNull()?.algid
 
     // `algorithm` is deprecated in the schema but still the only signal some packagers emit.
     @Suppress("DEPRECATION")
@@ -178,33 +168,7 @@ public class PSSH {
         throw ValueException("no PlayReadyHeader within the object")
     }
 
-    private fun playreadyKeyIds(): List<Uuid> {
-        val xml = playreadyHeaderXml()
-        // Anchored to the element: an unanchored `version="..."` matches the
-        // `<?xml version="1.0"?>` declaration many packagers emit.
-        val version = Regex("""<WRMHEADER\b[^>]*\bversion=\"([^\"]+)\"""", RegexOption.IGNORE_CASE)
-            .find(xml)?.groupValues?.get(1)
-            ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
-
-        val keyIdsB64: List<String> = when (version) {
-            "4.0.0.0" -> Regex("""<KID[^>]*>([^<]+)</KID>""", RegexOption.IGNORE_CASE)
-                .findAll(xml)
-                .map { it.groupValues[1].trim() }
-                .toList()
-
-            "4.1.0.0", "4.2.0.0", "4.3.0.0" -> Regex(
-                """<KID\b[^>]*\bVALUE=\"([^\"]+)\"""",
-                RegexOption.IGNORE_CASE,
-            )
-                .findAll(xml)
-                .map { it.groupValues[1].trim() }
-                .toList()
-
-            else -> throw ValueException("Unsupported PlayReadyHeader version $version")
-        }
-
-        return keyIdsB64.map { b64 -> Base64.decode(b64).uuidFromLittleEndian() }
-    }
+    private fun playreadyKeyIds(): List<Uuid> = PlayreadyHeader.parse(playreadyHeaderXml()).keyIds
 
     override fun toString(): String = exportBase64()
 
@@ -286,15 +250,15 @@ public class PSSH {
 
                 // Regex extraction of the carried-over elements is a stopgap until the header
                 // is parsed as real XML.
-                val xml = runCatching { playreadyHeaderXml() }.getOrNull()
+                val existing = runCatching { PlayreadyHeader.parse(playreadyHeaderXml()) }.getOrNull()
                 _content = buildPlayreadyPro(
                     keyIds = keyIds,
-                    algid = encryptionScheme ?: "AESCTR",
-                    laUrl = xml?.let { elementText(it, "LA_URL") },
-                    luiUrl = xml?.let { elementText(it, "LUI_URL") },
-                    dsId = xml?.let { elementText(it, "DS_ID") }?.let { Base64.decode(it) },
-                    decryptorSetup = xml?.let { elementText(it, "DECRYPTORSETUP") },
-                    customData = xml?.let { rawElementText(it, "CUSTOMATTRIBUTES") },
+                    algid = existing?.algid ?: "AESCTR",
+                    laUrl = existing?.laUrl,
+                    luiUrl = existing?.luiUrl,
+                    dsId = existing?.dsId,
+                    decryptorSetup = existing?.decryptorSetup,
+                    customData = existing?.customAttributes,
                 )
             }
 
@@ -381,14 +345,6 @@ public class PSSH {
             else -> null
         }
 
-        /** Text of a simple element, unescaped. Returns `null` when the element is absent. */
-        private fun elementText(xml: String, name: String): String? = rawElementText(xml, name)?.let { unescapeXml(it) }
-
-        /** Text of a simple element, left exactly as written. */
-        private fun rawElementText(xml: String, name: String): String? =
-            Regex("<$name\\b[^>]*>([^<]*)</$name>", RegexOption.IGNORE_CASE)
-                .find(xml)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
-
         /**
          * Build a PlayReady Object wrapping a single v4.3.0.0 header record.
          *
@@ -406,32 +362,21 @@ public class PSSH {
             decryptorSetup: String? = null,
             customData: String? = null,
         ): ByteArray {
-            val prrValue = buildString {
-                append(
-                    "<WRMHEADER xmlns=\"http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader\" " +
-                        "version=\"4.3.0.0\">",
-                )
-                append("<DATA>")
-                append("<PROTECTINFO><KIDS>")
-                val escapedAlgid = escapeXml(algid)
-                keyIds.forEach { kid ->
-                    append(
-                        "<KID ALGID=\"$escapedAlgid\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>",
-                    )
-                }
-                append("</KIDS></PROTECTINFO>")
-                laUrl?.let { append("<LA_URL>${escapeXml(it)}</LA_URL>") }
-                luiUrl?.let { append("<LUI_URL>${escapeXml(it)}</LUI_URL>") }
-                dsId?.let { append("<DS_ID>${Base64.encode(it)}</DS_ID>") }
-                decryptorSetup?.let { append("<DECRYPTORSETUP>${escapeXml(it)}</DECRYPTORSETUP>") }
-                customData?.let { append("<CUSTOMATTRIBUTES xmlns=\"\">$it</CUSTOMATTRIBUTES>") }
-                append("</DATA>")
-                append("</WRMHEADER>")
-            }.encodeToUtf16LE()
+            val prrValue = PlayreadyHeader.build(
+                keyIds = keyIds,
+                algid = algid,
+                laUrl = laUrl,
+                luiUrl = luiUrl,
+                dsId = dsId,
+                decryptorSetup = decryptorSetup,
+                customAttributes = customData,
+            ).encodeToUtf16LE()
 
             // The record length field is a u16; toLEU16 would silently truncate past 65535.
             if (prrValue.size > 0xFFFF) {
-                throw ValueException("PlayReadyHeader is ${prrValue.size} bytes, over the 65535-byte record limit")
+                throw ValueException(
+                    "PlayReadyHeader is ${prrValue.size} bytes, over the 65535-byte record limit",
+                )
             }
 
             val body = Buffer().apply {
