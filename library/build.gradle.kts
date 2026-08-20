@@ -66,8 +66,7 @@ kotlin {
             dependencies {
                 // put your multiplatform dependencies here
                 api(libs.wire.runtime)
-                implementation(libs.cryptography.core)
-                implementation(libs.cryptography.provider.optimal)
+                implementation(libs.bundles.cryptography)
                 implementation(libs.coroutines.core)
                 implementation(libs.kermit)
                 implementation(libs.xmlutil.core)
