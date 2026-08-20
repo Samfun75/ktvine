@@ -19,6 +19,20 @@ jobs:
       - name: Change wrapper permissions
         run: chmod +x ./gradlew
 
+      - name: Verify the version matches the release tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          CATALOG=$(sed -n 's/^ktvine = "\(.*\)"$/\1/p' gradle/libs.versions.toml)
+          echo "tag=$TAG catalog=$CATALOG"
+          if [ "$TAG" != "$CATALOG" ]; then
+            echo "::error::Release tag $TAG does not match ktvine = $CATALOG in gradle/libs.versions.toml"
+            exit 1
+          fi
+          if ! grep -q "io.github.samfun75:ktvine:$CATALOG" README.md; then
+            echo "::error::README install snippet does not reference version $CATALOG"
+            exit 1
+          fi
+
       - name: Publish to MavenCentral
         run: ./gradlew publishToMavenCentral --no-configuration-cache
         env:

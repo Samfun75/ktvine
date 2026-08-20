@@ -1,4 +1,8 @@
 [versions]
+# The single source of truth for the published version. The release workflow checks the
+# README install snippet against the tag.
+ktvine = "0.2.0"
+
 agp = "8.13.0"
 kermit = "2.0.8"
 kotlin = "2.2.20"

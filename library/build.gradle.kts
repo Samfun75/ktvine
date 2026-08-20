@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "io.github.samfun75"
-version = "0.2.0"
+version = libs.versions.ktvine.get()
 
 kotlin {
     applyDefaultHierarchyTemplate()
