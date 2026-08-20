@@ -2,7 +2,6 @@
 
 package org.samfun.ktvine.core
 
-import co.touchlab.kermit.Logger
 import okio.Buffer
 import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.encodeUtf8
@@ -458,7 +457,7 @@ class PSSH {
             }
 
             // Some license servers accept custom init data (Netflix MSL, for one).
-            Logger.d("ktvine") { "Unrecognised init data, wrapping it in a v0 Widevine box" }
+            KtvineLog.d { "Unrecognised init data, wrapping it in a v0 Widevine box" }
             return PSSH(WIDEVINE, 0, 0, emptyList(), data)
         }
 
@@ -482,7 +481,8 @@ class PSSH {
 
         /** Walk an ISOBMFF box sequence and return every `pssh` box found, in order. */
         private fun parseBoxes(bytes: ByteArray): List<PSSH> {
-            Logger.v("ktvine") { "Attempting to parse data as an ISOBMFF box sequence" }
+            // Verbose only: this dumps the whole init data, which callers may consider sensitive.
+            KtvineLog.v { "Parsing ${bytes.size} bytes as an ISOBMFF box sequence: ${bytes.toHexString()}" }
             val buffer = Buffer().write(bytes)
             val total = bytes.size
             val found = mutableListOf<PSSH>()
@@ -534,14 +534,14 @@ class PSSH {
 
             val keyIds = mutableListOf<Uuid>()
 
-            Logger.v("ktvine") { "PSSH box version: $version" }
+            KtvineLog.v { "PSSH box version: $version" }
             if (version > 1) throw InvalidBoxException("Unsupported PSSH version: $version")
 
             if (version == 1) {
                 if (b.size < 4) throw InvalidBoxException("PSSH payload too small to contain key ID count")
 
                 val keyCount = b.readInt().toLong() and 0xFFFFFFFFL
-                Logger.v("ktvine") { "PSSH box key count: $keyCount" }
+                KtvineLog.v { "PSSH box key count: $keyCount" }
 
                 if (b.size < keyCount * 16) throw InvalidBoxException("PSSH payload too small to contain $keyCount key IDs")
 
@@ -554,7 +554,7 @@ class PSSH {
             if (b.size < dataSize) throw InvalidBoxException("PSSH payload too small to contain data")
             val data = b.readByteArray(dataSize)
 
-            Logger.v("ktvine") { "Successfully parsed PSSH box data" }
+            KtvineLog.v { "Successfully parsed PSSH box data" }
             return PSSH(systemId, version, flags, keyIds, data)
         }
 

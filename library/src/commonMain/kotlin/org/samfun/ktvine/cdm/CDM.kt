@@ -1,6 +1,5 @@
 package org.samfun.ktvine.cdm
 
-import co.touchlab.kermit.Logger
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.sync.Mutex
@@ -322,7 +321,7 @@ class Cdm(
             encrypted_client_id = encryptedClientId
         )
 
-        Logger.d("ktvine") {
+        KtvineLog.d {
             "Generating License Request - " +
             "Session ID: $sessionId, " +
             "Request ID: $requestId, " +
@@ -420,7 +419,7 @@ class Cdm(
                 parsed.add(Key.fromContainer(kc, encKey))
             } catch (error: Throwable) {
                 // ignore malformed keys
-                Logger.e("ktvine", error) { "Error parsing key container: ${error.message}" }
+                KtvineLog.e(error) { "Error parsing key container: ${error.message}" }
             }
         }
 

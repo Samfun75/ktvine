@@ -1,6 +1,5 @@
 package org.samfun.ktvine.core
 
-import co.touchlab.kermit.Logger
 import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
@@ -11,6 +10,7 @@ import org.samfun.ktvine.proto.ClientIdentification
 import org.samfun.ktvine.proto.DrmCertificate
 import org.samfun.ktvine.proto.FileHashes
 import org.samfun.ktvine.proto.SignedDrmCertificate
+import org.samfun.ktvine.utils.KtvineLog
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.decodeExact
 import org.samfun.ktvine.utils.orDecodeError
@@ -140,7 +140,7 @@ class Device(
 
             val systemId = drm.system_id.orDecodeError("DrmCertificate.system_id")
 
-            Logger.d("ktvine") { "Loaded WVD v2 device: type=$type, securityLevel=$securityLevel, systemId=$systemId" }
+            KtvineLog.d { "Loaded WVD v2 device: type=$type, securityLevel=$securityLevel, systemId=$systemId" }
 
             return Device(
                 type = type,
@@ -238,7 +238,7 @@ class Device(
                 val newVmpData = vmp.encode()
                 val existing = clientId.vmp_data?.toByteArray()
                 if (existing != null && !existing.contentEquals(newVmpData)) {
-                    Logger.w("ktvine") { "Client ID already has Verified Media Path data; overwriting it" }
+                    KtvineLog.w { "Client ID already has Verified Media Path data; overwriting it" }
                 }
                 clientIdBytes = clientId.copy(vmp_data = newVmpData.toByteString()).encode()
             }
