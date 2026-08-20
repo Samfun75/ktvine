@@ -19,25 +19,25 @@ import org.samfun.ktvine.utils.orDecodeError
  * Kotlin Multiplatform representation of a Widevine Device file (WVD).
  * Supports the v2 structure used by pywidevine; v1 blobs can be brought forward with [migrate].
  */
-class Device(
-    val type: DeviceTypes,
-    val securityLevel: Int,
-    val flags: Map<String, Any?>,
-    val privateKeyDer: ByteArray,
-    val clientId: ClientIdentification,
-    val vmp: FileHashes?,
-    val systemId: Int,
+public class Device(
+    public val type: DeviceTypes,
+    public val securityLevel: Int,
+    public val flags: Map<String, Any?>,
+    public val privateKeyDer: ByteArray,
+    public val clientId: ClientIdentification,
+    public val vmp: FileHashes?,
+    public val systemId: Int,
     /**
      * The raw flags byte, preserved so [dumps] round-trips. No flags are defined yet, which
      * is why [flags] is always empty.
      */
-    val rawFlags: Int = 0
+    public val rawFlags: Int = 0
 ) {
     override fun toString(): String =
         "Device(type=$type, securityLevel=$securityLevel, flags=$flags, privateKeyDer=${privateKeyDer.size} bytes, systemId=$systemId)"
 
     /** Serialize this device back to a WVD v2 blob. */
-    fun dumps(): ByteArray = buildWvdV2(
+    public fun dumps(): ByteArray = buildWvdV2(
         type = type,
         securityLevel = securityLevel,
         privateKeyDer = privateKeyDer,
@@ -46,15 +46,16 @@ class Device(
     )
 
     /** Write this device to [path] as a WVD v2 file, creating parent directories. */
-    fun dump(path: Path, fileSystem: FileSystem = FileSystem.SYSTEM) {
+    public fun dump(path: Path, fileSystem: FileSystem = FileSystem.SYSTEM) {
         path.parent?.let { fileSystem.createDirectories(it) }
         fileSystem.write(path) { write(dumps()) }
     }
 
     /** Write this device to [path] as a WVD v2 file, creating parent directories. */
-    fun dump(path: String, fileSystem: FileSystem = FileSystem.SYSTEM) = dump(path.toPath(), fileSystem)
+    public fun dump(path: String, fileSystem: FileSystem = FileSystem.SYSTEM): Unit =
+        dump(path.toPath(), fileSystem)
 
-    companion object {
+    public companion object {
         private val MAGIC = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte())
         private const val HEADER_SIZE = 3 + 1 + 1 + 1 + 1 + 2 + 2
 
@@ -63,7 +64,7 @@ class Device(
          * @throws ValueException if the data is not a valid WVD v2 blob
          * @throws DecodeException if an embedded protobuf message is malformed
          */
-        fun loads(data: ByteArray): Device {
+        public fun loads(data: ByteArray): Device {
             if (data.size < HEADER_SIZE) throw ValueException("Data too short to be a WVD v2")
             var offset = 0
 
@@ -158,18 +159,18 @@ class Device(
          * Parse a Base64-encoded WVD v2 blob.
          * @throws ValueException if decoding or parsing fails
          */
-        fun loads(data: String): Device {
+        public fun loads(data: String): Device {
             val bytes = data.decodeBase64()?.toByteArray()
                 ?: throw ValueException("Device Base64 data is invalid")
             return loads(bytes)
         }
 
         /** Read a WVD v2 file from [path]. */
-        fun load(path: Path, fileSystem: FileSystem = FileSystem.SYSTEM): Device =
+        public fun load(path: Path, fileSystem: FileSystem = FileSystem.SYSTEM): Device =
             loads(fileSystem.read(path) { readByteArray() })
 
         /** Read a WVD v2 file from [path]. */
-        fun load(path: String, fileSystem: FileSystem = FileSystem.SYSTEM): Device =
+        public fun load(path: String, fileSystem: FileSystem = FileSystem.SYSTEM): Device =
             load(path.toPath(), fileSystem)
 
         /**
@@ -180,7 +181,7 @@ class Device(
          *
          * @throws ValueException if the data is already v2, or is not a WVD file at all
          */
-        fun migrate(data: ByteArray): Device {
+        public fun migrate(data: ByteArray): Device {
             if (data.size < 4) throw ValueException("Data too short to be a WVD file")
             if (!data.copyOfRange(0, 3).contentEquals(MAGIC))
                 throw ValueException("Device Data does not seem to be a WVD file (bad magic)")
@@ -254,7 +255,7 @@ class Device(
         }
 
         /** Bring a Base64-encoded WVD v1 blob forward to v2. */
-        fun migrate(data: String): Device {
+        public fun migrate(data: String): Device {
             val bytes = data.decodeBase64()?.toByteArray()
                 ?: throw ValueException("Device Base64 data is invalid")
             return migrate(bytes)
@@ -263,7 +264,7 @@ class Device(
         /**
          * Build a WVD v2 file (bytes) from parts.
          */
-        fun buildWvdV2(
+        public fun buildWvdV2(
             type: DeviceTypes,
             securityLevel: Int,
             privateKeyDer: ByteArray,
@@ -286,4 +287,4 @@ class Device(
 }
 
 /** Types of Widevine devices supported by this library. */
-enum class DeviceTypes(val value: Int) { CHROME(1), ANDROID(2) }
+public enum class DeviceTypes(public val value: Int) { CHROME(1), ANDROID(2) }

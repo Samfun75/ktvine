@@ -11,7 +11,7 @@ import org.samfun.ktvine.utils.ValueException
 private val crypto = CryptographyProvider.Default
 
 /** Sign data with RSA-PSS (SHA-1) using a PKCS#1 DER private key. */
-suspend fun rsaPssSignSha1(privateKeyDer: ByteArray, data: ByteArray): ByteArray {
+public suspend fun rsaPssSignSha1(privateKeyDer: ByteArray, data: ByteArray): ByteArray {
     val rsa = crypto.get(RSA.PSS)
     val privateKey = rsa.privateKeyDecoder(SHA1).decodeFromByteArray(
         RSA.PrivateKey.Format.DER.PKCS1,
@@ -21,7 +21,7 @@ suspend fun rsaPssSignSha1(privateKeyDer: ByteArray, data: ByteArray): ByteArray
 }
 
 /** Verify an RSA-PSS (SHA-1) signature using an X.509 DER public key. */
-suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature: ByteArray): Boolean {
+public suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature: ByteArray): Boolean {
     val rsa = crypto.get(RSA.PSS)
     val publicKey =
         rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
@@ -32,7 +32,7 @@ suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature
 }
 
 /** Encrypt with RSA-OAEP (SHA-1) using an X.509 DER public key. */
-suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray {
+public suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray {
     val rsa = crypto.get(RSA.OAEP)
     val publicKey = rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
         RSA.PublicKey.Format.DER.PKCS1,
@@ -42,7 +42,7 @@ suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray 
 }
 
 /** Decrypt with RSA-OAEP (SHA-1) using a PKCS#1 DER private key. */
-suspend fun rsaOaepDecrypt(privateKeyDer: ByteArray, data: ByteArray): ByteArray {
+public suspend fun rsaOaepDecrypt(privateKeyDer: ByteArray, data: ByteArray): ByteArray {
     val rsa = crypto.get(RSA.OAEP)
     val privateKey =
         rsa.privateKeyDecoder(SHA1).decodeFromByteArray(
@@ -63,7 +63,7 @@ private const val CMAC_RB = 0x87
  * provider in cryptography-kotlin 0.5.0 has it. CMAC is CBC-MAC with a tweaked final
  * block, so AES-CBC — which every provider does have — is enough to build it.
  */
-suspend fun aesCmac(key: ByteArray, data: ByteArray): ByteArray {
+public suspend fun aesCmac(key: ByteArray, data: ByteArray): ByteArray {
     // L = AES-ECB(K, 0^128); a single CBC block with a zero IV is the same thing.
     val l = aesCbcEncryptNoPadding(key, ZERO_IV, ZERO_IV)
     val k1 = shiftLeftWithRb(l)
@@ -106,41 +106,41 @@ private fun shiftLeftWithRb(input: ByteArray): ByteArray {
 }
 
 /** AES-CBC decrypt with PKCS#7 padding handling determined by cipher. */
-suspend fun aesCbcDecrypt(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray {
+public suspend fun aesCbcDecrypt(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray {
     val cbc = crypto.get(AES.CBC)
     val decryptor = cbc.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, key).cipher(false)
     return decryptor.decryptWithIv(iv, data)
 }
 
 /** Alias to match existing call sites expecting explicit no-padding naming. */
-suspend fun aesCbcDecryptNoPadding(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray =
+public suspend fun aesCbcDecryptNoPadding(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray =
     aesCbcDecrypt(key, iv, data)
 
 /** AES-CBC encrypt without internal padding. Provide PKCS#7 padded plaintext. */
-suspend fun aesCbcEncryptNoPadding(key: ByteArray, iv: ByteArray, plaintextNoPad: ByteArray): ByteArray {
+public suspend fun aesCbcEncryptNoPadding(key: ByteArray, iv: ByteArray, plaintextNoPad: ByteArray): ByteArray {
     val cbc = crypto.get(AES.CBC)
     val encryptor = cbc.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, key).cipher(padding = false)
     return encryptor.encryptWithIv(iv, plaintextNoPad)
 }
 
 /** Compute HMAC-SHA256 over [data] with [key]. */
-suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
+public suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
     val hmac = crypto.get(HMAC)
     val generator = hmac.keyDecoder(SHA256).decodeFromByteArray(HMAC.Key.Format.RAW,key).signatureGenerator()
     return generator.generateSignature(data)
 }
 
 /** Generate [count] cryptographically strong random bytes. */
-fun randomBytes(count: Int): ByteArray = CryptographyRandom.nextBytes(count)
+public fun randomBytes(count: Int): ByteArray = CryptographyRandom.nextBytes(count)
 
 /** Generate a cryptographically strong random [Int] in `[from, until)`. */
-fun randomInt(from: Int, until: Int): Int = CryptographyRandom.nextInt(from, until)
+public fun randomInt(from: Int, until: Int): Int = CryptographyRandom.nextInt(from, until)
 
 /**
  * Compare two byte arrays without an early exit, so the position of the first differing
  * byte is not observable through timing. Lengths are still compared directly.
  */
-fun constantTimeEquals(a: ByteArray, b: ByteArray): Boolean {
+public fun constantTimeEquals(a: ByteArray, b: ByteArray): Boolean {
     if (a.size != b.size) return false
     var diff = 0
     for (i in a.indices) diff = diff or (a[i].toInt() xor b[i].toInt())
@@ -148,7 +148,7 @@ fun constantTimeEquals(a: ByteArray, b: ByteArray): Boolean {
 }
 
 /** Apply PKCS#7 padding to [data] for [blockSize] bytes (default 16). */
-fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
+public fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
     if (blockSize !in 1..255) throw ValueException("Invalid block size $blockSize")
     val padLen = blockSize - (data.size % blockSize)
     val padding = ByteArray(padLen) { padLen.toByte() }
@@ -162,7 +162,7 @@ fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
  *   `Padding.unpad`. Returning the input unchanged would hand back a failed decrypt as
  *   if it were a content key.
  */
-fun pkcs7Unpad(data: ByteArray, blockSize: Int = 16): ByteArray {
+public fun pkcs7Unpad(data: ByteArray, blockSize: Int = 16): ByteArray {
     if (blockSize !in 1..255) throw ValueException("Invalid block size $blockSize")
     if (data.isEmpty()) throw ValueException("Cannot unpad empty data")
     if (data.size % blockSize != 0)

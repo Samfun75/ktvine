@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
  * Helper for parsing and building PSSH (Protection System Specific Header) boxes.
  * Supports both Widevine and PlayReady headers and provides conversions.
  */
-class PSSH {
+public class PSSH {
 
     private var _version: Int = 0
     private var _flags: Int = 0
@@ -25,13 +25,13 @@ class PSSH {
     private var _content: ByteArray = ByteArray(0)
 
     /** Raw init data contained within the PSSH box. */
-    val initData: ByteArray get() = _content
+    public val initData: ByteArray get() = _content
 
     /**
      * Create from a Base64-encoded PSSH box, Widevine CENC header, or PlayReady header.
      * @see PSSH constructor taking [ByteArray] for how [strict] is applied.
      */
-    constructor(data: String, strict: Boolean = false) : this(decodeBase64OrThrow(data), strict)
+    public constructor(data: String, strict: Boolean = false) : this(decodeBase64OrThrow(data), strict)
 
     /**
      * Create from raw bytes of a PSSH box, Widevine CENC header, or PlayReady header.
@@ -47,7 +47,7 @@ class PSSH {
      *
      * @param strict reject step 4 with a [DecodeException] instead of wrapping.
      */
-    constructor(data: ByteArray, strict: Boolean = false) {
+    public constructor(data: ByteArray, strict: Boolean = false) {
         val box = interpret(data, strict)
         this._systemId = box._systemId
         this._flags = box._flags
@@ -56,7 +56,7 @@ class PSSH {
         this._content = box._content
     }
 
-    constructor(systemId: ByteArray, version: Int, flags: Int, keyIds: List<Uuid>, content: ByteArray) {
+    public constructor(systemId: ByteArray, version: Int, flags: Int, keyIds: List<Uuid>, content: ByteArray) {
         _systemId = systemId
         _flags = flags
         _version = version
@@ -72,7 +72,7 @@ class PSSH {
      * per-KID from v4.2.0.0 on. Widevine spells it `protection_scheme`, a 4CC packed into a
      * uint32. It used to be dropped on conversion and replaced with a hardcoded AESCTR.
      */
-    val encryptionScheme: String?
+    public val encryptionScheme: String?
         get() = when {
             _systemId.contentEquals(PLAYREADY_SYSTEM_ID) -> playreadyAlgid()
             else -> runCatching { widevineScheme() }.getOrNull()
@@ -107,7 +107,7 @@ class PSSH {
      * - WidevineCencHeaders
      * - PlayReadyHeaders (4.0.0.0->4.3.0.0)
      */
-    fun keyIds(): List<Uuid> {
+    public fun keyIds(): List<Uuid> {
         if (_version == 1 && _keyIds.isNotEmpty()) return _keyIds
 
         // Dispatch on system_id rather than guessing. Whether a PRO happens to fail
@@ -193,7 +193,7 @@ class PSSH {
     override fun toString(): String = exportBase64()
 
     /** Convert PlayReady PSSH to a Widevine PSSH. */
-    fun toWidevine() {
+    public fun toWidevine() {
         if (_systemId.contentEquals(WIDEVINE)) throw ValueException("This is already a Widevine PSSH")
 
         val kids = keyIds()
@@ -222,7 +222,7 @@ class PSSH {
      *
      * @throws ValueException if the resulting header exceeds the 65535-byte record limit
      */
-    fun toPlayready(
+    public fun toPlayready(
         laUrl: String? = null,
         luiUrl: String? = null,
         dsId: ByteArray? = null,
@@ -252,7 +252,7 @@ class PSSH {
      *
      * @throws ValueException for any other system id
      */
-    fun setKeyIds(keyIds: List<Uuid>) {
+    public fun setKeyIds(keyIds: List<Uuid>) {
         when {
             _systemId.contentEquals(WIDEVINE) -> {
                 if (_version == 1 || _keyIds.isNotEmpty()) _keyIds = keyIds
@@ -285,16 +285,16 @@ class PSSH {
     }
 
     /** Overload that accepts a mixed list of UUID | String(hex/base64) | ByteArray. */
-    fun setKeyIdsAny(keyIds: List<Any>) = setKeyIds(parseKeyIds(keyIds))
+    public fun setKeyIdsAny(keyIds: List<Any>): Unit = setKeyIds(parseKeyIds(keyIds))
 
 
     /** Export the PSSH object as a full PSSH box in Base64 form. */
-    fun exportBase64(): String {
+    public fun exportBase64(): String {
         return Base64.encode(export())
     }
 
     /** Export the PSSH object as a full PSSH box in bytes form. */
-    fun export(): ByteArray {
+    public fun export(): ByteArray {
         val buffer = Buffer()
 
         // ISOBMFF Box Header (Size + Type). okio writes big-endian by default.
@@ -338,7 +338,7 @@ class PSSH {
         return size
     }
 
-    companion object {
+    public companion object {
 
         // WidevinePsshData.protection_scheme packs a 4CC into a uint32; see the proto.
         private const val FOURCC_CENC = 0x63656E63 // 'cenc', AES-CTR
@@ -467,16 +467,16 @@ class PSSH {
          * Multi-DRM init segments carry Widevine and PlayReady boxes side by side; the
          * [PSSH] constructors only ever return the first.
          */
-        fun parseAll(data: ByteArray): List<PSSH> = parseBoxes(data)
+        public fun parseAll(data: ByteArray): List<PSSH> = parseBoxes(data)
 
         /** Parse [data] as Base64 and return every `pssh` box in it. */
-        fun parseAll(data: String): List<PSSH> = parseBoxes(decodeBase64OrThrow(data))
+        public fun parseAll(data: String): List<PSSH> = parseBoxes(decodeBase64OrThrow(data))
 
         /**
          * Pick the `pssh` box for one DRM system out of an init segment.
          * @return the first matching box, or `null` when the segment carries none.
          */
-        fun fromInitSegment(data: ByteArray, systemId: ByteArray = WIDEVINE): PSSH? =
+        public fun fromInitSegment(data: ByteArray, systemId: ByteArray = WIDEVINE): PSSH? =
             parseBoxes(data).firstOrNull { it._systemId.contentEquals(systemId) }
 
         /** Walk an ISOBMFF box sequence and return every `pssh` box found, in order. */
@@ -558,15 +558,15 @@ class PSSH {
             return PSSH(systemId, version, flags, keyIds, data)
         }
 
-        val WIDEVINE: ByteArray = Uuid.parse("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed").toByteArray()
-        val PLAYREADY_SYSTEM_ID: ByteArray = Uuid.parse("9A04F079-9840-4286-AB92-E65BE0885F95").toByteArray()
+        public val WIDEVINE: ByteArray = Uuid.parse("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed").toByteArray()
+        public val PLAYREADY_SYSTEM_ID: ByteArray = Uuid.parse("9A04F079-9840-4286-AB92-E65BE0885F95").toByteArray()
 
 
         /**
          * Convert a list of UUID | String(hex/base64) | ByteArray to UUIDs.
          * @throws ValueException if any item has an unsupported type
          */
-        fun parseKeyIds(keyIds: List<Any>): List<Uuid> {
+        public fun parseKeyIds(keyIds: List<Any>): List<Uuid> {
             if (!keyIds.all { it is Uuid || it is String || it is ByteArray })
                 throw ValueException("Some items of key_ids are not a UUID, String, or ByteArray.")
             return keyIds.map { item ->
@@ -589,7 +589,7 @@ class PSSH {
          * - For version 0, provide initData only.
          * - For version 1, provide either keyIds or initData.
          */
-        fun new(
+        public fun new(
             systemId: Uuid,
             keyIds: List<Uuid>? = null,
             initData: Any? = null,

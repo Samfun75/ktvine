@@ -1,0 +1,217 @@
+public final class org/samfun/ktvine/cdm/Cdm {
+	public static final field COMMON_PRIVACY_CERT Ljava/lang/String;
+	public static final field Companion Lorg/samfun/ktvine/cdm/Cdm$Companion;
+	public static final field MAX_NUM_OF_SESSIONS I
+	public static final field STAGING_PRIVACY_CERT Ljava/lang/String;
+	public final fun close (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getKeys (Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun getKeys$default (Lorg/samfun/ktvine/cdm/Cdm;Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun getKeysFromEntitlement (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getLicense (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getLicenseChallenge (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun getLicenseChallenge$default (Lorg/samfun/ktvine/cdm/Cdm;Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun getSecurityLevel ()I
+	public final fun getServiceCertificate (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getSystemId ()I
+	public final fun open (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun parseLicense (Lokio/ByteString;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setServiceCertificate (Lokio/ByteString;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setServiceCertificate (Lokio/ByteString;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/samfun/ktvine/cdm/Cdm$Companion {
+	public final fun fromDevice (Lorg/samfun/ktvine/core/Device;)Lorg/samfun/ktvine/cdm/Cdm;
+	public final fun getSERVICE_CERTIFICATE_CHALLENGE ()[B
+	public final fun unwrapEntitledKeys (Ljava/util/List;Lorg/samfun/ktvine/core/PSSH;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/samfun/ktvine/core/Device {
+	public static final field Companion Lorg/samfun/ktvine/core/Device$Companion;
+	public fun <init> (Lorg/samfun/ktvine/core/DeviceTypes;ILjava/util/Map;[BLorg/samfun/ktvine/proto/ClientIdentification;Lorg/samfun/ktvine/proto/FileHashes;II)V
+	public synthetic fun <init> (Lorg/samfun/ktvine/core/DeviceTypes;ILjava/util/Map;[BLorg/samfun/ktvine/proto/ClientIdentification;Lorg/samfun/ktvine/proto/FileHashes;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun dump (Ljava/lang/String;Lokio/FileSystem;)V
+	public final fun dump (Lokio/Path;Lokio/FileSystem;)V
+	public static synthetic fun dump$default (Lorg/samfun/ktvine/core/Device;Ljava/lang/String;Lokio/FileSystem;ILjava/lang/Object;)V
+	public static synthetic fun dump$default (Lorg/samfun/ktvine/core/Device;Lokio/Path;Lokio/FileSystem;ILjava/lang/Object;)V
+	public final fun dumps ()[B
+	public final fun getClientId ()Lorg/samfun/ktvine/proto/ClientIdentification;
+	public final fun getFlags ()Ljava/util/Map;
+	public final fun getPrivateKeyDer ()[B
+	public final fun getRawFlags ()I
+	public final fun getSecurityLevel ()I
+	public final fun getSystemId ()I
+	public final fun getType ()Lorg/samfun/ktvine/core/DeviceTypes;
+	public final fun getVmp ()Lorg/samfun/ktvine/proto/FileHashes;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/samfun/ktvine/core/Device$Companion {
+	public final fun buildWvdV2 (Lorg/samfun/ktvine/core/DeviceTypes;I[B[BI)[B
+	public static synthetic fun buildWvdV2$default (Lorg/samfun/ktvine/core/Device$Companion;Lorg/samfun/ktvine/core/DeviceTypes;I[B[BIILjava/lang/Object;)[B
+	public final fun load (Ljava/lang/String;Lokio/FileSystem;)Lorg/samfun/ktvine/core/Device;
+	public final fun load (Lokio/Path;Lokio/FileSystem;)Lorg/samfun/ktvine/core/Device;
+	public static synthetic fun load$default (Lorg/samfun/ktvine/core/Device$Companion;Ljava/lang/String;Lokio/FileSystem;ILjava/lang/Object;)Lorg/samfun/ktvine/core/Device;
+	public static synthetic fun load$default (Lorg/samfun/ktvine/core/Device$Companion;Lokio/Path;Lokio/FileSystem;ILjava/lang/Object;)Lorg/samfun/ktvine/core/Device;
+	public final fun loads (Ljava/lang/String;)Lorg/samfun/ktvine/core/Device;
+	public final fun loads ([B)Lorg/samfun/ktvine/core/Device;
+	public final fun migrate (Ljava/lang/String;)Lorg/samfun/ktvine/core/Device;
+	public final fun migrate ([B)Lorg/samfun/ktvine/core/Device;
+}
+
+public final class org/samfun/ktvine/core/DeviceTypes : java/lang/Enum {
+	public static final field ANDROID Lorg/samfun/ktvine/core/DeviceTypes;
+	public static final field CHROME Lorg/samfun/ktvine/core/DeviceTypes;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getValue ()I
+	public static fun valueOf (Ljava/lang/String;)Lorg/samfun/ktvine/core/DeviceTypes;
+	public static fun values ()[Lorg/samfun/ktvine/core/DeviceTypes;
+}
+
+public final class org/samfun/ktvine/core/Key {
+	public static final field Companion Lorg/samfun/ktvine/core/Key$Companion;
+	public fun <init> (Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/uuid/Uuid;[BLjava/util/List;)V
+	public synthetic fun <init> (Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/uuid/Uuid;[BLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()[B
+	public final fun getKid ()Lkotlin/uuid/Uuid;
+	public final fun getPermissions ()Ljava/util/List;
+	public final fun getType ()Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/samfun/ktvine/core/Key$Companion {
+	public final fun fromContainer (Lorg/samfun/ktvine/proto/License$KeyContainer;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/samfun/ktvine/core/PSSH {
+	public static final field Companion Lorg/samfun/ktvine/core/PSSH$Companion;
+	public fun <init> (Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> ([BIILjava/util/List;[B)V
+	public fun <init> ([BZ)V
+	public synthetic fun <init> ([BZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun export ()[B
+	public final fun exportBase64 ()Ljava/lang/String;
+	public final fun getEncryptionScheme ()Ljava/lang/String;
+	public final fun getInitData ()[B
+	public final fun keyIds ()Ljava/util/List;
+	public final fun setKeyIds (Ljava/util/List;)V
+	public final fun setKeyIdsAny (Ljava/util/List;)V
+	public final fun toPlayready (Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;)V
+	public static synthetic fun toPlayready$default (Lorg/samfun/ktvine/core/PSSH;Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
+	public fun toString ()Ljava/lang/String;
+	public final fun toWidevine ()V
+}
+
+public final class org/samfun/ktvine/core/PSSH$Companion {
+	public final fun fromInitSegment ([B[B)Lorg/samfun/ktvine/core/PSSH;
+	public static synthetic fun fromInitSegment$default (Lorg/samfun/ktvine/core/PSSH$Companion;[B[BILjava/lang/Object;)Lorg/samfun/ktvine/core/PSSH;
+	public final fun getPLAYREADY_SYSTEM_ID ()[B
+	public final fun getWIDEVINE ()[B
+	public final fun new (Lkotlin/uuid/Uuid;Ljava/util/List;Ljava/lang/Object;II)Lorg/samfun/ktvine/core/PSSH;
+	public static synthetic fun new$default (Lorg/samfun/ktvine/core/PSSH$Companion;Lkotlin/uuid/Uuid;Ljava/util/List;Ljava/lang/Object;IIILjava/lang/Object;)Lorg/samfun/ktvine/core/PSSH;
+	public final fun parseAll (Ljava/lang/String;)Ljava/util/List;
+	public final fun parseAll ([B)Ljava/util/List;
+	public final fun parseKeyIds (Ljava/util/List;)Ljava/util/List;
+}
+
+public final class org/samfun/ktvine/crypto/CryptoKt {
+	public static final fun aesCbcDecrypt ([B[B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun aesCbcDecryptNoPadding ([B[B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun aesCbcEncryptNoPadding ([B[B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun aesCmac ([B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun constantTimeEquals ([B[B)Z
+	public static final fun hmacSha256 ([B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun pkcs7Pad ([BI)[B
+	public static synthetic fun pkcs7Pad$default ([BIILjava/lang/Object;)[B
+	public static final fun pkcs7Unpad ([BI)[B
+	public static synthetic fun pkcs7Unpad$default ([BIILjava/lang/Object;)[B
+	public static final fun randomBytes (I)[B
+	public static final fun randomInt (II)I
+	public static final fun rsaOaepDecrypt ([B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun rsaOaepEncrypt ([B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun rsaPssSignSha1 ([B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun rsaPssVerifySha1 ([B[B[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/samfun/ktvine/utils/DecodeException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/DeviceMismatchException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/ExtensionsKt {
+	public static final fun containsSubarray ([B[B)Z
+	public static final fun decodeToStringUtf16LE ([B)Ljava/lang/String;
+	public static final fun encodeToUtf16LE (Ljava/lang/String;)[B
+	public static final fun escapeXml (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun kidToUuid (Ljava/lang/String;)Lkotlin/uuid/Uuid;
+	public static final fun kidToUuid (Lokio/ByteString;)Lkotlin/uuid/Uuid;
+	public static final fun swapGuidEndianness ([B)[B
+	public static final fun toHexString ([B)Ljava/lang/String;
+	public static final fun toLEU16 (I)[B
+	public static final fun toLEU32 (I)[B
+	public static final fun toLittleEndianByteArray (Lkotlin/uuid/Uuid;)[B
+	public static final fun toUTF8 ([B)Ljava/lang/String;
+	public static final fun toUUID ([B)Lkotlin/uuid/Uuid;
+	public static final fun unescapeXml (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun uuidFromByteArray (Lokio/ByteString;)Lkotlin/uuid/Uuid;
+	public static final fun uuidFromByteString (Lokio/ByteString;)Lkotlin/uuid/Uuid;
+	public static final fun uuidFromHexByteString (Lokio/ByteString;)Lkotlin/uuid/Uuid;
+	public static final fun uuidFromLittleEndian ([B)Lkotlin/uuid/Uuid;
+}
+
+public final class org/samfun/ktvine/utils/InvalidBoxException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/InvalidContextException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/InvalidInitDataException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/InvalidLicenseMessageException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/InvalidLicenseTypeException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/InvalidSessionException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public class org/samfun/ktvine/utils/KtvineException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/KtvineLog {
+	public static final field INSTANCE Lorg/samfun/ktvine/utils/KtvineLog;
+	public final fun reset ()V
+	public final fun setLogger (Lco/touchlab/kermit/Logger;)V
+	public final fun setMinSeverity (Lco/touchlab/kermit/Severity;)V
+}
+
+public final class org/samfun/ktvine/utils/NoKeysLoadedException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/SignatureMismatchException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/TooManySessionsException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class org/samfun/ktvine/utils/ValueException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (Ljava/lang/String;)V
+}
+

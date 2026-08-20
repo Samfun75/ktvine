@@ -8,7 +8,7 @@ import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.proto.SignedDrmCertificate
 
 /** Internal session state used by [org.samfun.ktvine.cdm.Cdm]. */
-class Session(val number: Int) {
+internal class Session(val number: Int) {
     /** Serialises operations on this session's mutable state. Never held across [Cdm]'s own lock. */
     internal val lock: Mutex = Mutex()
 

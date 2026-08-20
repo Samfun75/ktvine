@@ -1,0 +1,234 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, linuxX64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.samfun75:library>
+final enum class org.samfun.ktvine.core/DeviceTypes : kotlin/Enum<org.samfun.ktvine.core/DeviceTypes> { // org.samfun.ktvine.core/DeviceTypes|null[0]
+    enum entry ANDROID // org.samfun.ktvine.core/DeviceTypes.ANDROID|null[0]
+    enum entry CHROME // org.samfun.ktvine.core/DeviceTypes.CHROME|null[0]
+
+    final val entries // org.samfun.ktvine.core/DeviceTypes.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktvine.core/DeviceTypes> // org.samfun.ktvine.core/DeviceTypes.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktvine.core/DeviceTypes.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktvine.core/DeviceTypes.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktvine.core/DeviceTypes // org.samfun.ktvine.core/DeviceTypes.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktvine.core/DeviceTypes> // org.samfun.ktvine.core/DeviceTypes.values|values#static(){}[0]
+}
+
+final class org.samfun.ktvine.cdm/Cdm { // org.samfun.ktvine.cdm/Cdm|null[0]
+    final val securityLevel // org.samfun.ktvine.cdm/Cdm.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int // org.samfun.ktvine.cdm/Cdm.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+    final val systemId // org.samfun.ktvine.cdm/Cdm.systemId|{}systemId[0]
+        final fun <get-systemId>(): kotlin/Int // org.samfun.ktvine.cdm/Cdm.systemId.<get-systemId>|<get-systemId>(){}[0]
+
+    final suspend fun close(okio/ByteString) // org.samfun.ktvine.cdm/Cdm.close|close(okio.ByteString){}[0]
+    final suspend fun getKeys(okio/ByteString, org.samfun.ktvine.proto/License.KeyContainer.KeyType? = ...): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.cdm/Cdm.getKeys|getKeys(okio.ByteString;org.samfun.ktvine.proto.License.KeyContainer.KeyType?){}[0]
+    final suspend fun getKeysFromEntitlement(okio/ByteString, org.samfun.ktvine.core/PSSH): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.cdm/Cdm.getKeysFromEntitlement|getKeysFromEntitlement(okio.ByteString;org.samfun.ktvine.core.PSSH){}[0]
+    final suspend fun getLicense(okio/ByteString): org.samfun.ktvine.proto/License? // org.samfun.ktvine.cdm/Cdm.getLicense|getLicense(okio.ByteString){}[0]
+    final suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktvine.core/PSSH, org.samfun.ktvine.proto/LicenseType = ..., kotlin/Boolean = ..., org.samfun.ktvine.proto/LicenseRequest.RequestType = ...): kotlin/ByteArray // org.samfun.ktvine.cdm/Cdm.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktvine.core.PSSH;org.samfun.ktvine.proto.LicenseType;kotlin.Boolean;org.samfun.ktvine.proto.LicenseRequest.RequestType){}[0]
+    final suspend fun getServiceCertificate(okio/ByteString): org.samfun.ktvine.proto/SignedDrmCertificate? // org.samfun.ktvine.cdm/Cdm.getServiceCertificate|getServiceCertificate(okio.ByteString){}[0]
+    final suspend fun open(): okio/ByteString // org.samfun.ktvine.cdm/Cdm.open|open(){}[0]
+    final suspend fun parseLicense(okio/ByteString, kotlin/ByteArray) // org.samfun.ktvine.cdm/Cdm.parseLicense|parseLicense(okio.ByteString;kotlin.ByteArray){}[0]
+    final suspend fun setServiceCertificate(okio/ByteString, kotlin/ByteArray?): kotlin/String? // org.samfun.ktvine.cdm/Cdm.setServiceCertificate|setServiceCertificate(okio.ByteString;kotlin.ByteArray?){}[0]
+    final suspend fun setServiceCertificate(okio/ByteString, kotlin/String?): kotlin/String? // org.samfun.ktvine.cdm/Cdm.setServiceCertificate|setServiceCertificate(okio.ByteString;kotlin.String?){}[0]
+
+    final object Companion { // org.samfun.ktvine.cdm/Cdm.Companion|null[0]
+        final const val COMMON_PRIVACY_CERT // org.samfun.ktvine.cdm/Cdm.Companion.COMMON_PRIVACY_CERT|{}COMMON_PRIVACY_CERT[0]
+            final fun <get-COMMON_PRIVACY_CERT>(): kotlin/String // org.samfun.ktvine.cdm/Cdm.Companion.COMMON_PRIVACY_CERT.<get-COMMON_PRIVACY_CERT>|<get-COMMON_PRIVACY_CERT>(){}[0]
+        final const val MAX_NUM_OF_SESSIONS // org.samfun.ktvine.cdm/Cdm.Companion.MAX_NUM_OF_SESSIONS|{}MAX_NUM_OF_SESSIONS[0]
+            final fun <get-MAX_NUM_OF_SESSIONS>(): kotlin/Int // org.samfun.ktvine.cdm/Cdm.Companion.MAX_NUM_OF_SESSIONS.<get-MAX_NUM_OF_SESSIONS>|<get-MAX_NUM_OF_SESSIONS>(){}[0]
+        final const val STAGING_PRIVACY_CERT // org.samfun.ktvine.cdm/Cdm.Companion.STAGING_PRIVACY_CERT|{}STAGING_PRIVACY_CERT[0]
+            final fun <get-STAGING_PRIVACY_CERT>(): kotlin/String // org.samfun.ktvine.cdm/Cdm.Companion.STAGING_PRIVACY_CERT.<get-STAGING_PRIVACY_CERT>|<get-STAGING_PRIVACY_CERT>(){}[0]
+
+        final val SERVICE_CERTIFICATE_CHALLENGE // org.samfun.ktvine.cdm/Cdm.Companion.SERVICE_CERTIFICATE_CHALLENGE|{}SERVICE_CERTIFICATE_CHALLENGE[0]
+            final fun <get-SERVICE_CERTIFICATE_CHALLENGE>(): kotlin/ByteArray // org.samfun.ktvine.cdm/Cdm.Companion.SERVICE_CERTIFICATE_CHALLENGE.<get-SERVICE_CERTIFICATE_CHALLENGE>|<get-SERVICE_CERTIFICATE_CHALLENGE>(){}[0]
+
+        final fun fromDevice(org.samfun.ktvine.core/Device): org.samfun.ktvine.cdm/Cdm // org.samfun.ktvine.cdm/Cdm.Companion.fromDevice|fromDevice(org.samfun.ktvine.core.Device){}[0]
+        final suspend fun unwrapEntitledKeys(kotlin.collections/List<org.samfun.ktvine.core/Key>, org.samfun.ktvine.core/PSSH): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.cdm/Cdm.Companion.unwrapEntitledKeys|unwrapEntitledKeys(kotlin.collections.List<org.samfun.ktvine.core.Key>;org.samfun.ktvine.core.PSSH){}[0]
+    }
+}
+
+final class org.samfun.ktvine.core/Device { // org.samfun.ktvine.core/Device|null[0]
+    constructor <init>(org.samfun.ktvine.core/DeviceTypes, kotlin/Int, kotlin.collections/Map<kotlin/String, kotlin/Any?>, kotlin/ByteArray, org.samfun.ktvine.proto/ClientIdentification, org.samfun.ktvine.proto/FileHashes?, kotlin/Int, kotlin/Int = ...) // org.samfun.ktvine.core/Device.<init>|<init>(org.samfun.ktvine.core.DeviceTypes;kotlin.Int;kotlin.collections.Map<kotlin.String,kotlin.Any?>;kotlin.ByteArray;org.samfun.ktvine.proto.ClientIdentification;org.samfun.ktvine.proto.FileHashes?;kotlin.Int;kotlin.Int){}[0]
+
+    final val clientId // org.samfun.ktvine.core/Device.clientId|{}clientId[0]
+        final fun <get-clientId>(): org.samfun.ktvine.proto/ClientIdentification // org.samfun.ktvine.core/Device.clientId.<get-clientId>|<get-clientId>(){}[0]
+    final val flags // org.samfun.ktvine.core/Device.flags|{}flags[0]
+        final fun <get-flags>(): kotlin.collections/Map<kotlin/String, kotlin/Any?> // org.samfun.ktvine.core/Device.flags.<get-flags>|<get-flags>(){}[0]
+    final val privateKeyDer // org.samfun.ktvine.core/Device.privateKeyDer|{}privateKeyDer[0]
+        final fun <get-privateKeyDer>(): kotlin/ByteArray // org.samfun.ktvine.core/Device.privateKeyDer.<get-privateKeyDer>|<get-privateKeyDer>(){}[0]
+    final val rawFlags // org.samfun.ktvine.core/Device.rawFlags|{}rawFlags[0]
+        final fun <get-rawFlags>(): kotlin/Int // org.samfun.ktvine.core/Device.rawFlags.<get-rawFlags>|<get-rawFlags>(){}[0]
+    final val securityLevel // org.samfun.ktvine.core/Device.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int // org.samfun.ktvine.core/Device.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+    final val systemId // org.samfun.ktvine.core/Device.systemId|{}systemId[0]
+        final fun <get-systemId>(): kotlin/Int // org.samfun.ktvine.core/Device.systemId.<get-systemId>|<get-systemId>(){}[0]
+    final val type // org.samfun.ktvine.core/Device.type|{}type[0]
+        final fun <get-type>(): org.samfun.ktvine.core/DeviceTypes // org.samfun.ktvine.core/Device.type.<get-type>|<get-type>(){}[0]
+    final val vmp // org.samfun.ktvine.core/Device.vmp|{}vmp[0]
+        final fun <get-vmp>(): org.samfun.ktvine.proto/FileHashes? // org.samfun.ktvine.core/Device.vmp.<get-vmp>|<get-vmp>(){}[0]
+
+    final fun dump(kotlin/String, okio/FileSystem = ...) // org.samfun.ktvine.core/Device.dump|dump(kotlin.String;okio.FileSystem){}[0]
+    final fun dump(okio/Path, okio/FileSystem = ...) // org.samfun.ktvine.core/Device.dump|dump(okio.Path;okio.FileSystem){}[0]
+    final fun dumps(): kotlin/ByteArray // org.samfun.ktvine.core/Device.dumps|dumps(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktvine.core/Device.toString|toString(){}[0]
+
+    final object Companion { // org.samfun.ktvine.core/Device.Companion|null[0]
+        final fun buildWvdV2(org.samfun.ktvine.core/DeviceTypes, kotlin/Int, kotlin/ByteArray, kotlin/ByteArray, kotlin/Int = ...): kotlin/ByteArray // org.samfun.ktvine.core/Device.Companion.buildWvdV2|buildWvdV2(org.samfun.ktvine.core.DeviceTypes;kotlin.Int;kotlin.ByteArray;kotlin.ByteArray;kotlin.Int){}[0]
+        final fun load(kotlin/String, okio/FileSystem = ...): org.samfun.ktvine.core/Device // org.samfun.ktvine.core/Device.Companion.load|load(kotlin.String;okio.FileSystem){}[0]
+        final fun load(okio/Path, okio/FileSystem = ...): org.samfun.ktvine.core/Device // org.samfun.ktvine.core/Device.Companion.load|load(okio.Path;okio.FileSystem){}[0]
+        final fun loads(kotlin/ByteArray): org.samfun.ktvine.core/Device // org.samfun.ktvine.core/Device.Companion.loads|loads(kotlin.ByteArray){}[0]
+        final fun loads(kotlin/String): org.samfun.ktvine.core/Device // org.samfun.ktvine.core/Device.Companion.loads|loads(kotlin.String){}[0]
+        final fun migrate(kotlin/ByteArray): org.samfun.ktvine.core/Device // org.samfun.ktvine.core/Device.Companion.migrate|migrate(kotlin.ByteArray){}[0]
+        final fun migrate(kotlin/String): org.samfun.ktvine.core/Device // org.samfun.ktvine.core/Device.Companion.migrate|migrate(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktvine.core/Key { // org.samfun.ktvine.core/Key|null[0]
+    constructor <init>(org.samfun.ktvine.proto/License.KeyContainer.KeyType, kotlin.uuid/Uuid, kotlin/ByteArray, kotlin.collections/List<kotlin/String> = ...) // org.samfun.ktvine.core/Key.<init>|<init>(org.samfun.ktvine.proto.License.KeyContainer.KeyType;kotlin.uuid.Uuid;kotlin.ByteArray;kotlin.collections.List<kotlin.String>){}[0]
+
+    final val key // org.samfun.ktvine.core/Key.key|{}key[0]
+        final fun <get-key>(): kotlin/ByteArray // org.samfun.ktvine.core/Key.key.<get-key>|<get-key>(){}[0]
+    final val kid // org.samfun.ktvine.core/Key.kid|{}kid[0]
+        final fun <get-kid>(): kotlin.uuid/Uuid // org.samfun.ktvine.core/Key.kid.<get-kid>|<get-kid>(){}[0]
+    final val permissions // org.samfun.ktvine.core/Key.permissions|{}permissions[0]
+        final fun <get-permissions>(): kotlin.collections/List<kotlin/String> // org.samfun.ktvine.core/Key.permissions.<get-permissions>|<get-permissions>(){}[0]
+    final val type // org.samfun.ktvine.core/Key.type|{}type[0]
+        final fun <get-type>(): org.samfun.ktvine.proto/License.KeyContainer.KeyType // org.samfun.ktvine.core/Key.type.<get-type>|<get-type>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // org.samfun.ktvine.core/Key.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // org.samfun.ktvine.core/Key.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktvine.core/Key.toString|toString(){}[0]
+
+    final object Companion { // org.samfun.ktvine.core/Key.Companion|null[0]
+        final suspend fun fromContainer(org.samfun.ktvine.proto/License.KeyContainer, kotlin/ByteArray): org.samfun.ktvine.core/Key // org.samfun.ktvine.core/Key.Companion.fromContainer|fromContainer(org.samfun.ktvine.proto.License.KeyContainer;kotlin.ByteArray){}[0]
+    }
+}
+
+final class org.samfun.ktvine.core/PSSH { // org.samfun.ktvine.core/PSSH|null[0]
+    constructor <init>(kotlin/ByteArray, kotlin/Boolean = ...) // org.samfun.ktvine.core/PSSH.<init>|<init>(kotlin.ByteArray;kotlin.Boolean){}[0]
+    constructor <init>(kotlin/ByteArray, kotlin/Int, kotlin/Int, kotlin.collections/List<kotlin.uuid/Uuid>, kotlin/ByteArray) // org.samfun.ktvine.core/PSSH.<init>|<init>(kotlin.ByteArray;kotlin.Int;kotlin.Int;kotlin.collections.List<kotlin.uuid.Uuid>;kotlin.ByteArray){}[0]
+    constructor <init>(kotlin/String, kotlin/Boolean = ...) // org.samfun.ktvine.core/PSSH.<init>|<init>(kotlin.String;kotlin.Boolean){}[0]
+
+    final val encryptionScheme // org.samfun.ktvine.core/PSSH.encryptionScheme|{}encryptionScheme[0]
+        final fun <get-encryptionScheme>(): kotlin/String? // org.samfun.ktvine.core/PSSH.encryptionScheme.<get-encryptionScheme>|<get-encryptionScheme>(){}[0]
+    final val initData // org.samfun.ktvine.core/PSSH.initData|{}initData[0]
+        final fun <get-initData>(): kotlin/ByteArray // org.samfun.ktvine.core/PSSH.initData.<get-initData>|<get-initData>(){}[0]
+
+    final fun export(): kotlin/ByteArray // org.samfun.ktvine.core/PSSH.export|export(){}[0]
+    final fun exportBase64(): kotlin/String // org.samfun.ktvine.core/PSSH.exportBase64|exportBase64(){}[0]
+    final fun keyIds(): kotlin.collections/List<kotlin.uuid/Uuid> // org.samfun.ktvine.core/PSSH.keyIds|keyIds(){}[0]
+    final fun setKeyIds(kotlin.collections/List<kotlin.uuid/Uuid>) // org.samfun.ktvine.core/PSSH.setKeyIds|setKeyIds(kotlin.collections.List<kotlin.uuid.Uuid>){}[0]
+    final fun setKeyIdsAny(kotlin.collections/List<kotlin/Any>) // org.samfun.ktvine.core/PSSH.setKeyIdsAny|setKeyIdsAny(kotlin.collections.List<kotlin.Any>){}[0]
+    final fun toPlayready(kotlin/String? = ..., kotlin/String? = ..., kotlin/ByteArray? = ..., kotlin/String? = ..., kotlin/String? = ...) // org.samfun.ktvine.core/PSSH.toPlayready|toPlayready(kotlin.String?;kotlin.String?;kotlin.ByteArray?;kotlin.String?;kotlin.String?){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktvine.core/PSSH.toString|toString(){}[0]
+    final fun toWidevine() // org.samfun.ktvine.core/PSSH.toWidevine|toWidevine(){}[0]
+
+    final object Companion { // org.samfun.ktvine.core/PSSH.Companion|null[0]
+        final val PLAYREADY_SYSTEM_ID // org.samfun.ktvine.core/PSSH.Companion.PLAYREADY_SYSTEM_ID|{}PLAYREADY_SYSTEM_ID[0]
+            final fun <get-PLAYREADY_SYSTEM_ID>(): kotlin/ByteArray // org.samfun.ktvine.core/PSSH.Companion.PLAYREADY_SYSTEM_ID.<get-PLAYREADY_SYSTEM_ID>|<get-PLAYREADY_SYSTEM_ID>(){}[0]
+        final val WIDEVINE // org.samfun.ktvine.core/PSSH.Companion.WIDEVINE|{}WIDEVINE[0]
+            final fun <get-WIDEVINE>(): kotlin/ByteArray // org.samfun.ktvine.core/PSSH.Companion.WIDEVINE.<get-WIDEVINE>|<get-WIDEVINE>(){}[0]
+
+        final fun fromInitSegment(kotlin/ByteArray, kotlin/ByteArray = ...): org.samfun.ktvine.core/PSSH? // org.samfun.ktvine.core/PSSH.Companion.fromInitSegment|fromInitSegment(kotlin.ByteArray;kotlin.ByteArray){}[0]
+        final fun new(kotlin.uuid/Uuid, kotlin.collections/List<kotlin.uuid/Uuid>? = ..., kotlin/Any? = ..., kotlin/Int = ..., kotlin/Int = ...): org.samfun.ktvine.core/PSSH // org.samfun.ktvine.core/PSSH.Companion.new|new(kotlin.uuid.Uuid;kotlin.collections.List<kotlin.uuid.Uuid>?;kotlin.Any?;kotlin.Int;kotlin.Int){}[0]
+        final fun parseAll(kotlin/ByteArray): kotlin.collections/List<org.samfun.ktvine.core/PSSH> // org.samfun.ktvine.core/PSSH.Companion.parseAll|parseAll(kotlin.ByteArray){}[0]
+        final fun parseAll(kotlin/String): kotlin.collections/List<org.samfun.ktvine.core/PSSH> // org.samfun.ktvine.core/PSSH.Companion.parseAll|parseAll(kotlin.String){}[0]
+        final fun parseKeyIds(kotlin.collections/List<kotlin/Any>): kotlin.collections/List<kotlin.uuid/Uuid> // org.samfun.ktvine.core/PSSH.Companion.parseKeyIds|parseKeyIds(kotlin.collections.List<kotlin.Any>){}[0]
+    }
+}
+
+final class org.samfun.ktvine.utils/DecodeException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/DecodeException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/DecodeException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/DeviceMismatchException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/DeviceMismatchException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/DeviceMismatchException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/InvalidBoxException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidBoxException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidBoxException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/InvalidContextException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidContextException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidContextException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/InvalidInitDataException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidInitDataException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidInitDataException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/InvalidLicenseMessageException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidLicenseMessageException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidLicenseMessageException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/InvalidLicenseTypeException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidLicenseTypeException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidLicenseTypeException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/InvalidSessionException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidSessionException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidSessionException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/NoKeysLoadedException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/NoKeysLoadedException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/NoKeysLoadedException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/SignatureMismatchException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/SignatureMismatchException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/SignatureMismatchException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/TooManySessionsException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/TooManySessionsException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/TooManySessionsException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktvine.utils/ValueException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/ValueException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/ValueException.<init>|<init>(kotlin.String){}[0]
+}
+
+open class org.samfun.ktvine.utils/KtvineException : kotlin/Exception { // org.samfun.ktvine.utils/KtvineException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/KtvineException.<init>|<init>(kotlin.String){}[0]
+}
+
+final object org.samfun.ktvine.utils/KtvineLog { // org.samfun.ktvine.utils/KtvineLog|null[0]
+    final fun reset() // org.samfun.ktvine.utils/KtvineLog.reset|reset(){}[0]
+    final fun setLogger(co.touchlab.kermit/Logger) // org.samfun.ktvine.utils/KtvineLog.setLogger|setLogger(co.touchlab.kermit.Logger){}[0]
+    final fun setMinSeverity(co.touchlab.kermit/Severity) // org.samfun.ktvine.utils/KtvineLog.setMinSeverity|setMinSeverity(co.touchlab.kermit.Severity){}[0]
+}
+
+final fun (kotlin.uuid/Uuid).org.samfun.ktvine.utils/toLittleEndianByteArray(): kotlin/ByteArray // org.samfun.ktvine.utils/toLittleEndianByteArray|toLittleEndianByteArray@kotlin.uuid.Uuid(){}[0]
+final fun (kotlin/ByteArray).org.samfun.ktvine.utils/containsSubarray(kotlin/ByteArray): kotlin/Boolean // org.samfun.ktvine.utils/containsSubarray|containsSubarray@kotlin.ByteArray(kotlin.ByteArray){}[0]
+final fun (kotlin/ByteArray).org.samfun.ktvine.utils/decodeToStringUtf16LE(): kotlin/String // org.samfun.ktvine.utils/decodeToStringUtf16LE|decodeToStringUtf16LE@kotlin.ByteArray(){}[0]
+final fun (kotlin/ByteArray).org.samfun.ktvine.utils/swapGuidEndianness(): kotlin/ByteArray // org.samfun.ktvine.utils/swapGuidEndianness|swapGuidEndianness@kotlin.ByteArray(){}[0]
+final fun (kotlin/ByteArray).org.samfun.ktvine.utils/toHexString(): kotlin/String // org.samfun.ktvine.utils/toHexString|toHexString@kotlin.ByteArray(){}[0]
+final fun (kotlin/ByteArray).org.samfun.ktvine.utils/toUTF8(): kotlin/String // org.samfun.ktvine.utils/toUTF8|toUTF8@kotlin.ByteArray(){}[0]
+final fun (kotlin/ByteArray).org.samfun.ktvine.utils/toUUID(): kotlin.uuid/Uuid // org.samfun.ktvine.utils/toUUID|toUUID@kotlin.ByteArray(){}[0]
+final fun (kotlin/ByteArray).org.samfun.ktvine.utils/uuidFromLittleEndian(): kotlin.uuid/Uuid // org.samfun.ktvine.utils/uuidFromLittleEndian|uuidFromLittleEndian@kotlin.ByteArray(){}[0]
+final fun (kotlin/Int).org.samfun.ktvine.utils/toLEU16(): kotlin/ByteArray // org.samfun.ktvine.utils/toLEU16|toLEU16@kotlin.Int(){}[0]
+final fun (kotlin/Int).org.samfun.ktvine.utils/toLEU32(): kotlin/ByteArray // org.samfun.ktvine.utils/toLEU32|toLEU32@kotlin.Int(){}[0]
+final fun (kotlin/String).org.samfun.ktvine.utils/encodeToUtf16LE(): kotlin/ByteArray // org.samfun.ktvine.utils/encodeToUtf16LE|encodeToUtf16LE@kotlin.String(){}[0]
+final fun (kotlin/String).org.samfun.ktvine.utils/kidToUuid(): kotlin.uuid/Uuid // org.samfun.ktvine.utils/kidToUuid|kidToUuid@kotlin.String(){}[0]
+final fun (okio/ByteString).org.samfun.ktvine.utils/uuidFromByteArray(): kotlin.uuid/Uuid // org.samfun.ktvine.utils/uuidFromByteArray|uuidFromByteArray@okio.ByteString(){}[0]
+final fun (okio/ByteString).org.samfun.ktvine.utils/uuidFromByteString(): kotlin.uuid/Uuid // org.samfun.ktvine.utils/uuidFromByteString|uuidFromByteString@okio.ByteString(){}[0]
+final fun (okio/ByteString).org.samfun.ktvine.utils/uuidFromHexByteString(): kotlin.uuid/Uuid // org.samfun.ktvine.utils/uuidFromHexByteString|uuidFromHexByteString@okio.ByteString(){}[0]
+final fun (okio/ByteString?).org.samfun.ktvine.utils/kidToUuid(): kotlin.uuid/Uuid // org.samfun.ktvine.utils/kidToUuid|kidToUuid@okio.ByteString?(){}[0]
+final fun org.samfun.ktvine.crypto/constantTimeEquals(kotlin/ByteArray, kotlin/ByteArray): kotlin/Boolean // org.samfun.ktvine.crypto/constantTimeEquals|constantTimeEquals(kotlin.ByteArray;kotlin.ByteArray){}[0]
+final fun org.samfun.ktvine.crypto/pkcs7Pad(kotlin/ByteArray, kotlin/Int = ...): kotlin/ByteArray // org.samfun.ktvine.crypto/pkcs7Pad|pkcs7Pad(kotlin.ByteArray;kotlin.Int){}[0]
+final fun org.samfun.ktvine.crypto/pkcs7Unpad(kotlin/ByteArray, kotlin/Int = ...): kotlin/ByteArray // org.samfun.ktvine.crypto/pkcs7Unpad|pkcs7Unpad(kotlin.ByteArray;kotlin.Int){}[0]
+final fun org.samfun.ktvine.crypto/randomBytes(kotlin/Int): kotlin/ByteArray // org.samfun.ktvine.crypto/randomBytes|randomBytes(kotlin.Int){}[0]
+final fun org.samfun.ktvine.crypto/randomInt(kotlin/Int, kotlin/Int): kotlin/Int // org.samfun.ktvine.crypto/randomInt|randomInt(kotlin.Int;kotlin.Int){}[0]
+final fun org.samfun.ktvine.utils/escapeXml(kotlin/String): kotlin/String // org.samfun.ktvine.utils/escapeXml|escapeXml(kotlin.String){}[0]
+final fun org.samfun.ktvine.utils/unescapeXml(kotlin/String): kotlin/String // org.samfun.ktvine.utils/unescapeXml|unescapeXml(kotlin.String){}[0]
+final suspend fun org.samfun.ktvine.crypto/aesCbcDecrypt(kotlin/ByteArray, kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/aesCbcDecrypt|aesCbcDecrypt(kotlin.ByteArray;kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/aesCbcDecryptNoPadding(kotlin/ByteArray, kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/aesCbcDecryptNoPadding|aesCbcDecryptNoPadding(kotlin.ByteArray;kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/aesCbcEncryptNoPadding(kotlin/ByteArray, kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/aesCbcEncryptNoPadding|aesCbcEncryptNoPadding(kotlin.ByteArray;kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/aesCmac(kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/aesCmac|aesCmac(kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/hmacSha256(kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/hmacSha256|hmacSha256(kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/rsaOaepDecrypt(kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/rsaOaepDecrypt|rsaOaepDecrypt(kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/rsaOaepEncrypt(kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/rsaOaepEncrypt|rsaOaepEncrypt(kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/rsaPssSignSha1(kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/rsaPssSignSha1|rsaPssSignSha1(kotlin.ByteArray;kotlin.ByteArray){}[0]
+final suspend fun org.samfun.ktvine.crypto/rsaPssVerifySha1(kotlin/ByteArray, kotlin/ByteArray, kotlin/ByteArray): kotlin/Boolean // org.samfun.ktvine.crypto/rsaPssVerifySha1|rsaPssVerifySha1(kotlin.ByteArray;kotlin.ByteArray;kotlin.ByteArray){}[0]

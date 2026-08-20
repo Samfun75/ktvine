@@ -11,6 +11,7 @@ android-compileSdk = "36"
 coroutinesCore = "1.10.2"
 vanniktechMavenPublish = "0.34.0"
 
+binaryCompatibilityValidator = "0.18.1"
 wire = "5.4.0"
 cryptography = "0.5.0"
 
@@ -31,3 +32,4 @@ android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
 wire = { id = "com.squareup.wire", version.ref = "wire" }
+binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }

@@ -3,4 +3,17 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply  false
     alias(libs.plugins.vanniktech.mavenPublish) apply false
     alias(libs.plugins.wire).apply(false)
+    alias(libs.plugins.binary.compatibility.validator)
+}
+
+apiValidation {
+    // Wire-generated protobuf models are not hand-written API; tracking them would make
+    // every schema regeneration look like an ABI break.
+    ignoredPackages.add("org.samfun.ktvine.proto")
+
+    // The JVM dump alone would miss anything that only exists on the native targets.
+    @OptIn(kotlinx.validation.ExperimentalBCVApi::class)
+    klib {
+        enabled = true
+    }
 }

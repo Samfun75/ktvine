@@ -9,7 +9,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** Encode this string as UTF-16LE, two bytes per code unit. */
-fun String.encodeToUtf16LE(): ByteArray {
+public fun String.encodeToUtf16LE(): ByteArray {
     val out = ByteArray(length * 2)
     for (i in indices) {
         val c = this[i].code
@@ -20,7 +20,7 @@ fun String.encodeToUtf16LE(): ByteArray {
 }
 
 /** Decode UTF-16LE bytes back to a string. A trailing odd byte is ignored. */
-fun ByteArray.decodeToStringUtf16LE(): String {
+public fun ByteArray.decodeToStringUtf16LE(): String {
     val chars = CharArray(size / 2)
     for (i in chars.indices) {
         val lo = this[i * 2].toInt() and 0xFF
@@ -31,11 +31,11 @@ fun ByteArray.decodeToStringUtf16LE(): String {
 }
 
 /** Interpret this [ByteString] as a hex-encoded [Uuid] string. */
-fun ByteString.uuidFromHexByteString(): Uuid = Uuid.parseHex(utf8())
+public fun ByteString.uuidFromHexByteString(): Uuid = Uuid.parseHex(utf8())
 
-fun ByteArray.toUTF8(): String = decodeToString()
+public fun ByteArray.toUTF8(): String = decodeToString()
 
-fun ByteArray.toUUID(): Uuid {
+public fun ByteArray.toUUID(): Uuid {
     if (size != 16) throw ValueException("A UUID must be exactly 16 bytes, not $size")
     var most = 0L
     var least = 0L
@@ -53,7 +53,7 @@ fun ByteArray.toUUID(): Uuid {
  * KIDs that disagree with the manifest's own `cenc:default_KID`; the manifest is the
  * authority, so ktvine diverges here deliberately.
  */
-fun ByteArray.swapGuidEndianness(): ByteArray {
+public fun ByteArray.swapGuidEndianness(): ByteArray {
     if (size != 16) throw ValueException("A GUID must be exactly 16 bytes, not $size")
     val out = copyOf()
     out[0] = this[3]; out[1] = this[2]; out[2] = this[1]; out[3] = this[0]
@@ -63,20 +63,20 @@ fun ByteArray.swapGuidEndianness(): ByteArray {
 }
 
 /** Read 16 little-endian GUID bytes as a [Uuid]. */
-fun ByteArray.uuidFromLittleEndian(): Uuid = swapGuidEndianness().toUUID()
+public fun ByteArray.uuidFromLittleEndian(): Uuid = swapGuidEndianness().toUUID()
 
 /** Write this [Uuid] as 16 little-endian GUID bytes. */
-fun Uuid.toLittleEndianByteArray(): ByteArray = toByteArray().swapGuidEndianness()
+public fun Uuid.toLittleEndianByteArray(): ByteArray = toByteArray().swapGuidEndianness()
 
 /** Interpret this [ByteString] as a 16-byte [Uuid]. */
-fun ByteString.uuidFromByteString(): Uuid = this.toByteArray().toUUID()
+public fun ByteString.uuidFromByteString(): Uuid = this.toByteArray().toUUID()
 
 /**
  * Interpret this [ByteString] as a big-endian unsigned number widened to a [Uuid].
  *
  * Used for KIDs that are neither 16 raw bytes nor 32 hex characters.
  */
-fun ByteString.uuidFromByteArray(): Uuid {
+public fun ByteString.uuidFromByteArray(): Uuid {
     var most = 0L
     var least = 0L
     // Only the low 16 bytes fit; anything beyond would overflow a UUID anyway.
@@ -89,13 +89,13 @@ fun ByteString.uuidFromByteArray(): Uuid {
 }
 
 /** Convert this [Int] to little-endian unsigned 16-bit value [ByteArray]. */
-fun Int.toLEU16(): ByteArray = byteArrayOf(
+public fun Int.toLEU16(): ByteArray = byteArrayOf(
     (this and 0xFF).toByte(),
     ((this ushr 8) and 0xFF).toByte(),
 )
 
 /** Convert this [Int] to little-endian unsigned 32-bit value [ByteArray]. */
-fun Int.toLEU32(): ByteArray = byteArrayOf(
+public fun Int.toLEU32(): ByteArray = byteArrayOf(
     (this and 0xFF).toByte(),
     ((this ushr 8) and 0xFF).toByte(),
     ((this ushr 16) and 0xFF).toByte(),
@@ -103,7 +103,7 @@ fun Int.toLEU32(): ByteArray = byteArrayOf(
 )
 
 /** Convert a [ByteArray] to a lowercase hex string. */
-fun ByteArray.toHexString(): String = joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
+public fun ByteArray.toHexString(): String = joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
 /**
  * Convert a KID from a License `KeyContainer.id` to a [Uuid].
@@ -115,7 +115,7 @@ fun ByteArray.toHexString(): String = joinToString("") { (it.toInt() and 0xFF).t
  *
  * Returns the nil UUID for a missing or empty KID.
  */
-fun ByteString?.kidToUuid(): Uuid {
+public fun ByteString?.kidToUuid(): Uuid {
     var kidBytes = this?.toByteArray()
     if (kidBytes == null || kidBytes.isEmpty()) {
         return Uuid.NIL
@@ -157,10 +157,10 @@ private fun decimalStringToUuid(digits: String): Uuid {
 }
 
 /** Convert a Base64-encoded KID [String] to a [Uuid]. */
-fun String.kidToUuid(): Uuid = Base64.decode(this).toByteString().kidToUuid()
+public fun String.kidToUuid(): Uuid = Base64.decode(this).toByteString().kidToUuid()
 
 /** Escape the five XML predefined entities so interpolated text cannot break the document. */
-fun escapeXml(value: String): String = buildString(value.length) {
+public fun escapeXml(value: String): String = buildString(value.length) {
     for (c in value) {
         when (c) {
             '&' -> append("&amp;")
@@ -174,7 +174,7 @@ fun escapeXml(value: String): String = buildString(value.length) {
 }
 
 /** Reverse of [escapeXml] for the five predefined entities and numeric character references. */
-fun unescapeXml(value: String): String {
+public fun unescapeXml(value: String): String {
     if (!value.contains('&')) return value
     return Regex("&(#x?[0-9A-Fa-f]+|amp|lt|gt|quot|apos);").replace(value) { match ->
         when (val entity = match.groupValues[1]) {
@@ -196,7 +196,7 @@ fun unescapeXml(value: String): String {
 }
 
 /** True when [needle] occurs anywhere in this array. */
-fun ByteArray.containsSubarray(needle: ByteArray): Boolean {
+public fun ByteArray.containsSubarray(needle: ByteArray): Boolean {
     if (needle.isEmpty()) return true
     if (needle.size > size) return false
     outer@ for (start in 0..(size - needle.size)) {

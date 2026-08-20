@@ -15,11 +15,11 @@ import kotlin.uuid.Uuid
  * Decrypted content key from a Widevine License.
  * Holds key type, KID (as UUID), raw key bytes, and optional permissions for OPERATOR_SESSION keys.
  */
-class Key(
-    val type: License.KeyContainer.KeyType,
-    val kid: Uuid,
-    val key: ByteArray,
-    val permissions: List<String> = emptyList()
+public class Key(
+    public val type: License.KeyContainer.KeyType,
+    public val kid: Uuid,
+    public val key: ByteArray,
+    public val permissions: List<String> = emptyList()
 ) {
     override fun toString(): String =
         "Key(type=$type, kid=$kid, key=${key.toHexString()}, permissions=$permissions)"
@@ -42,11 +42,11 @@ class Key(
         return result
     }
 
-    companion object {
+    public companion object {
         /**
          * Build a [Key] from a protobuf [License.KeyContainer] using the provided content encryption key.
          */
-        suspend fun fromContainer(container: License.KeyContainer, encKey: ByteArray): Key {
+        public suspend fun fromContainer(container: License.KeyContainer, encKey: ByteArray): Key {
             val perms = mutableListOf<String>()
             if (container.type == License.KeyContainer.KeyType.OPERATOR_SESSION) {
                 container.operator_session_key_permissions?.let { p ->

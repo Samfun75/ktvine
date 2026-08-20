@@ -30,14 +30,14 @@ import org.samfun.ktvine.utils.*
  * This class is Kotlin Multiplatform and uses the same protobuf models as pywidevine.
  */
 @OptIn(ExperimentalTime::class)
-class Cdm(
+public class Cdm internal constructor(
     private val deviceType: DeviceTypes,
     private val clientId: ClientIdentification,
     private val privateKeyDer: ByteArray,
     /** System id of the device this CDM was built from, or 0 when unknown. */
-    val systemId: Int = 0,
+    public val systemId: Int = 0,
     /** Security level of the device this CDM was built from, or 0 when unknown. */
-    val securityLevel: Int = 0
+    public val securityLevel: Int = 0
 ) {
     private val sessions = linkedMapOf<ByteString, Session>()
 
@@ -53,28 +53,28 @@ class Cdm(
         sessionsLock.withLock { sessions[sessionId] }
             ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
 
-    companion object {
+    public companion object {
         /** Maximum number of concurrently open sessions. */
-        const val MAX_NUM_OF_SESSIONS: Int = 16
+        public const val MAX_NUM_OF_SESSIONS: Int = 16
 
         /**
          * A serialized `SignedMessage(SERVICE_CERTIFICATE_REQUEST)`. POST this to a license
          * server to obtain its service certificate for privacy mode.
          */
-        val SERVICE_CERTIFICATE_CHALLENGE: ByteArray = byteArrayOf(0x08, 0x04)
+        public val SERVICE_CERTIFICATE_CHALLENGE: ByteArray = byteArrayOf(0x08, 0x04)
 
         /**
          * Service certificate of Google's production license server (license.google.com).
          * Not reachable directly, but many services proxy to it.
          */
-        const val COMMON_PRIVACY_CERT: String =
+        public const val COMMON_PRIVACY_CERT: String =
             "CAUSxwUKwQIIAxIQFwW5F8wSBIaLBjM6L3cqjBiCtIKSBSKOAjCCAQoCggEBAJntWzsyfateJO/DtiqVtZhSCtW8yzdQPgZFuBTYdrjfQFEEQa2M462xG7iMTnJaXkqeB5UpHVhYQCOn4a8OOKkSeTkwCGELbxWMh4x+Ib/7/up34QGeHleB6KRfRiY9FOYOgFioYHrc4E+shFexN6jWfM3rM3BdmDoh+07svUoQykdJDKR+ql1DghjduvHK3jOS8T1v+2RC/THhv0CwxgTRxLpMlSCkv5fuvWCSmvzu9Vu69WTi0Ods18Vcc6CCuZYSC4NZ7c4kcHCCaA1vZ8bYLErF8xNEkKdO7DevSy8BDFnoKEPiWC8La59dsPxebt9k+9MItHEbzxJQAZyfWgkCAwEAAToUbGljZW5zZS53aWRldmluZS5jb20SgAOuNHMUtag1KX8nE4j7e7jLUnfSSYI83dHaMLkzOVEes8y96gS5RLknwSE0bv296snUE5F+bsF2oQQ4RgpQO8GVK5uk5M4PxL/CCpgIqq9L/NGcHc/N9XTMrCjRtBBBbPneiAQwHL2zNMr80NQJeEI6ZC5UYT3wr8+WykqSSdhV5Cs6cD7xdn9qm9Nta/gr52u/DLpP3lnSq8x2/rZCR7hcQx+8pSJmthn8NpeVQ/ypy727+voOGlXnVaPHvOZV+WRvWCq5z3CqCLl5+Gf2Ogsrf9s2LFvE7NVV2FvKqcWTw4PIV9Sdqrd+QLeFHd/SSZiAjjWyWOddeOrAyhb3BHMEwg2T7eTo/xxvF+YkPj89qPwXCYcOxF+6gjomPwzvofcJOxkJkoMmMzcFBDopvab5tDQsyN9UPLGhGC98X/8z8QSQ+spbJTYLdgFenFoGq47gLwDS6NWYYQSqzE3Udf2W7pzk4ybyG4PHBYV3s4cyzdq8amvtE/sNSdOKReuHpfQ="
 
         /**
          * Service certificate of Google's staging license server (staging.google.com),
          * reachable without auth at https://cwip-shaka-proxy.appspot.com/no_auth
          */
-        const val STAGING_PRIVACY_CERT: String =
+        public const val STAGING_PRIVACY_CERT: String =
             "CAUSxQUKvwIIAxIQKHA0VMAI9jYYredEPbbEyBiL5/mQBSKOAjCCAQoCggEBALUhErjQXQI/zF2V4sJRwcZJtBd82NK+7zVbsGdD3mYePSq8MYK3mUbVX9wI3+lUB4FemmJ0syKix/XgZ7tfCsB6idRa6pSyUW8HW2bvgR0NJuG5priU8rmFeWKqFxxPZmMNPkxgJxiJf14e+baq9a1Nuip+FBdt8TSh0xhbWiGKwFpMQfCB7/+Ao6BAxQsJu8dA7tzY8U1nWpGYD5LKfdxkagatrVEB90oOSYzAHwBTK6wheFC9kF6QkjZWt9/v70JIZ2fzPvYoPU9CVKtyWJOQvuVYCPHWaAgNRdiTwryi901goMDQoJk87wFgRwMzTDY4E5SGvJ2vJP1noH+a2UMCAwEAAToSc3RhZ2luZy5nb29nbGUuY29tEoADmD4wNSZ19AunFfwkm9rl1KxySaJmZSHkNlVzlSlyH/iA4KrvxeJ7yYDa6tq/P8OG0ISgLIJTeEjMdT/0l7ARp9qXeIoA4qprhM19ccB6SOv2FgLMpaPzIDCnKVww2pFbkdwYubyVk7jei7UPDe3BKTi46eA5zd4Y+oLoG7AyYw/pVdhaVmzhVDAL9tTBvRJpZjVrKH1lexjOY9Dv1F/FJp6X6rEctWPlVkOyb/SfEJwhAa/K81uDLyiPDZ1Flg4lnoX7XSTb0s+Cdkxd2b9yfvvpyGH4aTIfat4YkF9Nkvmm2mU224R1hx0WjocLsjA89wxul4TJPS3oRa2CYr5+DU4uSgdZzvgtEJ0lksckKfjAF0K64rPeytvDPD5fS69eFuy3Tq26/LfGcF96njtvOUA4P5xRFtICogySKe6WnCUZcYMDtQ0BMMM1LgawFNg4VA+KDCJ8ABHg9bOOTimO0sswHrRWSWX1XF15dXolCk65yEqz5lOfa2/fVomeopkU"
 
         private val ROOT_SIGNED_CERT_B64 =
@@ -93,7 +93,7 @@ class Cdm(
          * @throws DecodeException if an entitled key is missing a required field
          * @throws ValueException if no entitlement key matches an entitled key
          */
-        suspend fun unwrapEntitledKeys(entitlementKeys: List<Key>, entitledPssh: PSSH): List<Key> {
+        public suspend fun unwrapEntitledKeys(entitlementKeys: List<Key>, entitledPssh: PSSH): List<Key> {
             val header = try {
                 WidevinePsshData.ADAPTER.decode(entitledPssh.initData)
             } catch (e: Throwable) {
@@ -125,7 +125,7 @@ class Cdm(
         /**
          * Create a [Cdm] instance from a [Device].
          */
-        fun fromDevice(device: Device): Cdm = Cdm(
+        public fun fromDevice(device: Device): Cdm = Cdm(
             deviceType = device.type,
             clientId = device.clientId,
             privateKeyDer = device.privateKeyDer,
@@ -160,7 +160,7 @@ class Cdm(
      * @return unique session identifier
      * @throws TooManySessionsException when [MAX_NUM_OF_SESSIONS] sessions are already open
      */
-    suspend fun open(): ByteString = sessionsLock.withLock {
+    public suspend fun open(): ByteString = sessionsLock.withLock {
         // pywidevine compares with `>`, which lets a 17th session through; that is a bug,
         // and diverging from it is deliberate.
         if (sessions.size >= MAX_NUM_OF_SESSIONS)
@@ -175,7 +175,7 @@ class Cdm(
      * @param sessionId id returned by [open]
      * @throws InvalidSessionException if the id is unknown
      */
-    suspend fun close(sessionId: ByteString) {
+    public suspend fun close(sessionId: ByteString) {
         sessionsLock.withLock {
             sessions.remove(sessionId)
                 ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
@@ -194,7 +194,7 @@ class Cdm(
      * @throws DecodeException if parsing fails
      * @throws SignatureMismatchException if the certificate signature is invalid
      */
-    suspend fun setServiceCertificate(sessionId: ByteString, certificate: ByteArray?): String? {
+    public suspend fun setServiceCertificate(sessionId: ByteString, certificate: ByteArray?): String? {
         val s = session(sessionId)
         if (certificate == null) {
             val prev = s.lock.withLock {
@@ -242,7 +242,7 @@ class Cdm(
      * Overload of [setServiceCertificate] accepting a Base64-encoded certificate string.
      * Pass null to clear the currently set certificate.
      */
-    suspend fun setServiceCertificate(sessionId: ByteString, certificateBase64: String?): String? {
+    public suspend fun setServiceCertificate(sessionId: ByteString, certificateBase64: String?): String? {
         val bytes = certificateBase64?.decodeBase64()?.toByteArray()
             ?: return setServiceCertificate(sessionId, null as ByteArray?)
         return setServiceCertificate(sessionId, bytes)
@@ -251,7 +251,7 @@ class Cdm(
     /**
      * Get the currently configured service certificate for a session, if any.
      */
-    suspend fun getServiceCertificate(sessionId: ByteString): SignedDrmCertificate? {
+    public suspend fun getServiceCertificate(sessionId: ByteString): SignedDrmCertificate? {
         val s = session(sessionId)
         return s.lock.withLock { s.serviceCertificate }
     }
@@ -272,7 +272,7 @@ class Cdm(
      *   has been parsed for this session
      * @throws ValueException if a RENEWAL is requested but the policy forbids it
      */
-    suspend fun getLicenseChallenge(
+    public suspend fun getLicenseChallenge(
         sessionId: ByteString,
         pssh: PSSH,
         licenseType: LicenseType = LicenseType.STREAMING,
@@ -361,7 +361,7 @@ class Cdm(
      * @throws DecodeException if parsing fails
      * @throws SignatureMismatchException if MAC verification fails
      */
-    suspend fun parseLicense(sessionId: ByteString, licenseMessage: ByteArray) {
+    public suspend fun parseLicense(sessionId: ByteString, licenseMessage: ByteArray) {
         val s = session(sessionId)
         if (licenseMessage.isEmpty()) throw InvalidLicenseMessageException("Cannot parse an empty license_message")
 
@@ -528,7 +528,7 @@ class Cdm(
      * @throws DecodeException if an entitled key is missing a required field
      * @throws ValueException if no entitlement key matches an entitled key
      */
-    suspend fun getKeysFromEntitlement(sessionId: ByteString, entitledPssh: PSSH): List<Key> {
+    public suspend fun getKeysFromEntitlement(sessionId: ByteString, entitledPssh: PSSH): List<Key> {
         val s = session(sessionId)
         val entitlementKeys = s.lock.withLock {
             s.keys.filter { it.type == License.KeyContainer.KeyType.ENTITLEMENT }
@@ -546,7 +546,7 @@ class Cdm(
      * Read `policy` for `can_persist`, `can_renew`, `rental_duration_seconds`,
      * `renewal_server_url` and friends; offline and download flows need those.
      */
-    suspend fun getLicense(sessionId: ByteString): License? {
+    public suspend fun getLicense(sessionId: ByteString): License? {
         val s = session(sessionId)
         return s.lock.withLock { s.license }
     }
@@ -554,7 +554,7 @@ class Cdm(
     /**
      * Convenience to get decrypted keys for the session. Optionally filter by [License.KeyContainer.KeyType].
      */
-    suspend fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key> {
+    public suspend fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key> {
         val s = session(sessionId)
         return s.lock.withLock { s.keys.filter { type == null || it.type == type } }
     }
