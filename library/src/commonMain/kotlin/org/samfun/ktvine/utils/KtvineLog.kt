@@ -19,11 +19,10 @@ public object KtvineLog {
 
     private var delegate: Logger = loggerFor(Severity.Warn)
 
-    private fun loggerFor(minSeverity: Severity): Logger =
-        Logger(
-            config = loggerConfigInit(platformLogWriter(), minSeverity = minSeverity),
-            tag = TAG
-        )
+    private fun loggerFor(minSeverity: Severity): Logger = Logger(
+        config = loggerConfigInit(platformLogWriter(), minSeverity = minSeverity),
+        tag = TAG,
+    )
 
     /**
      * Raise or lower how much this library logs. Defaults to [Severity.Warn].
@@ -54,6 +53,5 @@ public object KtvineLog {
 
     internal fun w(message: () -> String) = delegate.w(null, TAG, message)
 
-    internal fun e(throwable: Throwable? = null, message: () -> String) =
-        delegate.e(throwable, TAG, message)
+    internal fun e(throwable: Throwable? = null, message: () -> String) = delegate.e(throwable, TAG, message)
 }

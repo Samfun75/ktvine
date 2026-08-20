@@ -63,7 +63,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                //put your multiplatform dependencies here
+                // put your multiplatform dependencies here
                 api(libs.wire.runtime)
                 implementation(libs.cryptography.core)
                 implementation(libs.cryptography.provider.optimal)

@@ -82,19 +82,19 @@ class CdmProxyIntegrationTest {
             val renewalChallenge = cdm.getLicenseChallenge(
                 sessionId,
                 pssh,
-                requestType = LicenseRequest.RequestType.RENEWAL
+                requestType = LicenseRequest.RequestType.RENEWAL,
             )
             val renewal = LicenseRequest.ADAPTER.decode(
-                SignedMessage.ADAPTER.decode(renewalChallenge).msg!!
+                SignedMessage.ADAPTER.decode(renewalChallenge).msg!!,
             )
             assertEquals(LicenseRequest.RequestType.RENEWAL, renewal.type)
             assertTrue(
                 renewal.content_id!!.widevine_pssh_data == null,
-                "a renewal identifies the license, not the content"
+                "a renewal identifies the license, not the content",
             )
             assertEquals(
                 cdm.getLicense(sessionId)!!.id,
-                renewal.content_id!!.existing_license!!.license_id
+                renewal.content_id!!.existing_license!!.license_id,
             )
 
             // The parsed license itself must be reachable, not just its keys.
@@ -115,7 +115,7 @@ class CdmProxyIntegrationTest {
                 assertEquals(
                     expectedKeyHex,
                     key.key.toHexString(),
-                    "Key mismatch for KID $kid: expected $expectedKeyHex, got ${key.key.toHexString()}"
+                    "Key mismatch for KID $kid: expected $expectedKeyHex, got ${key.key.toHexString()}",
                 )
             }
         }

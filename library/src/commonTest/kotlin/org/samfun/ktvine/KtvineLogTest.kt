@@ -27,7 +27,7 @@ class KtvineLogTest {
     private fun capture(minSeverity: Severity): Recorder {
         val recorder = Recorder()
         KtvineLog.setLogger(
-            Logger(loggerConfigInit(recorder, minSeverity = minSeverity), tag = "ktvine")
+            Logger(loggerConfigInit(recorder, minSeverity = minSeverity), tag = "ktvine"),
         )
         return recorder
     }
@@ -37,7 +37,7 @@ class KtvineLogTest {
         PSSH.new(
             systemId = Uuid.parse("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"),
             keyIds = listOf(Uuid.parse("11111111-2222-3333-4444-555555555555")),
-            version = 1
+            version = 1,
         ).export().let { PSSH(it) }
     }
 
@@ -48,7 +48,7 @@ class KtvineLogTest {
         assertEquals(
             emptyList(),
             recorder.lines,
-            "PSSH parsing should not log below Warn by default"
+            "PSSH parsing should not log below Warn by default",
         )
     }
 
@@ -59,7 +59,7 @@ class KtvineLogTest {
         assertTrue(recorder.lines.isNotEmpty(), "verbose should surface the parse trace")
         assertTrue(
             recorder.lines.all { it.first >= Severity.Verbose },
-            "unexpected severity in ${recorder.lines}"
+            "unexpected severity in ${recorder.lines}",
         )
     }
 
@@ -69,14 +69,14 @@ class KtvineLogTest {
         parseSomething()
         assertTrue(
             atDebug.lines.none { it.second.contains("ISOBMFF box sequence") },
-            "the hex dump must not appear at Debug: ${atDebug.lines}"
+            "the hex dump must not appear at Debug: ${atDebug.lines}",
         )
 
         val atVerbose = capture(Severity.Verbose)
         parseSomething()
         assertTrue(
             atVerbose.lines.any { it.second.contains("ISOBMFF box sequence") },
-            "the hex dump should appear at Verbose: ${atVerbose.lines}"
+            "the hex dump should appear at Verbose: ${atVerbose.lines}",
         )
     }
 }

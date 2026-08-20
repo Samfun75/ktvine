@@ -4,7 +4,11 @@ package org.samfun.ktvine.crypto
 
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.DelicateCryptographyApi
-import dev.whyoleg.cryptography.algorithms.*
+import dev.whyoleg.cryptography.algorithms.AES
+import dev.whyoleg.cryptography.algorithms.HMAC
+import dev.whyoleg.cryptography.algorithms.RSA
+import dev.whyoleg.cryptography.algorithms.SHA1
+import dev.whyoleg.cryptography.algorithms.SHA256
 import dev.whyoleg.cryptography.random.CryptographyRandom
 import org.samfun.ktvine.utils.ValueException
 
@@ -15,7 +19,7 @@ public suspend fun rsaPssSignSha1(privateKeyDer: ByteArray, data: ByteArray): By
     val rsa = crypto.get(RSA.PSS)
     val privateKey = rsa.privateKeyDecoder(SHA1).decodeFromByteArray(
         RSA.PrivateKey.Format.DER.PKCS1,
-        privateKeyDer
+        privateKeyDer,
     )
     return privateKey.signatureGenerator().generateSignature(data)
 }
@@ -26,7 +30,7 @@ public suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, si
     val publicKey =
         rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
             RSA.PublicKey.Format.DER.PKCS1,
-            publicKeyDer
+            publicKeyDer,
         )
     return publicKey.signatureVerifier().tryVerifySignature(data, signature)
 }
@@ -36,7 +40,7 @@ public suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): Byt
     val rsa = crypto.get(RSA.OAEP)
     val publicKey = rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
         RSA.PublicKey.Format.DER.PKCS1,
-        publicKeyDer
+        publicKeyDer,
     )
     return publicKey.encryptor().encrypt(data)
 }
@@ -47,7 +51,7 @@ public suspend fun rsaOaepDecrypt(privateKeyDer: ByteArray, data: ByteArray): By
     val privateKey =
         rsa.privateKeyDecoder(SHA1).decodeFromByteArray(
             RSA.PrivateKey.Format.DER.PKCS1,
-            privateKeyDer
+            privateKeyDer,
         )
     return privateKey.decryptor().decrypt(data)
 }
@@ -126,7 +130,7 @@ public suspend fun aesCbcEncryptNoPadding(key: ByteArray, iv: ByteArray, plainte
 /** Compute HMAC-SHA256 over [data] with [key]. */
 public suspend fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
     val hmac = crypto.get(HMAC)
-    val generator = hmac.keyDecoder(SHA256).decodeFromByteArray(HMAC.Key.Format.RAW,key).signatureGenerator()
+    val generator = hmac.keyDecoder(SHA256).decodeFromByteArray(HMAC.Key.Format.RAW, key).signatureGenerator()
     return generator.generateSignature(data)
 }
 
@@ -165,8 +169,9 @@ public fun pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray {
 public fun pkcs7Unpad(data: ByteArray, blockSize: Int = 16): ByteArray {
     if (blockSize !in 1..255) throw ValueException("Invalid block size $blockSize")
     if (data.isEmpty()) throw ValueException("Cannot unpad empty data")
-    if (data.size % blockSize != 0)
+    if (data.size % blockSize != 0) {
         throw ValueException("Data length ${data.size} is not a multiple of block size $blockSize")
+    }
 
     val padLen = data.last().toInt() and 0xFF
 

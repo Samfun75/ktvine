@@ -22,9 +22,11 @@ class RequestIdJvmTest {
     private suspend fun challengeFrom(device: Device): ByteArray {
         val cdm = Cdm.fromDevice(device)
         val sessionId = cdm.open()
-        val pssh = PSSH(TestFixtures.readText("playlist/tears.mpd").let { xml ->
-            Regex("""<cenc:pssh\b[^>]*>([^<]+)</cenc:pssh>""").find(xml)!!.groupValues[1].trim()
-        })
+        val pssh = PSSH(
+            TestFixtures.readText("playlist/tears.mpd").let { xml ->
+                Regex("""<cenc:pssh\b[^>]*>([^<]+)</cenc:pssh>""").find(xml)!!.groupValues[1].trim()
+            },
+        )
         return cdm.getLicenseChallenge(sessionId, pssh)
     }
 
@@ -42,7 +44,7 @@ class RequestIdJvmTest {
             val text = requestId.decodeToString()
             assertTrue(
                 Regex("^[0-9A-F]{32}$").matches(text),
-                "expected uppercase hex, got $text"
+                "expected uppercase hex, got $text",
             )
             // Bytes 5-8 of the underlying block are zero, and the counter is little-endian.
             assertEquals("00000000", text.substring(8, 16), "bytes 5-8 should be zero: $text")

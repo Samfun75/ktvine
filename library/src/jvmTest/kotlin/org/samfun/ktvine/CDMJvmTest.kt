@@ -1,16 +1,16 @@
 package org.samfun.ktvine
 
 import dev.whyoleg.cryptography.BinarySize.Companion.bits
-import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.RSA
 import dev.whyoleg.cryptography.algorithms.SHA1
 import kotlinx.coroutines.runBlocking
-import org.samfun.ktvine.crypto.rsaPssSignSha1
-import org.samfun.ktvine.crypto.rsaPssVerifySha1
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.Device
+import org.samfun.ktvine.crypto.rsaPssSignSha1
+import org.samfun.ktvine.crypto.rsaPssVerifySha1
 import org.samfun.ktvine.proto.SignedMessage
 import org.samfun.ktvine.utils.InvalidContextException
 import org.samfun.ktvine.utils.InvalidLicenseMessageException
@@ -50,7 +50,7 @@ class CDMJvmTest {
             val sessionId = cdm.open()
             val errorResponse = SignedMessage(
                 type = SignedMessage.MessageType.ERROR_RESPONSE,
-                msg = byteArrayOf(0x08, 0x02).toByteString()
+                msg = byteArrayOf(0x08, 0x02).toByteString(),
             ).encode()
 
             val failure = assertFailsWith<InvalidLicenseMessageException> {
@@ -70,9 +70,9 @@ class CDMJvmTest {
                 type = SignedMessage.MessageType.LICENSE,
                 msg = org.samfun.ktvine.proto.License(
                     id = org.samfun.ktvine.proto.LicenseIdentification(
-                        request_id = byteArrayOf(1, 2, 3, 4).toByteString()
-                    )
-                ).encode().toByteString()
+                        request_id = byteArrayOf(1, 2, 3, 4).toByteString(),
+                    ),
+                ).encode().toByteString(),
             ).encode()
 
             assertFailsWith<InvalidContextException> { cdm.parseLicense(sessionId, license) }

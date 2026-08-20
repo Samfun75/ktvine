@@ -3,16 +3,16 @@ package org.samfun.ktvine
 import org.samfun.ktvine.cdm.Cdm
 import org.samfun.ktvine.core.Device
 import org.samfun.ktvine.core.DeviceTypes
-import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.proto.ClientIdentification
 import org.samfun.ktvine.proto.DrmCertificate
 import org.samfun.ktvine.proto.SignedDrmCertificate
+import org.samfun.ktvine.utils.ValueException
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertFailsWith
 
 class DeviceJvmTest {
 
@@ -158,15 +158,16 @@ class DeviceJvmTest {
 
     @Test
     fun `test loads unknown device type throws`() {
-        // 'WVD' + version 2 + type 99 + securityLevel + flags + two u16 lengths (zeros)
+        // magic, version 2, type 99 (unknown), security level 3, flags,
+        // then two u16 lengths of zero for the private key and client id.
         val bytes = byteArrayOf(
             'W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte(),
-            2, // version
-            99, // unknown type
-            3, // security level
-            0, // flags
-            0, 0, // priv len
-            0, 0  // client len
+            2,
+            99,
+            3,
+            0,
+            0, 0,
+            0, 0,
         )
         assertFailsWith<ValueException> {
             Device.loads(bytes)

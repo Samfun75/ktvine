@@ -27,17 +27,13 @@ class DeviceApiTest {
         val signed = SignedDrmCertificate(drm_certificate = drm.toByteString()).encode()
         return ClientIdentification(
             token = signed.toByteString(),
-            vmp_data = vmpData?.toByteString()
+            vmp_data = vmpData?.toByteString(),
         )
     }
 
     private fun vmp() = FileHashes(signer = byteArrayOf(1, 2, 3).toByteString()).encode()
 
-    private fun buildV1(
-        clientIdBytes: ByteArray,
-        vmpBytes: ByteArray?,
-        version: Int = 1
-    ): ByteArray {
+    private fun buildV1(clientIdBytes: ByteArray, vmpBytes: ByteArray?, version: Int = 1): ByteArray {
         fun u16(v: Int) = byteArrayOf(((v ushr 8) and 0xFF).toByte(), (v and 0xFF).toByte())
         var out = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte()) +
             byteArrayOf(version.toByte()) +
@@ -57,7 +53,7 @@ class DeviceApiTest {
             securityLevel = 1,
             privateKeyDer = privateKey,
             clientIdBytes = clientId().encode(),
-            rawFlags = 0x2A
+            rawFlags = 0x2A,
         )
 
         val device = Device.loads(original)

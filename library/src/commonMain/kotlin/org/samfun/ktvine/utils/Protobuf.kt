@@ -12,11 +12,7 @@ import com.squareup.wire.Message
  *
  * @throws DecodeException if decoding fails or the re-encoding differs from [bytes]
  */
-internal inline fun <T : Message<*, *>> decodeExact(
-    bytes: ByteArray,
-    what: String,
-    decode: (ByteArray) -> T
-): T {
+internal inline fun <T : Message<*, *>> decodeExact(bytes: ByteArray, what: String, decode: (ByteArray) -> T): T {
     val message = try {
         decode(bytes)
     } catch (e: Throwable) {
@@ -29,10 +25,7 @@ internal inline fun <T : Message<*, *>> decodeExact(
 }
 
 /** [decodeExact], returning `null` instead of throwing. */
-internal inline fun <T : Message<*, *>> decodeExactOrNull(
-    bytes: ByteArray,
-    decode: (ByteArray) -> T
-): T? = try {
+internal inline fun <T : Message<*, *>> decodeExactOrNull(bytes: ByteArray, decode: (ByteArray) -> T): T? = try {
     decodeExact(bytes, "message", decode)
 } catch (_: DecodeException) {
     null

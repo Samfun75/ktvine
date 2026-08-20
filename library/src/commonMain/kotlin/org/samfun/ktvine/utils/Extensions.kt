@@ -56,9 +56,14 @@ public fun ByteArray.toUUID(): Uuid {
 public fun ByteArray.swapGuidEndianness(): ByteArray {
     if (size != 16) throw ValueException("A GUID must be exactly 16 bytes, not $size")
     val out = copyOf()
-    out[0] = this[3]; out[1] = this[2]; out[2] = this[1]; out[3] = this[0]
-    out[4] = this[5]; out[5] = this[4]
-    out[6] = this[7]; out[7] = this[6]
+    out[0] = this[3]
+    out[1] = this[2]
+    out[2] = this[1]
+    out[3] = this[0]
+    out[4] = this[5]
+    out[5] = this[4]
+    out[6] = this[7]
+    out[7] = this[6]
     return out
 }
 
@@ -99,7 +104,7 @@ public fun Int.toLEU32(): ByteArray = byteArrayOf(
     (this and 0xFF).toByte(),
     ((this ushr 8) and 0xFF).toByte(),
     ((this ushr 16) and 0xFF).toByte(),
-    ((this ushr 24) and 0xFF).toByte()
+    ((this ushr 24) and 0xFF).toByte(),
 )
 
 /** Convert a [ByteArray] to a lowercase hex string. */

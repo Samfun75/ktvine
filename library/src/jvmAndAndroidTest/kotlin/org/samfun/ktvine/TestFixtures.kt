@@ -11,10 +11,9 @@ object TestFixtures {
 
     const val ROOT: String = "library/src/commonTest/resources"
 
-    fun readOrNull(path: String): ByteArray? =
-        TestFixtures::class.java
-            .getResourceAsStream("/$path")
-            ?.use { it.readBytes() }
+    fun readOrNull(path: String): ByteArray? = TestFixtures::class.java
+        .getResourceAsStream("/$path")
+        ?.use { it.readBytes() }
 
     fun read(path: String): ByteArray =
         readOrNull(path) ?: error("Missing test fixture '$path'; expected it at $ROOT/$path")

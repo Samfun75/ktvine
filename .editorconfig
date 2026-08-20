@@ -1,0 +1,30 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+max_line_length = 120
+ktlint_code_style = intellij_idea
+
+# The protocol mirrors pywidevine's naming, and Wire generates snake_case properties, so
+# the surrounding code reads better matching them than fighting them.
+ktlint_standard_property-naming = disabled
+ktlint_standard_function-naming = disabled
+
+# Test names are backtick-quoted sentences.
+ktlint_standard_max-line-length = enabled
+
+[*.{yml,yaml,json,toml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[gradlew.bat]
+end_of_line = crlf

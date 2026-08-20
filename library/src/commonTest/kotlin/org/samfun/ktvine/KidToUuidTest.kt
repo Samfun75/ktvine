@@ -4,9 +4,9 @@ import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.encodeUtf8
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.utils.kidToUuid
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.uuid.Uuid
 
 class KidToUuidTest {
 
@@ -16,11 +16,11 @@ class KidToUuidTest {
         // It used to be Base64-decoded, yielding d34d34d3-4d34-d34d-34d3-4d3500000000.
         assertEquals(
             Uuid.parse("00000000-0000-0000-0000-000000000001"),
-            "0000000000000001".encodeUtf8().kidToUuid()
+            "0000000000000001".encodeUtf8().kidToUuid(),
         )
         assertEquals(
             Uuid.parse("00000000-0000-0000-0000-000000000007"),
-            "0000000000000007".encodeUtf8().kidToUuid()
+            "0000000000000007".encodeUtf8().kidToUuid(),
         )
     }
 
@@ -28,7 +28,7 @@ class KidToUuidTest {
     fun `test raw 16 byte kid is read big-endian`() {
         assertEquals(
             Uuid.parse("eb676abb-cb34-5e96-bbcf-616630f1a3da"),
-            "eb676abbcb345e96bbcf616630f1a3da".decodeHex().kidToUuid()
+            "eb676abbcb345e96bbcf616630f1a3da".decodeHex().kidToUuid(),
         )
     }
 
@@ -36,7 +36,7 @@ class KidToUuidTest {
     fun `test short non-digit kid is zero padded on the right`() {
         assertEquals(
             Uuid.parse("abcd0000-0000-0000-0000-000000000000"),
-            byteArrayOf(0xAB.toByte(), 0xCD.toByte()).toByteString().kidToUuid()
+            byteArrayOf(0xAB.toByte(), 0xCD.toByte()).toByteString().kidToUuid(),
         )
     }
 
@@ -46,7 +46,7 @@ class KidToUuidTest {
         // pywidevine reads that as the number 5, not as the byte 0x35.
         assertEquals(
             Uuid.parse("00000000-0000-0000-0000-000000000005"),
-            byteArrayOf(0x35).toByteString().kidToUuid()
+            byteArrayOf(0x35).toByteString().kidToUuid(),
         )
     }
 
@@ -60,7 +60,7 @@ class KidToUuidTest {
     fun `test base64 kid strings go through the string overload`() {
         assertEquals(
             Uuid.parse("00000000-0000-0000-0000-000000000001"),
-            "MDAwMDAwMDAwMDAwMDAwMQ==".kidToUuid()
+            "MDAwMDAwMDAwMDAwMDAwMQ==".kidToUuid(),
         )
     }
 }

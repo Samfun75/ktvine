@@ -23,12 +23,11 @@ class PsshFixtureTest {
         return PSSH(b64)
     }
 
-    private fun defaultKidOf(manifest: String): String =
-        Regex("""cenc:default_KID="([^"]+)"""")
-            .find(TestFixtures.readText(manifest))
-            ?.groupValues?.get(1)
-            ?.lowercase()
-            ?: error("No cenc:default_KID in $manifest")
+    private fun defaultKidOf(manifest: String): String = Regex("""cenc:default_KID="([^"]+)"""")
+        .find(TestFixtures.readText(manifest))
+        ?.groupValues?.get(1)
+        ?.lowercase()
+        ?: error("No cenc:default_KID in $manifest")
 
     @Test
     fun `test playready pssh key id matches the manifest default KID`() {
@@ -39,7 +38,7 @@ class PsshFixtureTest {
             listOf(defaultKidOf(manifest)),
             pssh.keyIds().map { it.toString() },
             "PlayReady stores KIDs as little-endian GUIDs; reading them big-endian yields " +
-                "128200d9-5b38-8032-b3b2-f60df62a033e instead"
+                "128200d9-5b38-8032-b3b2-f60df62a033e instead",
         )
     }
 
@@ -53,7 +52,7 @@ class PsshFixtureTest {
         assertEquals(
             listOf(defaultKidOf(manifest)),
             pssh.keyIds().map { it.toString() },
-            "conversion must not change which key the challenge asks for"
+            "conversion must not change which key the challenge asks for",
         )
     }
 
@@ -76,7 +75,7 @@ class PsshFixtureTest {
         assertEquals(
             "AESCTR",
             pssh.encryptionScheme,
-            "toWidevine used to drop the scheme and hardcode AESCTR"
+            "toWidevine used to drop the scheme and hardcode AESCTR",
         )
     }
 }

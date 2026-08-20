@@ -28,7 +28,7 @@ class DeviceFileIoJvmTest {
         val signed = SignedDrmCertificate(drm_certificate = drm.toByteString()).encode()
         val clientId = ClientIdentification(token = signed.toByteString())
         return Device.loads(
-            Device.buildWvdV2(DeviceTypes.ANDROID, 3, ByteArray(32) { it.toByte() }, clientId.encode())
+            Device.buildWvdV2(DeviceTypes.ANDROID, 3, ByteArray(32) { it.toByte() }, clientId.encode()),
         )
     }
 

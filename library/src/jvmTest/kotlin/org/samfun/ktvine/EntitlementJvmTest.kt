@@ -14,11 +14,11 @@ import org.samfun.ktvine.proto.WidevinePsshData
 import org.samfun.ktvine.utils.InvalidInitDataException
 import org.samfun.ktvine.utils.NoKeysLoadedException
 import org.samfun.ktvine.utils.ValueException
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.uuid.Uuid
 
 class EntitlementJvmTest {
 
@@ -33,7 +33,7 @@ class EntitlementJvmTest {
     private fun cdm() = Cdm(DeviceTypes.ANDROID, ClientIdentification(), ByteArray(0))
 
     private val entitlementKeys = listOf(
-        Key(License.KeyContainer.KeyType.ENTITLEMENT, entitlementKid, entitlementKey)
+        Key(License.KeyContainer.KeyType.ENTITLEMENT, entitlementKid, entitlementKey),
     )
 
     /** Wrap [contentKey] the way a packager would, so the unwrap has something real to undo. */
@@ -46,9 +46,9 @@ class EntitlementJvmTest {
                     entitlement_key_id = entitlementKid.toByteArray().toByteString(),
                     key_id = contentKid.toByteArray().toByteString(),
                     key = wrapped.toByteString(),
-                    iv = iv.toByteString()
-                )
-            )
+                    iv = iv.toByteString(),
+                ),
+            ),
         )
         return PSSH.new(systemId = WIDEVINE_UUID, initData = header)
     }
@@ -80,7 +80,7 @@ class EntitlementJvmTest {
     fun `test a mismatched entitlement key id is rejected`() {
         runBlocking {
             val wrongKey = listOf(
-                Key(License.KeyContainer.KeyType.ENTITLEMENT, Uuid.fromLongs(0, 99), entitlementKey)
+                Key(License.KeyContainer.KeyType.ENTITLEMENT, Uuid.fromLongs(0, 99), entitlementKey),
             )
             assertFailsWith<ValueException> { Cdm.unwrapEntitledKeys(wrongKey, entitledPssh()) }
         }
@@ -91,7 +91,7 @@ class EntitlementJvmTest {
         runBlocking {
             val plain = PSSH.new(
                 systemId = WIDEVINE_UUID,
-                initData = WidevinePsshData(key_ids = listOf(contentKid.toByteArray().toByteString()))
+                initData = WidevinePsshData(key_ids = listOf(contentKid.toByteArray().toByteString())),
             )
             assertFailsWith<InvalidInitDataException> {
                 Cdm.unwrapEntitledKeys(entitlementKeys, plain)

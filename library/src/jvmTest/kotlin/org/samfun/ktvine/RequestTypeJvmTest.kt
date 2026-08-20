@@ -49,14 +49,14 @@ class RequestTypeJvmTest {
                 cdm.getLicenseChallenge(
                     sessionId,
                     pssh(),
-                    requestType = LicenseRequest.RequestType.RENEWAL
+                    requestType = LicenseRequest.RequestType.RENEWAL,
                 )
             }
             assertFailsWith<InvalidContextException> {
                 cdm.getLicenseChallenge(
                     sessionId,
                     pssh(),
-                    requestType = LicenseRequest.RequestType.RELEASE
+                    requestType = LicenseRequest.RequestType.RELEASE,
                 )
             }
         }

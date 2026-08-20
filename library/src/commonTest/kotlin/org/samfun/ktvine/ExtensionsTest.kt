@@ -35,14 +35,14 @@ class ExtensionsTest {
         // Replaced BigInteger, so the 64-bit boundary is the interesting case.
         assertEquals(
             Uuid.fromLongs(0L, 0x35L),
-            byteArrayOf(0x35).toByteString().uuidFromByteArray()
+            byteArrayOf(0x35).toByteString().uuidFromByteArray(),
         )
 
         // 2^64 exactly: the carry has to reach the high half.
         val twoToThe64 = byteArrayOf(1, 0, 0, 0, 0, 0, 0, 0, 0)
         assertEquals(
             Uuid.parse("00000000-0000-0001-0000-000000000000"),
-            twoToThe64.toByteString().uuidFromByteArray()
+            twoToThe64.toByteString().uuidFromByteArray(),
         )
 
         // A full 16 bytes must survive untouched.
@@ -57,13 +57,13 @@ class ExtensionsTest {
         // 2^64 = 18446744073709551616, the first value needing the high half.
         assertEquals(
             Uuid.parse("00000000-0000-0001-0000-000000000000"),
-            "18446744073709551616".encodeUtf8().kidToUuid()
+            "18446744073709551616".encodeUtf8().kidToUuid(),
         )
 
         // 2^64 - 1 must stay entirely in the low half.
         assertEquals(
             Uuid.parse("00000000-0000-0000-ffff-ffffffffffff"),
-            "18446744073709551615".encodeUtf8().kidToUuid()
+            "18446744073709551615".encodeUtf8().kidToUuid(),
         )
     }
 
@@ -71,7 +71,7 @@ class ExtensionsTest {
     fun `test hex string kid decoding`() {
         assertEquals(
             Uuid.parse("eb676abb-cb34-5e96-bbcf-616630f1a3da"),
-            "eb676abbcb345e96bbcf616630f1a3da".encodeUtf8().uuidFromHexByteString()
+            "eb676abbcb345e96bbcf616630f1a3da".encodeUtf8().uuidFromHexByteString(),
         )
     }
 

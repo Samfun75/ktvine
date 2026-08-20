@@ -19,10 +19,9 @@ public class Key(
     public val type: License.KeyContainer.KeyType,
     public val kid: Uuid,
     public val key: ByteArray,
-    public val permissions: List<String> = emptyList()
+    public val permissions: List<String> = emptyList(),
 ) {
-    override fun toString(): String =
-        "Key(type=$type, kid=$kid, key=${key.toHexString()}, permissions=$permissions)"
+    override fun toString(): String = "Key(type=$type, kid=$kid, key=${key.toHexString()}, permissions=$permissions)"
 
     // Written out by hand: a data class would compare `key` by identity.
     override fun equals(other: Any?): Boolean {
@@ -61,7 +60,7 @@ public class Key(
             val decrypted = aesCbcDecryptNoPadding(
                 encKey,
                 iv,
-                container.key.orDecodeError("KeyContainer.key").toByteArray()
+                container.key.orDecodeError("KeyContainer.key").toByteArray(),
             )
             val unpadded = pkcs7Unpad(decrypted)
 
@@ -69,7 +68,7 @@ public class Key(
                 type = container.type.orDecodeError("KeyContainer.type"),
                 kid = container.id.kidToUuid(),
                 key = unpadded,
-                permissions = perms
+                permissions = perms,
             )
         }
     }

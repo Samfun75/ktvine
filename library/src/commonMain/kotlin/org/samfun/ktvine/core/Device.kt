@@ -31,10 +31,10 @@ public class Device(
      * The raw flags byte, preserved so [dumps] round-trips. No flags are defined yet, which
      * is why [flags] is always empty.
      */
-    public val rawFlags: Int = 0
+    public val rawFlags: Int = 0,
 ) {
-    override fun toString(): String =
-        "Device(type=$type, securityLevel=$securityLevel, flags=$flags, privateKeyDer=${privateKeyDer.size} bytes, systemId=$systemId)"
+    override fun toString(): String = "Device(type=$type, securityLevel=$securityLevel, flags=$flags, " +
+        "privateKeyDer=${privateKeyDer.size} bytes, systemId=$systemId)"
 
     /** Serialize this device back to a WVD v2 blob. */
     public fun dumps(): ByteArray = buildWvdV2(
@@ -42,7 +42,7 @@ public class Device(
         securityLevel = securityLevel,
         privateKeyDer = privateKeyDer,
         clientIdBytes = clientId.encode(),
-        rawFlags = rawFlags
+        rawFlags = rawFlags,
     )
 
     /** Write this device to [path] as a WVD v2 file, creating parent directories. */
@@ -52,8 +52,7 @@ public class Device(
     }
 
     /** Write this device to [path] as a WVD v2 file, creating parent directories. */
-    public fun dump(path: String, fileSystem: FileSystem = FileSystem.SYSTEM): Unit =
-        dump(path.toPath(), fileSystem)
+    public fun dump(path: String, fileSystem: FileSystem = FileSystem.SYSTEM): Unit = dump(path.toPath(), fileSystem)
 
     public companion object {
         private val MAGIC = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte())
@@ -131,12 +130,12 @@ public class Device(
 
             val signed = decodeExact(
                 clientId.token.orDecodeError("ClientIdentification.token").toByteArray(),
-                "the Signed DRM Certificate of the Client ID"
+                "the Signed DRM Certificate of the Client ID",
             ) { SignedDrmCertificate.ADAPTER.decode(it) }
 
             val drm = decodeExact(
                 signed.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate").toByteArray(),
-                "the DRM Certificate of the Client ID"
+                "the DRM Certificate of the Client ID",
             ) { DrmCertificate.ADAPTER.decode(it) }
 
             val systemId = drm.system_id.orDecodeError("DrmCertificate.system_id")
@@ -151,7 +150,7 @@ public class Device(
                 clientId = clientId,
                 vmp = vmp,
                 systemId = systemId,
-                rawFlags = rawFlags
+                rawFlags = rawFlags,
             )
         }
 
@@ -183,8 +182,9 @@ public class Device(
          */
         public fun migrate(data: ByteArray): Device {
             if (data.size < 4) throw ValueException("Data too short to be a WVD file")
-            if (!data.copyOfRange(0, 3).contentEquals(MAGIC))
+            if (!data.copyOfRange(0, 3).contentEquals(MAGIC)) {
                 throw ValueException("Device Data does not seem to be a WVD file (bad magic)")
+            }
 
             when (val version = data[3].toInt() and 0xFF) {
                 2 -> throw ValueException("Device Data is already migrated to the latest version.")
@@ -249,8 +249,8 @@ public class Device(
                     type = type,
                     securityLevel = securityLevel,
                     privateKeyDer = privateKey,
-                    clientIdBytes = clientIdBytes
-                )
+                    clientIdBytes = clientIdBytes,
+                ),
             )
         }
 
@@ -269,7 +269,7 @@ public class Device(
             securityLevel: Int,
             privateKeyDer: ByteArray,
             clientIdBytes: ByteArray,
-            rawFlags: Int = 0
+            rawFlags: Int = 0,
         ): ByteArray {
             val out = Buffer()
             out.write(MAGIC)
@@ -277,7 +277,7 @@ public class Device(
             out.writeByte(type.value)
             out.writeByte(securityLevel)
             out.writeByte(rawFlags)
-            out.writeShort(privateKeyDer.size)   // okio writes big-endian
+            out.writeShort(privateKeyDer.size) // okio writes big-endian
             out.write(privateKeyDer)
             out.writeShort(clientIdBytes.size)
             out.write(clientIdBytes)

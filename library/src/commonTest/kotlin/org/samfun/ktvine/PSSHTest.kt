@@ -1,26 +1,26 @@
 package org.samfun.ktvine
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertContentEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
-import org.samfun.ktvine.proto.WidevinePsshData
 import okio.Buffer
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.core.PSSH
-import org.samfun.ktvine.utils.decodeToStringUtf16LE
-import org.samfun.ktvine.utils.encodeToUtf16LE
-import org.samfun.ktvine.utils.toLittleEndianByteArray
-import org.samfun.ktvine.utils.toLEU16
-import org.samfun.ktvine.utils.toLEU32
+import org.samfun.ktvine.proto.WidevinePsshData
 import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.ValueException
+import org.samfun.ktvine.utils.decodeToStringUtf16LE
+import org.samfun.ktvine.utils.encodeToUtf16LE
+import org.samfun.ktvine.utils.toLEU16
+import org.samfun.ktvine.utils.toLEU32
+import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.toUUID
-import kotlin.uuid.Uuid
 import kotlin.io.encoding.Base64
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 class PSSHTest {
 
@@ -44,7 +44,9 @@ class PSSHTest {
             <DECRYPTORSETUP>ONDEMAND</DECRYPTORSETUP>
             <CUSTOMATTRIBUTES xmlns="">k=v</CUSTOMATTRIBUTES>
             """.trimIndent()
-        } else ""
+        } else {
+            ""
+        }
 
         val xml = """
         <WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.3.0.0">
@@ -98,7 +100,7 @@ class PSSHTest {
         val pssh = PSSH.new(
             systemId = WV_UUID,
             initData = data,
-            version = 0
+            version = 0,
         )
         assertEquals(setOf(k1, k2), pssh.keyIds().toSet())
 
@@ -188,7 +190,7 @@ class PSSHTest {
             luiUrl = "https://ui.example.com",
             dsId = byteArrayOf(1, 2, 3, 4),
             decryptorSetup = "ONDEMAND",
-            customData = "<tag>v</tag>"
+            customData = "<tag>v</tag>",
         )
 
         val xml = readPlayreadyHeader(pssh.initData)
@@ -230,18 +232,18 @@ class PSSHTest {
         // A bare & here produces XML that will not parse.
         pssh.toPlayready(
             laUrl = "https://ls.example.com/rights?a=1&b=2",
-            decryptorSetup = "<not a tag>"
+            decryptorSetup = "<not a tag>",
         )
 
         val xml = readPlayreadyHeader(pssh.initData)
         assertTrue(
             xml.contains("<LA_URL>https://ls.example.com/rights?a=1&amp;b=2</LA_URL>"),
-            xml
+            xml,
         )
         assertTrue(xml.contains("<DECRYPTORSETUP>&lt;not a tag&gt;</DECRYPTORSETUP>"), xml)
         assertFalse(
             Regex("&(?!amp;|lt;|gt;|quot;|apos;)").containsMatchIn(xml),
-            "an unescaped & escaped into the header: " + xml
+            "an unescaped & escaped into the header: " + xml,
         )
 
         // The KIDs must still survive the escaping pass.
@@ -266,7 +268,7 @@ class PSSHTest {
         val failure = assertFailsWith<ValueException> { pssh.keyIds() }
         assertTrue(
             failure.message!!.contains("corrupt"),
-            "expected a corrupt-PRO message, got: " + failure.message
+            "expected a corrupt-PRO message, got: " + failure.message,
         )
     }
 
@@ -280,23 +282,25 @@ class PSSHTest {
         val failure = assertFailsWith<ValueException> { pssh.keyIds() }
         assertTrue(
             failure.message!!.contains("no PlayReadyHeader"),
-            "expected a missing-header message, got: " + failure.message
+            "expected a missing-header message, got: " + failure.message,
         )
     }
 
     @Test
     fun `test unsupported playready version is not swallowed`() {
-        val xml = ("<WRMHEADER version=" + '"'.toString() + "9.9.9.9" + '"'.toString() +
-            "><DATA></DATA></WRMHEADER>").encodeToUtf16LE()
+        val xml = (
+            "<WRMHEADER version=" + '"'.toString() + "9.9.9.9" + '"'.toString() +
+                "><DATA></DATA></WRMHEADER>"
+            ).encodeToUtf16LE()
         val pssh = PSSH.new(
             systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
-            initData = proWrapSingleRecord(xml)
+            initData = proWrapSingleRecord(xml),
         )
 
         val failure = assertFailsWith<ValueException> { pssh.keyIds() }
         assertTrue(
             failure.message!!.contains("9.9.9.9"),
-            "the specific version error used to be swallowed into a generic message, got: " + failure.message
+            "the specific version error used to be swallowed into a generic message, got: " + failure.message,
         )
     }
 
@@ -348,7 +352,7 @@ class PSSHTest {
         val widevine = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
         val playready = PSSH.new(
             systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
-            initData = proWrapSingleRecord(makeProXmlV43(k2))
+            initData = proWrapSingleRecord(makeProXmlV43(k2)),
         )
         val segment = widevine.export() + playready.export()
 
@@ -369,18 +373,18 @@ class PSSHTest {
         val widevine = PSSH.new(systemId = WV_UUID, initData = wvData(k1), version = 0)
         val playready = PSSH.new(
             systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
-            initData = proWrapSingleRecord(makeProXmlV43(k2))
+            initData = proWrapSingleRecord(makeProXmlV43(k2)),
         )
         val segment = playready.export() + widevine.export()
 
         assertEquals(
             setOf(k1),
             PSSH.fromInitSegment(segment)!!.keyIds().toSet(),
-            "must pick the Widevine box even though PlayReady comes first"
+            "must pick the Widevine box even though PlayReady comes first",
         )
         assertEquals(
             setOf(k2),
-            PSSH.fromInitSegment(segment, PSSH.PLAYREADY_SYSTEM_ID)!!.keyIds().toSet()
+            PSSH.fromInitSegment(segment, PSSH.PLAYREADY_SYSTEM_ID)!!.keyIds().toSet(),
         )
         assertNull(PSSH.fromInitSegment(widevine.export(), PSSH.PLAYREADY_SYSTEM_ID))
     }
@@ -388,9 +392,10 @@ class PSSHTest {
     @Test
     fun `test a non-default encryption scheme is preserved both ways`() {
         val k1 = Uuid.parse("fedcba98-7654-3210-fedc-ba9876543210")
+        // 0x63626331 is the 'cbc1' 4CC, i.e. AES-CBC.
         val cbc = WidevinePsshData(
             key_ids = listOf(k1.toByteArray().toByteString()),
-            protection_scheme = 0x63626331 // 'cbc1'
+            protection_scheme = 0x63626331,
         )
         val pssh = PSSH.new(systemId = WV_UUID, initData = cbc, version = 0)
         assertEquals("AESCBC", pssh.encryptionScheme)
@@ -398,7 +403,7 @@ class PSSHTest {
         pssh.toPlayready()
         assertTrue(
             readPlayreadyHeader(pssh.initData).contains("ALGID=\"AESCBC\""),
-            "toPlayready hardcoded AESCTR: " + readPlayreadyHeader(pssh.initData)
+            "toPlayready hardcoded AESCTR: " + readPlayreadyHeader(pssh.initData),
         )
         assertEquals("AESCBC", pssh.encryptionScheme)
 
@@ -412,7 +417,7 @@ class PSSHTest {
         val pssh = PSSH.new(
             systemId = WV_UUID,
             initData = WidevinePsshData(key_ids = listOf(Uuid.fromLongs(0, 1).toByteArray().toByteString())),
-            version = 0
+            version = 0,
         )
         assertNull(pssh.encryptionScheme)
     }
@@ -430,7 +435,7 @@ class PSSHTest {
         val xml = readPlayreadyHeader(pssh.initData)
         assertTrue(
             xml.contains("<LA_URL>https://ls.example.com/rights?a=1&amp;b=2</LA_URL>"),
-            "LA_URL should survive a key id rewrite, and stay escaped exactly once: " + xml
+            "LA_URL should survive a key id rewrite, and stay escaped exactly once: " + xml,
         )
         assertTrue(xml.contains("<DECRYPTORSETUP>ONDEMAND</DECRYPTORSETUP>"), xml)
     }
@@ -442,7 +447,7 @@ class PSSHTest {
         val pssh = PSSH.new(
             systemId = PSSH.PLAYREADY_SYSTEM_ID.toUUID(),
             keyIds = listOf(k1),
-            version = 1
+            version = 1,
         )
 
         // This used to leave init_data empty, producing a box no PlayReady client accepts.

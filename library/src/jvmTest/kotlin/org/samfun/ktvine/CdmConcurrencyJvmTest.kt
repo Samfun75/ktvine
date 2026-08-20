@@ -36,7 +36,7 @@ class CdmConcurrencyJvmTest {
             assertEquals(
                 Cdm.MAX_NUM_OF_SESSIONS,
                 ids.toSet().size,
-                "concurrent open() produced duplicate session ids"
+                "concurrent open() produced duplicate session ids",
             )
             assertFailsWith<TooManySessionsException> { cdm.open() }
         }

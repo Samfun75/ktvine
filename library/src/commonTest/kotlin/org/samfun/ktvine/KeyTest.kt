@@ -2,11 +2,11 @@ package org.samfun.ktvine
 
 import org.samfun.ktvine.core.Key
 import org.samfun.ktvine.proto.License
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 class KeyTest {
 
@@ -14,7 +14,7 @@ class KeyTest {
 
     private fun key(
         type: License.KeyContainer.KeyType = License.KeyContainer.KeyType.CONTENT,
-        bytes: ByteArray = byteArrayOf(1, 2, 3, 4)
+        bytes: ByteArray = byteArrayOf(1, 2, 3, 4),
     ) = Key(type, kid, bytes)
 
     @Test

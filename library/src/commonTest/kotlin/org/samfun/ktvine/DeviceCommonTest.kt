@@ -28,6 +28,8 @@ class DeviceCommonTest {
 
     @Test
     fun `test loads unsupported version throws common`() {
+        // magic, version 2, type 99 (unknown), security level 3, flags,
+        // then two u16 lengths of zero for the private key and client id.
         val bytes = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte(), 1) + ByteArray(7) { 0 }
         assertFailsWith<ValueException> { Device.loads(bytes) }
     }
@@ -36,12 +38,12 @@ class DeviceCommonTest {
     fun `test loads unknown device type throws common`() {
         val bytes = byteArrayOf(
             'W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte(),
-            2, // version
-            99, // unknown type
-            3, // security level
-            0, // flags
-            0, 0, // priv len
-            0, 0  // client len
+            2,
+            99,
+            3,
+            0,
+            0, 0,
+            0, 0,
         )
         assertFailsWith<ValueException> { Device.loads(bytes) }
     }
@@ -68,7 +70,7 @@ class DeviceCommonTest {
             type = DeviceTypes.ANDROID,
             securityLevel = 3,
             privateKeyDer = ByteArray(4),
-            clientIdBytes = ClientIdentification().encode()
+            clientIdBytes = ClientIdentification().encode(),
         )
         assertFailsWith<DecodeException> { Device.loads(wvd) }
     }

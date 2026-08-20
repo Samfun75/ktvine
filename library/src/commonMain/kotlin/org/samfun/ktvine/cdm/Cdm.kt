@@ -1,17 +1,57 @@
 package org.samfun.ktvine.cdm
 
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.ByteString
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.cdm.Cdm.Companion.fromDevice
-import org.samfun.ktvine.core.*
-import org.samfun.ktvine.crypto.*
-import org.samfun.ktvine.proto.*
-import org.samfun.ktvine.utils.*
+import org.samfun.ktvine.core.Device
+import org.samfun.ktvine.core.DeviceTypes
+import org.samfun.ktvine.core.Key
+import org.samfun.ktvine.core.PSSH
+import org.samfun.ktvine.core.Session
+import org.samfun.ktvine.crypto.aesCbcDecryptNoPadding
+import org.samfun.ktvine.crypto.aesCbcEncryptNoPadding
+import org.samfun.ktvine.crypto.aesCmac
+import org.samfun.ktvine.crypto.constantTimeEquals
+import org.samfun.ktvine.crypto.hmacSha256
+import org.samfun.ktvine.crypto.pkcs7Pad
+import org.samfun.ktvine.crypto.pkcs7Unpad
+import org.samfun.ktvine.crypto.randomBytes
+import org.samfun.ktvine.crypto.randomInt
+import org.samfun.ktvine.crypto.rsaOaepDecrypt
+import org.samfun.ktvine.crypto.rsaOaepEncrypt
+import org.samfun.ktvine.crypto.rsaPssSignSha1
+import org.samfun.ktvine.crypto.rsaPssVerifySha1
+import org.samfun.ktvine.proto.ClientIdentification
+import org.samfun.ktvine.proto.DrmCertificate
+import org.samfun.ktvine.proto.EncryptedClientIdentification
+import org.samfun.ktvine.proto.License
+import org.samfun.ktvine.proto.LicenseIdentification
+import org.samfun.ktvine.proto.LicenseRequest
+import org.samfun.ktvine.proto.LicenseType
+import org.samfun.ktvine.proto.ProtocolVersion
+import org.samfun.ktvine.proto.SignedDrmCertificate
+import org.samfun.ktvine.proto.SignedMessage
+import org.samfun.ktvine.proto.WidevinePsshData
+import org.samfun.ktvine.utils.DecodeException
+import org.samfun.ktvine.utils.InvalidContextException
+import org.samfun.ktvine.utils.InvalidInitDataException
+import org.samfun.ktvine.utils.InvalidLicenseMessageException
+import org.samfun.ktvine.utils.InvalidSessionException
+import org.samfun.ktvine.utils.KtvineLog
+import org.samfun.ktvine.utils.NoKeysLoadedException
+import org.samfun.ktvine.utils.SignatureMismatchException
+import org.samfun.ktvine.utils.TooManySessionsException
+import org.samfun.ktvine.utils.ValueException
+import org.samfun.ktvine.utils.decodeExact
+import org.samfun.ktvine.utils.decodeExactOrNull
+import org.samfun.ktvine.utils.kidToUuid
+import org.samfun.ktvine.utils.orDecodeError
+import org.samfun.ktvine.utils.toHexString
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Widevine CDM helper that can:
@@ -37,7 +77,7 @@ public class Cdm internal constructor(
     /** System id of the device this CDM was built from, or 0 when unknown. */
     public val systemId: Int = 0,
     /** Security level of the device this CDM was built from, or 0 when unknown. */
-    public val securityLevel: Int = 0
+    public val securityLevel: Int = 0,
 ) {
     private val sessions = linkedMapOf<ByteString, Session>()
 
@@ -49,9 +89,8 @@ public class Cdm internal constructor(
     // and the two are never held at the same time, so the pair cannot deadlock.
     private val sessionsLock = Mutex()
 
-    private suspend fun session(sessionId: ByteString): Session =
-        sessionsLock.withLock { sessions[sessionId] }
-            ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
+    private suspend fun session(sessionId: ByteString): Session = sessionsLock.withLock { sessions[sessionId] }
+        ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
 
     public companion object {
         /** Maximum number of concurrently open sessions. */
@@ -68,17 +107,46 @@ public class Cdm internal constructor(
          * Not reachable directly, but many services proxy to it.
          */
         public const val COMMON_PRIVACY_CERT: String =
-            "CAUSxwUKwQIIAxIQFwW5F8wSBIaLBjM6L3cqjBiCtIKSBSKOAjCCAQoCggEBAJntWzsyfateJO/DtiqVtZhSCtW8yzdQPgZFuBTYdrjfQFEEQa2M462xG7iMTnJaXkqeB5UpHVhYQCOn4a8OOKkSeTkwCGELbxWMh4x+Ib/7/up34QGeHleB6KRfRiY9FOYOgFioYHrc4E+shFexN6jWfM3rM3BdmDoh+07svUoQykdJDKR+ql1DghjduvHK3jOS8T1v+2RC/THhv0CwxgTRxLpMlSCkv5fuvWCSmvzu9Vu69WTi0Ods18Vcc6CCuZYSC4NZ7c4kcHCCaA1vZ8bYLErF8xNEkKdO7DevSy8BDFnoKEPiWC8La59dsPxebt9k+9MItHEbzxJQAZyfWgkCAwEAAToUbGljZW5zZS53aWRldmluZS5jb20SgAOuNHMUtag1KX8nE4j7e7jLUnfSSYI83dHaMLkzOVEes8y96gS5RLknwSE0bv296snUE5F+bsF2oQQ4RgpQO8GVK5uk5M4PxL/CCpgIqq9L/NGcHc/N9XTMrCjRtBBBbPneiAQwHL2zNMr80NQJeEI6ZC5UYT3wr8+WykqSSdhV5Cs6cD7xdn9qm9Nta/gr52u/DLpP3lnSq8x2/rZCR7hcQx+8pSJmthn8NpeVQ/ypy727+voOGlXnVaPHvOZV+WRvWCq5z3CqCLl5+Gf2Ogsrf9s2LFvE7NVV2FvKqcWTw4PIV9Sdqrd+QLeFHd/SSZiAjjWyWOddeOrAyhb3BHMEwg2T7eTo/xxvF+YkPj89qPwXCYcOxF+6gjomPwzvofcJOxkJkoMmMzcFBDopvab5tDQsyN9UPLGhGC98X/8z8QSQ+spbJTYLdgFenFoGq47gLwDS6NWYYQSqzE3Udf2W7pzk4ybyG4PHBYV3s4cyzdq8amvtE/sNSdOKReuHpfQ="
+            "CAUSxwUKwQIIAxIQFwW5F8wSBIaLBjM6L3cqjBiCtIKSBSKOAjCCAQoCggEBAJntWzsyfateJO/DtiqVtZhSCtW8yzdQPgZF" +
+                "uBTYdrjfQFEEQa2M462xG7iMTnJaXkqeB5UpHVhYQCOn4a8OOKkSeTkwCGELbxWMh4x+Ib/7/up34QGeHleB6KRfRiY9FOYO" +
+                "gFioYHrc4E+shFexN6jWfM3rM3BdmDoh+07svUoQykdJDKR+ql1DghjduvHK3jOS8T1v+2RC/THhv0CwxgTRxLpMlSCkv5fu" +
+                "vWCSmvzu9Vu69WTi0Ods18Vcc6CCuZYSC4NZ7c4kcHCCaA1vZ8bYLErF8xNEkKdO7DevSy8BDFnoKEPiWC8La59dsPxebt9k" +
+                "+9MItHEbzxJQAZyfWgkCAwEAAToUbGljZW5zZS53aWRldmluZS5jb20SgAOuNHMUtag1KX8nE4j7e7jLUnfSSYI83dHaMLkz" +
+                "OVEes8y96gS5RLknwSE0bv296snUE5F+bsF2oQQ4RgpQO8GVK5uk5M4PxL/CCpgIqq9L/NGcHc/N9XTMrCjRtBBBbPneiAQw" +
+                "HL2zNMr80NQJeEI6ZC5UYT3wr8+WykqSSdhV5Cs6cD7xdn9qm9Nta/gr52u/DLpP3lnSq8x2/rZCR7hcQx+8pSJmthn8NpeV" +
+                "Q/ypy727+voOGlXnVaPHvOZV+WRvWCq5z3CqCLl5+Gf2Ogsrf9s2LFvE7NVV2FvKqcWTw4PIV9Sdqrd+QLeFHd/SSZiAjjWy" +
+                "WOddeOrAyhb3BHMEwg2T7eTo/xxvF+YkPj89qPwXCYcOxF+6gjomPwzvofcJOxkJkoMmMzcFBDopvab5tDQsyN9UPLGhGC98" +
+                "X/8z8QSQ+spbJTYLdgFenFoGq47gLwDS6NWYYQSqzE3Udf2W7pzk4ybyG4PHBYV3s4cyzdq8amvtE/sNSdOKReuHpfQ="
 
         /**
          * Service certificate of Google's staging license server (staging.google.com),
          * reachable without auth at https://cwip-shaka-proxy.appspot.com/no_auth
          */
         public const val STAGING_PRIVACY_CERT: String =
-            "CAUSxQUKvwIIAxIQKHA0VMAI9jYYredEPbbEyBiL5/mQBSKOAjCCAQoCggEBALUhErjQXQI/zF2V4sJRwcZJtBd82NK+7zVbsGdD3mYePSq8MYK3mUbVX9wI3+lUB4FemmJ0syKix/XgZ7tfCsB6idRa6pSyUW8HW2bvgR0NJuG5priU8rmFeWKqFxxPZmMNPkxgJxiJf14e+baq9a1Nuip+FBdt8TSh0xhbWiGKwFpMQfCB7/+Ao6BAxQsJu8dA7tzY8U1nWpGYD5LKfdxkagatrVEB90oOSYzAHwBTK6wheFC9kF6QkjZWt9/v70JIZ2fzPvYoPU9CVKtyWJOQvuVYCPHWaAgNRdiTwryi901goMDQoJk87wFgRwMzTDY4E5SGvJ2vJP1noH+a2UMCAwEAAToSc3RhZ2luZy5nb29nbGUuY29tEoADmD4wNSZ19AunFfwkm9rl1KxySaJmZSHkNlVzlSlyH/iA4KrvxeJ7yYDa6tq/P8OG0ISgLIJTeEjMdT/0l7ARp9qXeIoA4qprhM19ccB6SOv2FgLMpaPzIDCnKVww2pFbkdwYubyVk7jei7UPDe3BKTi46eA5zd4Y+oLoG7AyYw/pVdhaVmzhVDAL9tTBvRJpZjVrKH1lexjOY9Dv1F/FJp6X6rEctWPlVkOyb/SfEJwhAa/K81uDLyiPDZ1Flg4lnoX7XSTb0s+Cdkxd2b9yfvvpyGH4aTIfat4YkF9Nkvmm2mU224R1hx0WjocLsjA89wxul4TJPS3oRa2CYr5+DU4uSgdZzvgtEJ0lksckKfjAF0K64rPeytvDPD5fS69eFuy3Tq26/LfGcF96njtvOUA4P5xRFtICogySKe6WnCUZcYMDtQ0BMMM1LgawFNg4VA+KDCJ8ABHg9bOOTimO0sswHrRWSWX1XF15dXolCk65yEqz5lOfa2/fVomeopkU"
+            "CAUSxQUKvwIIAxIQKHA0VMAI9jYYredEPbbEyBiL5/mQBSKOAjCCAQoCggEBALUhErjQXQI/zF2V4sJRwcZJtBd82NK+7zVb" +
+                "sGdD3mYePSq8MYK3mUbVX9wI3+lUB4FemmJ0syKix/XgZ7tfCsB6idRa6pSyUW8HW2bvgR0NJuG5priU8rmFeWKqFxxPZmMN" +
+                "PkxgJxiJf14e+baq9a1Nuip+FBdt8TSh0xhbWiGKwFpMQfCB7/+Ao6BAxQsJu8dA7tzY8U1nWpGYD5LKfdxkagatrVEB90oO" +
+                "SYzAHwBTK6wheFC9kF6QkjZWt9/v70JIZ2fzPvYoPU9CVKtyWJOQvuVYCPHWaAgNRdiTwryi901goMDQoJk87wFgRwMzTDY4" +
+                "E5SGvJ2vJP1noH+a2UMCAwEAAToSc3RhZ2luZy5nb29nbGUuY29tEoADmD4wNSZ19AunFfwkm9rl1KxySaJmZSHkNlVzlSly" +
+                "H/iA4KrvxeJ7yYDa6tq/P8OG0ISgLIJTeEjMdT/0l7ARp9qXeIoA4qprhM19ccB6SOv2FgLMpaPzIDCnKVww2pFbkdwYubyV" +
+                "k7jei7UPDe3BKTi46eA5zd4Y+oLoG7AyYw/pVdhaVmzhVDAL9tTBvRJpZjVrKH1lexjOY9Dv1F/FJp6X6rEctWPlVkOyb/Sf" +
+                "EJwhAa/K81uDLyiPDZ1Flg4lnoX7XSTb0s+Cdkxd2b9yfvvpyGH4aTIfat4YkF9Nkvmm2mU224R1hx0WjocLsjA89wxul4TJ" +
+                "PS3oRa2CYr5+DU4uSgdZzvgtEJ0lksckKfjAF0K64rPeytvDPD5fS69eFuy3Tq26/LfGcF96njtvOUA4P5xRFtICogySKe6W" +
+                "nCUZcYMDtQ0BMMM1LgawFNg4VA+KDCJ8ABHg9bOOTimO0sswHrRWSWX1XF15dXolCk65yEqz5lOfa2/fVomeopkU"
 
         private val ROOT_SIGNED_CERT_B64 =
-            "CpwDCAASAQAY3ZSIiwUijgMwggGKAoIBgQC0/jnDZZAD2zwRlwnoaM3yw16b8udNI7EQ24dl39z7nzWgVwNTTPZtNX2meNuzNtI/nECplSZyf7i+Zt/FIZh4FRZoXS9GDkPLioQ5q/uwNYAivjQji6tTW3LsS7VIaVM+R1/9Cf2ndhOPD5LWTN+udqm62SIQqZ1xRdbX4RklhZxTmpfrhNfMqIiCIHAmIP1+QFAn4iWTb7w+cqD6wb0ptE2CXMG0y5xyfrDpihc+GWP8/YJIK7eyM7l97Eu6iR8nuJuISISqGJIOZfXIbBH/azbkdDTKjDOx+biOtOYS4AKYeVJeRTP/Edzrw1O6fGAaET0A+9K3qjD6T15Id1sX3HXvb9IZbdy+f7B4j9yCYEy/5CkGXmmMOROtFCXtGbLynwGCDVZEiMg17B8RsyTgWQ035Ec86kt/lzEcgXyUikx9aBWE/6UI/Rjn5yvkRycSEbgj7FiTPKwS0ohtQT3F/hzcufjUUT4H5QNvpxLoEve1zqaWVT94tGSCUNIzX5ECAwEAARKAA1jx1k0ECXvf1+9dOwI5F/oUNnVKOGeFVxKnFO41FtU9v0KG9mkAds2T9Hyy355EzUzUrgkYU0Qy7OBhG+XaE9NVxd0ay5AeflvG6Q8in76FAv6QMcxrA4S9IsRV+vXyCM1lQVjofSnaBFiC9TdpvPNaV4QXezKHcLKwdpyywxXRESYqI3WZPrl3IjINvBoZwdVlkHZVdA8OaU1fTY8Zr9/WFjGUqJJfT7x6Mfiujq0zt+kw0IwKimyDNfiKgbL+HIisKmbF/73mF9BiC9yKRfewPlrIHkokL2yl4xyIFIPVxe9enz2FRXPia1BSV0z7kmxmdYrWDRuu8+yvUSIDXQouY5OcCwEgqKmELhfKrnPsIht5rvagcizfB0fbiIYwFHghESKIrNdUdPnzJsKlVshWTwApHQh7evuVicPumFSePGuUBRMS9nG5qxPDDJtGCHs9Mmpoyh6ckGLF7RC5HxclzpC5bc3ERvWjYhN0AqdipPpV2d7PouaAdFUGSdUCDA=="
+            "CpwDCAASAQAY3ZSIiwUijgMwggGKAoIBgQC0/jnDZZAD2zwRlwnoaM3yw16b8udNI7EQ24dl39z7nzWgVwNTTPZtNX2meNuz" +
+                "NtI/nECplSZyf7i+Zt/FIZh4FRZoXS9GDkPLioQ5q/uwNYAivjQji6tTW3LsS7VIaVM+R1/9Cf2ndhOPD5LWTN+udqm62SIQ" +
+                "qZ1xRdbX4RklhZxTmpfrhNfMqIiCIHAmIP1+QFAn4iWTb7w+cqD6wb0ptE2CXMG0y5xyfrDpihc+GWP8/YJIK7eyM7l97Eu6" +
+                "iR8nuJuISISqGJIOZfXIbBH/azbkdDTKjDOx+biOtOYS4AKYeVJeRTP/Edzrw1O6fGAaET0A+9K3qjD6T15Id1sX3HXvb9IZ" +
+                "bdy+f7B4j9yCYEy/5CkGXmmMOROtFCXtGbLynwGCDVZEiMg17B8RsyTgWQ035Ec86kt/lzEcgXyUikx9aBWE/6UI/Rjn5yvk" +
+                "RycSEbgj7FiTPKwS0ohtQT3F/hzcufjUUT4H5QNvpxLoEve1zqaWVT94tGSCUNIzX5ECAwEAARKAA1jx1k0ECXvf1+9dOwI5" +
+                "F/oUNnVKOGeFVxKnFO41FtU9v0KG9mkAds2T9Hyy355EzUzUrgkYU0Qy7OBhG+XaE9NVxd0ay5AeflvG6Q8in76FAv6QMcxr" +
+                "A4S9IsRV+vXyCM1lQVjofSnaBFiC9TdpvPNaV4QXezKHcLKwdpyywxXRESYqI3WZPrl3IjINvBoZwdVlkHZVdA8OaU1fTY8Z" +
+                "r9/WFjGUqJJfT7x6Mfiujq0zt+kw0IwKimyDNfiKgbL+HIisKmbF/73mF9BiC9yKRfewPlrIHkokL2yl4xyIFIPVxe9enz2F" +
+                "RXPia1BSV0z7kmxmdYrWDRuu8+yvUSIDXQouY5OcCwEgqKmELhfKrnPsIht5rvagcizfB0fbiIYwFHghESKIrNdUdPnzJsKl" +
+                "VshWTwApHQh7evuVicPumFSePGuUBRMS9nG5qxPDDJtGCHs9Mmpoyh6ckGLF7RC5HxclzpC5bc3ERvWjYhN0AqdipPpV2d7P" +
+                "ouaAdFUGSdUCDA=="
         private val ROOT_SIGNED_CERT =
             SignedDrmCertificate.ADAPTER.decode(ROOT_SIGNED_CERT_B64.decodeBase64()!!.toByteArray())
         private val ROOT_CERT = DrmCertificate.ADAPTER.decode(ROOT_SIGNED_CERT.drm_certificate!!)
@@ -99,8 +167,9 @@ public class Cdm internal constructor(
             } catch (e: Throwable) {
                 throw DecodeException("Could not parse init data as a WidevineCencHeader, $e")
             }
-            if (header.entitled_keys.isEmpty())
+            if (header.entitled_keys.isEmpty()) {
                 throw InvalidInitDataException("This PSSH carries no entitled_keys.")
+            }
 
             return header.entitled_keys.map { entitled ->
                 val entitlementKeyId = entitled.entitlement_key_id
@@ -108,7 +177,7 @@ public class Cdm internal constructor(
                     .kidToUuid()
                 val wrapping = entitlementKeys.firstOrNull { it.kid == entitlementKeyId }
                     ?: throw ValueException(
-                        "No ENTITLEMENT key with id $entitlementKeyId was provided."
+                        "No ENTITLEMENT key with id $entitlementKeyId was provided.",
                     )
 
                 val wrapped = entitled.key.orDecodeError("EntitledKey.key").toByteArray()
@@ -117,7 +186,7 @@ public class Cdm internal constructor(
                 Key(
                     type = License.KeyContainer.KeyType.CONTENT,
                     kid = entitled.key_id.kidToUuid(),
-                    key = pkcs7Unpad(aesCbcDecryptNoPadding(wrapping.key, iv, wrapped))
+                    key = pkcs7Unpad(aesCbcDecryptNoPadding(wrapping.key, iv, wrapped)),
                 )
             }
         }
@@ -130,13 +199,13 @@ public class Cdm internal constructor(
             clientId = device.clientId,
             privateKeyDer = device.privateKeyDer,
             systemId = device.systemId,
-            securityLevel = device.securityLevel
+            securityLevel = device.securityLevel,
         )
     }
 
     private suspend fun encryptClientId(
         client: ClientIdentification,
-        serviceCert: DrmCertificate
+        serviceCert: DrmCertificate,
     ): EncryptedClientIdentification {
         val privacyKey = randomBytes(16)
         val privacyIv = randomBytes(16)
@@ -144,14 +213,14 @@ public class Cdm internal constructor(
         val encryptedClient = aesCbcEncryptNoPadding(privacyKey, privacyIv, padded)
         val encryptedPrivacyKey = rsaOaepEncrypt(
             serviceCert.public_key.orDecodeError("DrmCertificate.public_key").toByteArray(),
-            privacyKey
+            privacyKey,
         )
         return EncryptedClientIdentification(
             provider_id = serviceCert.provider_id,
             service_certificate_serial_number = serviceCert.serial_number,
             encrypted_client_id = encryptedClient.toByteString(),
             encrypted_client_id_iv = privacyIv.toByteString(),
-            encrypted_privacy_key = encryptedPrivacyKey.toByteString()
+            encrypted_privacy_key = encryptedPrivacyKey.toByteString(),
         )
     }
 
@@ -163,8 +232,9 @@ public class Cdm internal constructor(
     public suspend fun open(): ByteString = sessionsLock.withLock {
         // pywidevine compares with `>`, which lets a 17th session through; that is a bug,
         // and diverging from it is deliberate.
-        if (sessions.size >= MAX_NUM_OF_SESSIONS)
+        if (sessions.size >= MAX_NUM_OF_SESSIONS) {
             throw TooManySessionsException("Too many Sessions open ($MAX_NUM_OF_SESSIONS).")
+        }
         val s = Session(++sessionCounter)
         sessions[s.id] = s
         s.id
@@ -202,7 +272,7 @@ public class Cdm internal constructor(
             }
             return prev?.let {
                 DrmCertificate.ADAPTER.decode(
-                    it.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
+                    it.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate"),
                 ).provider_id
             }
         }
@@ -230,7 +300,7 @@ public class Cdm internal constructor(
         val ok = rsaPssVerifySha1(
             ROOT_CERT.public_key!!.toByteArray(),
             certBytes.toByteArray(),
-            certSignature.toByteArray()
+            certSignature.toByteArray(),
         )
         if (!ok) throw SignatureMismatchException("Signature Mismatch on SignedDrmCertificate, rejecting certificate")
 
@@ -277,7 +347,7 @@ public class Cdm internal constructor(
         pssh: PSSH,
         licenseType: LicenseType = LicenseType.STREAMING,
         privacyMode: Boolean = true,
-        requestType: LicenseRequest.RequestType = LicenseRequest.RequestType.NEW
+        requestType: LicenseRequest.RequestType = LicenseRequest.RequestType.NEW,
     ): ByteArray {
         val s = session(sessionId)
         val init = pssh.initData
@@ -289,25 +359,27 @@ public class Cdm internal constructor(
         val serviceCertificate = s.lock.withLock { s.serviceCertificate }
         val encryptedClientId = if (serviceCertificate != null && privacyMode) {
             val drm = DrmCertificate.ADAPTER.decode(
-                serviceCertificate.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate")
+                serviceCertificate.drm_certificate.orDecodeError("SignedDrmCertificate.drm_certificate"),
             )
             encryptClientId(clientId, drm)
-        } else null
+        } else {
+            null
+        }
 
         val contentId = when (requestType) {
             LicenseRequest.RequestType.NEW -> LicenseRequest.ContentIdentification(
                 widevine_pssh_data = LicenseRequest.ContentIdentification.WidevinePsshData(
                     pssh_data = listOf(init.toByteString()),
                     license_type = licenseType,
-                    request_id = requestId
-                )
+                    request_id = requestId,
+                ),
             )
 
             // RENEWAL and RELEASE identify the license already held, not the content.
             else -> LicenseRequest.ContentIdentification(
                 existing_license = LicenseRequest.ContentIdentification.ExistingLicense(
-                    license_id = existingLicenseId(s, requestType)
-                )
+                    license_id = existingLicenseId(s, requestType),
+                ),
             )
         }
 
@@ -318,17 +390,17 @@ public class Cdm internal constructor(
             request_time = requestTime,
             protocol_version = ProtocolVersion.VERSION_2_1,
             key_control_nonce = randomInt(1, Int.MAX_VALUE),
-            encrypted_client_id = encryptedClientId
+            encrypted_client_id = encryptedClientId,
         )
 
         KtvineLog.d {
             "Generating License Request - " +
-            "Session ID: $sessionId, " +
-            "Request ID: $requestId, " +
-            "Request Time: $requestTime, " +
-            "License Type: $licenseType, " +
-            "Privacy Mode: $privacyMode, " +
-            "Encrypted Client ID: ${encryptedClientId != null}"
+                "Session ID: $sessionId, " +
+                "Request ID: $requestId, " +
+                "Request Time: $requestTime, " +
+                "License Type: $licenseType, " +
+                "Privacy Mode: $privacyMode, " +
+                "Encrypted Client ID: ${encryptedClientId != null}"
         }
 
         val encodedLr = lr.encode()
@@ -341,7 +413,7 @@ public class Cdm internal constructor(
         val sm = SignedMessage(
             type = SignedMessage.MessageType.LICENSE_REQUEST,
             msg = encodedLr.toByteString(),
-            signature = signature.toByteString()
+            signature = signature.toByteString(),
         )
 
         val (encCtx, macCtx) = deriveContext(encodedLr)
@@ -369,7 +441,7 @@ public class Cdm internal constructor(
             SignedMessage.ADAPTER.decode(licenseMessage)
         } catch (e: Throwable) {
             throw DecodeException(
-                "Could not parse license_message as a SignedMessage, $e"
+                "Could not parse license_message as a SignedMessage, $e",
             )
         }
         if (sm.type == SignedMessage.MessageType.ERROR_RESPONSE) {
@@ -378,18 +450,19 @@ public class Cdm internal constructor(
             val detail = sm.msg?.toByteArray()?.toHexString() ?: "<empty>"
             val version = sm.service_version_info?.let { " (service ${it.license_service_version})" } ?: ""
             throw InvalidLicenseMessageException(
-                "License server returned an ERROR_RESPONSE$version, payload: $detail"
+                "License server returned an ERROR_RESPONSE$version, payload: $detail",
             )
         }
-        if (sm.type != SignedMessage.MessageType.LICENSE)
+        if (sm.type != SignedMessage.MessageType.LICENSE) {
             throw InvalidLicenseMessageException("Expecting a LICENSE message, not a '${sm.type}' message.")
+        }
 
         val msg = sm.msg.orDecodeError("SignedMessage.msg")
         val license = try {
             License.ADAPTER.decode(msg)
         } catch (e: Throwable) {
             throw DecodeException(
-                "Could not parse license_message's message as a License, $e"
+                "Could not parse license_message's message as a License, $e",
             )
         }
 
@@ -402,15 +475,16 @@ public class Cdm internal constructor(
         // Unwrap session key and derive enc/mac keys
         val sessionKey = rsaOaepDecrypt(
             privateKeyDer,
-            sm.session_key.orDecodeError("SignedMessage.session_key").toByteArray()
+            sm.session_key.orDecodeError("SignedMessage.session_key").toByteArray(),
         )
         val (encKey, macKeyServer, macKeyClient) = deriveKeys(encCtx, macCtx, sessionKey)
 
         // Compute HMAC over optional oemcrypto_core_message prefix + msg, as per OEMCrypto v16+
         val core = sm.oemcrypto_core_message?.toByteArray() ?: ByteArray(0)
         val computedSig = hmacSha256(macKeyServer, core + msg.toByteArray())
-        if (!constantTimeEquals(computedSig, sm.signature.orDecodeError("SignedMessage.signature").toByteArray()))
+        if (!constantTimeEquals(computedSig, sm.signature.orDecodeError("SignedMessage.signature").toByteArray())) {
             throw SignatureMismatchException("Signature Mismatch on License Message, rejecting license")
+        }
 
         // Load Keys from license
         val parsed = mutableListOf<Key>()
@@ -439,13 +513,10 @@ public class Cdm internal constructor(
      * @throws InvalidContextException if no license has been parsed for the session
      * @throws ValueException if the license's policy does not permit renewal
      */
-    private suspend fun existingLicenseId(
-        s: Session,
-        requestType: LicenseRequest.RequestType
-    ): LicenseIdentification {
+    private suspend fun existingLicenseId(s: Session, requestType: LicenseRequest.RequestType): LicenseIdentification {
         val license = s.lock.withLock { s.license }
             ?: throw InvalidContextException(
-                "A $requestType request needs a parsed license; call parseLicense first."
+                "A $requestType request needs a parsed license; call parseLicense first.",
             )
 
         if (requestType == LicenseRequest.RequestType.RENEWAL && license.policy?.can_renew != true) {
@@ -477,7 +548,7 @@ public class Cdm internal constructor(
                 (keySize ushr 24).toByte(),
                 (keySize ushr 16).toByte(),
                 (keySize ushr 8).toByte(),
-                keySize.toByte()
+                keySize.toByte(),
             )
         }
 
@@ -488,7 +559,7 @@ public class Cdm internal constructor(
                 (keySize ushr 24).toByte(),
                 (keySize ushr 16).toByte(),
                 (keySize ushr 8).toByte(),
-                keySize.toByte()
+                keySize.toByte(),
             )
         }
         return encCtx(message) to macCtx(message)
@@ -497,15 +568,15 @@ public class Cdm internal constructor(
     private suspend fun deriveKeys(
         encContext: ByteArray,
         macContext: ByteArray,
-        key: ByteArray
+        key: ByteArray,
     ): Triple<ByteArray, ByteArray, ByteArray> {
         suspend fun derive(context: ByteArray, counter: Int): ByteArray {
             return aesCmac(key, byteArrayOf(counter.toByte()) + context)
         }
 
-        val encKey = derive( encContext, 1)
-        val macKeyServer = derive(macContext, 1) + derive( macContext, 2)
-        val macKeyClient = derive( macContext, 3) + derive(macContext, 4)
+        val encKey = derive(encContext, 1)
+        val macKeyServer = derive(macContext, 1) + derive(macContext, 2)
+        val macKeyClient = derive(macContext, 3) + derive(macContext, 4)
         return Triple(encKey, macKeyServer, macKeyClient)
     }
 
@@ -533,8 +604,9 @@ public class Cdm internal constructor(
         val entitlementKeys = s.lock.withLock {
             s.keys.filter { it.type == License.KeyContainer.KeyType.ENTITLEMENT }
         }
-        if (entitlementKeys.isEmpty())
+        if (entitlementKeys.isEmpty()) {
             throw NoKeysLoadedException("No ENTITLEMENT keys are loaded for this session.")
+        }
 
         return unwrapEntitledKeys(entitlementKeys, entitledPssh)
     }

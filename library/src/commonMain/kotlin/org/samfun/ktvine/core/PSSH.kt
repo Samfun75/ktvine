@@ -7,7 +7,23 @@ import okio.ByteString.Companion.decodeHex
 import okio.ByteString.Companion.encodeUtf8
 import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.proto.WidevinePsshData
-import org.samfun.ktvine.utils.*
+import org.samfun.ktvine.utils.DecodeException
+import org.samfun.ktvine.utils.InvalidBoxException
+import org.samfun.ktvine.utils.KtvineLog
+import org.samfun.ktvine.utils.ValueException
+import org.samfun.ktvine.utils.containsSubarray
+import org.samfun.ktvine.utils.decodeToStringUtf16LE
+import org.samfun.ktvine.utils.encodeToUtf16LE
+import org.samfun.ktvine.utils.escapeXml
+import org.samfun.ktvine.utils.toHexString
+import org.samfun.ktvine.utils.toLittleEndianByteArray
+import org.samfun.ktvine.utils.toUTF8
+import org.samfun.ktvine.utils.toUUID
+import org.samfun.ktvine.utils.unescapeXml
+import org.samfun.ktvine.utils.uuidFromByteArray
+import org.samfun.ktvine.utils.uuidFromByteString
+import org.samfun.ktvine.utils.uuidFromHexByteString
+import org.samfun.ktvine.utils.uuidFromLittleEndian
 import kotlin.io.encoding.Base64
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -145,8 +161,9 @@ public class PSSH {
         } catch (e: Throwable) {
             throw DecodeException("The PlayReadyObject seems to be corrupt, $e")
         }
-        if (size != _content.size)
+        if (size != _content.size) {
             throw ValueException("The PlayReadyObject seems to be corrupt (declares $size bytes, has ${_content.size})")
+        }
 
         val proRecordCount = proData.readShortLe().toInt() and 0xFFFF
         repeat(proRecordCount) {
@@ -177,7 +194,7 @@ public class PSSH {
 
             "4.1.0.0", "4.2.0.0", "4.3.0.0" -> Regex(
                 """<KID\b[^>]*\bVALUE=\"([^\"]+)\"""",
-                RegexOption.IGNORE_CASE
+                RegexOption.IGNORE_CASE,
             )
                 .findAll(xml)
                 .map { it.groupValues[1].trim() }
@@ -189,7 +206,6 @@ public class PSSH {
         return keyIdsB64.map { b64 -> Base64.decode(b64).uuidFromLittleEndian() }
     }
 
-
     override fun toString(): String = exportBase64()
 
     /** Convert PlayReady PSSH to a Widevine PSSH. */
@@ -197,15 +213,19 @@ public class PSSH {
         if (_systemId.contentEquals(WIDEVINE)) throw ValueException("This is already a Widevine PSSH")
 
         val kids = keyIds()
+
         @Suppress("DEPRECATION")
         val scheme = encryptionScheme
         val widevine = WidevinePsshData(
             key_ids = kids.map { it.toByteArray().toByteString() },
             // The deprecated `algorithm` enum only knows AESCTR, so anything else is carried
             // by `protection_scheme` alone.
-            algorithm = if (scheme == null || scheme.equals("AESCTR", ignoreCase = true))
-                WidevinePsshData.Algorithm.AESCTR else null,
-            protection_scheme = schemeToFourCc(scheme)
+            algorithm = if (scheme == null || scheme.equals("AESCTR", ignoreCase = true)) {
+                WidevinePsshData.Algorithm.AESCTR
+            } else {
+                null
+            },
+            protection_scheme = schemeToFourCc(scheme),
         )
 
         if (_version == 1) _keyIds = kids
@@ -227,7 +247,7 @@ public class PSSH {
         luiUrl: String? = null,
         dsId: ByteArray? = null,
         decryptorSetup: String? = null,
-        customData: String? = null
+        customData: String? = null,
     ) {
         if (_systemId.contentEquals(PLAYREADY_SYSTEM_ID)) throw ValueException("This is already a PlayReady PSSH")
 
@@ -238,7 +258,7 @@ public class PSSH {
             luiUrl = luiUrl,
             dsId = dsId,
             decryptorSetup = decryptorSetup,
-            customData = customData
+            customData = customData,
         )
         _systemId = PLAYREADY_SYSTEM_ID
     }
@@ -274,19 +294,18 @@ public class PSSH {
                     luiUrl = xml?.let { elementText(it, "LUI_URL") },
                     dsId = xml?.let { elementText(it, "DS_ID") }?.let { Base64.decode(it) },
                     decryptorSetup = xml?.let { elementText(it, "DECRYPTORSETUP") },
-                    customData = xml?.let { rawElementText(it, "CUSTOMATTRIBUTES") }
+                    customData = xml?.let { rawElementText(it, "CUSTOMATTRIBUTES") },
                 )
             }
 
             else -> throw ValueException(
-                "Only Widevine and PlayReady PSSH Boxes are supported, not ${_systemId.toHexString()}"
+                "Only Widevine and PlayReady PSSH Boxes are supported, not ${_systemId.toHexString()}",
             )
         }
     }
 
     /** Overload that accepts a mixed list of UUID | String(hex/base64) | ByteArray. */
     public fun setKeyIdsAny(keyIds: List<Any>): Unit = setKeyIds(parseKeyIds(keyIds))
-
 
     /** Export the PSSH object as a full PSSH box in Base64 form. */
     public fun exportBase64(): String {
@@ -363,8 +382,7 @@ public class PSSH {
         }
 
         /** Text of a simple element, unescaped. Returns `null` when the element is absent. */
-        private fun elementText(xml: String, name: String): String? =
-            rawElementText(xml, name)?.let { unescapeXml(it) }
+        private fun elementText(xml: String, name: String): String? = rawElementText(xml, name)?.let { unescapeXml(it) }
 
         /** Text of a simple element, left exactly as written. */
         private fun rawElementText(xml: String, name: String): String? =
@@ -386,15 +404,20 @@ public class PSSH {
             luiUrl: String? = null,
             dsId: ByteArray? = null,
             decryptorSetup: String? = null,
-            customData: String? = null
+            customData: String? = null,
         ): ByteArray {
             val prrValue = buildString {
-                append("<WRMHEADER xmlns=\"http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader\" version=\"4.3.0.0\">")
+                append(
+                    "<WRMHEADER xmlns=\"http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader\" " +
+                        "version=\"4.3.0.0\">",
+                )
                 append("<DATA>")
                 append("<PROTECTINFO><KIDS>")
                 val escapedAlgid = escapeXml(algid)
                 keyIds.forEach { kid ->
-                    append("<KID ALGID=\"$escapedAlgid\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>")
+                    append(
+                        "<KID ALGID=\"$escapedAlgid\" VALUE=\"${Base64.encode(kid.toLittleEndianByteArray())}\"></KID>",
+                    )
                 }
                 append("</KIDS></PROTECTINFO>")
                 laUrl?.let { append("<LA_URL>${escapeXml(it)}</LA_URL>") }
@@ -407,30 +430,30 @@ public class PSSH {
             }.encodeToUtf16LE()
 
             // The record length field is a u16; toLEU16 would silently truncate past 65535.
-            if (prrValue.size > 0xFFFF)
+            if (prrValue.size > 0xFFFF) {
                 throw ValueException("PlayReadyHeader is ${prrValue.size} bytes, over the 65535-byte record limit")
+            }
 
             val body = Buffer().apply {
-                writeShortLe(1)                 // record count
-                writeShortLe(0x01)              // type: PlayReadyHeader
-                writeShortLe(prrValue.size)     // length
+                writeShortLe(1) // record count
+                writeShortLe(0x01) // type: PlayReadyHeader
+                writeShortLe(prrValue.size) // length
                 write(prrValue)
             }.readByteArray()
 
             return Buffer().apply {
-                writeIntLe(body.size + 4)       // total size including this length field
+                writeIntLe(body.size + 4) // total size including this length field
                 write(body)
             }.readByteArray()
         }
 
         private val WRMHEADER_CLOSE_TAG = "</WRMHEADER>".encodeToUtf16LE()
 
-        private fun decodeBase64OrThrow(data: String): ByteArray =
-            try {
-                Base64.decode(data)
-            } catch (e: Throwable) {
-                throw DecodeException("Could not decode data as Base64, $e")
-            }
+        private fun decodeBase64OrThrow(data: String): ByteArray = try {
+            Base64.decode(data)
+        } catch (e: Throwable) {
+            throw DecodeException("Could not decode data as Base64, $e")
+        }
 
         /** Apply the input cascade documented on the [PSSH] `ByteArray` constructor. */
         private fun interpret(data: ByteArray, strict: Boolean): PSSH {
@@ -452,7 +475,7 @@ public class PSSH {
 
             if (strict) {
                 throw DecodeException(
-                    "Could not parse data as a PSSH box, a WidevineCencHeader, or a PlayReadyHeader."
+                    "Could not parse data as a PSSH box, a WidevineCencHeader, or a PlayReadyHeader.",
                 )
             }
 
@@ -543,7 +566,11 @@ public class PSSH {
                 val keyCount = b.readInt().toLong() and 0xFFFFFFFFL
                 KtvineLog.v { "PSSH box key count: $keyCount" }
 
-                if (b.size < keyCount * 16) throw InvalidBoxException("PSSH payload too small to contain $keyCount key IDs")
+                if (b.size < keyCount * 16) {
+                    throw InvalidBoxException(
+                        "PSSH payload too small to contain $keyCount key IDs",
+                    )
+                }
 
                 repeat(keyCount.toInt()) { keyIds.add(b.readByteArray(16).toUUID()) }
             }
@@ -561,14 +588,14 @@ public class PSSH {
         public val WIDEVINE: ByteArray = Uuid.parse("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed").toByteArray()
         public val PLAYREADY_SYSTEM_ID: ByteArray = Uuid.parse("9A04F079-9840-4286-AB92-E65BE0885F95").toByteArray()
 
-
         /**
          * Convert a list of UUID | String(hex/base64) | ByteArray to UUIDs.
          * @throws ValueException if any item has an unsupported type
          */
         public fun parseKeyIds(keyIds: List<Any>): List<Uuid> {
-            if (!keyIds.all { it is Uuid || it is String || it is ByteArray })
+            if (!keyIds.all { it is Uuid || it is String || it is ByteArray }) {
                 throw ValueException("Some items of key_ids are not a UUID, String, or ByteArray.")
+            }
             return keyIds.map { item ->
                 when (item) {
                     is Uuid -> item
@@ -594,15 +621,19 @@ public class PSSH {
             keyIds: List<Uuid>? = null,
             initData: Any? = null,
             version: Int = 0,
-            flags: Int = 0
+            flags: Int = 0,
         ): PSSH {
             if (version !in 0..1) throw ValueException("Invalid version, must be either 0 or 1, not $version.")
             if (flags < 0) throw ValueException("Invalid flags, cannot be less than 0.")
 
-            if (version == 0 && keyIds != null && initData != null)
+            if (version == 0 && keyIds != null && initData != null) {
                 throw ValueException("Version 0 PSSH boxes must use only init_data, not init_data and key_ids.")
-            if (version == 1 && keyIds == null && initData == null)
-                throw ValueException("Version 1 PSSH boxes must use either init_data or key_ids but neither were provided")
+            }
+            if (version == 1 && keyIds == null && initData == null) {
+                throw ValueException(
+                    "Version 1 PSSH boxes must use either init_data or key_ids but neither were provided",
+                )
+            }
 
             val contentBytes: ByteArray = when (initData) {
                 null -> ByteArray(0)
@@ -613,7 +644,9 @@ public class PSSH {
                 }
 
                 is ByteArray -> initData
-                else -> throw ValueException("Expecting init_data to be WidevinePsshData, hex, base64, or bytes, not ${initData::class}")
+                else -> throw ValueException(
+                    "Expecting init_data to be WidevinePsshData, hex, base64, or bytes, not ${initData::class}",
+                )
             }
 
             val systemIdBytes = systemId.toByteArray()
@@ -633,7 +666,7 @@ public class PSSH {
                 version = version,
                 flags = flags,
                 keyIds = keyIds ?: emptyList(),
-                content = content
+                content = content,
             )
         }
     }

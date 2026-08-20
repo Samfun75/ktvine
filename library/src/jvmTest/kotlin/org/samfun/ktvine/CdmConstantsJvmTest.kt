@@ -28,7 +28,7 @@ class CdmConstantsJvmTest {
             val cdm = cdm()
             for ((name, cert) in listOf(
                 "common" to Cdm.COMMON_PRIVACY_CERT,
-                "staging" to Cdm.STAGING_PRIVACY_CERT
+                "staging" to Cdm.STAGING_PRIVACY_CERT,
             )) {
                 val sessionId = cdm.open()
                 // setServiceCertificate verifies the RSA-PSS signature against the root cert,
@@ -75,7 +75,7 @@ class CdmConstantsJvmTest {
             assertEquals(
                 cdm.getServiceCertificate(viaWrapper),
                 cdm.getServiceCertificate(viaBare),
-                "both forms must store the same SignedDrmCertificate"
+                "both forms must store the same SignedDrmCertificate",
             )
         }
     }
