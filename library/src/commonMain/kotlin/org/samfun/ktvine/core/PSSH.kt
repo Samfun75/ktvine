@@ -106,6 +106,50 @@ public class PSSH {
     }
 
     /**
+     * Crypto period this header names, for content using key rotation, or `null`.
+     *
+     * Widevine only; a PlayReady header has no equivalent.
+     */
+    public val cryptoPeriodIndex: Int?
+        get() = widevineHeaderOrNull()?.crypto_period_index
+
+    /** Duration of each crypto period in seconds, for content using key rotation, or `null`. */
+    public val cryptoPeriodSeconds: Int?
+        get() = widevineHeaderOrNull()?.crypto_period_seconds
+
+    private fun widevineHeaderOrNull(): WidevinePsshData? {
+        if (_systemId.contentEquals(PLAYREADY_SYSTEM_ID)) return null
+        return runCatching { WidevinePsshData.ADAPTER.decode(_content) }.getOrNull()
+    }
+
+    /**
+     * Point this PSSH at a specific crypto period.
+     *
+     * With key rotation the licence for each period is requested with the same init data
+     * but a different `crypto_period_index`, so rotating is: set the index, build a fresh
+     * challenge, parse the response.
+     *
+     * @throws ValueException for a non-Widevine box, which has no such field
+     */
+    public fun setCryptoPeriodIndex(index: Int) {
+        if (!_systemId.contentEquals(WIDEVINE)) {
+            throw ValueException("Only Widevine PSSH Boxes carry a crypto period, not ${_systemId.toHexString()}")
+        }
+        if (index < 0) throw ValueException("Invalid crypto period index $index, cannot be negative.")
+
+        val header = if (_content.isEmpty()) {
+            WidevinePsshData()
+        } else {
+            try {
+                WidevinePsshData.ADAPTER.decode(_content)
+            } catch (e: Throwable) {
+                throw DecodeException("Could not parse init data as a WidevineCencHeader, $e")
+            }
+        }
+        _content = header.copy(crypto_period_index = index).encode()
+    }
+
+    /**
      * Get all Key IDs from within the Box or Init Data, wherever possible.
      *
      * Supports:

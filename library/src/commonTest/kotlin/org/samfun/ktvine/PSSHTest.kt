@@ -471,4 +471,60 @@ class PSSHTest {
         val pssh = PSSH.new(systemId = other, initData = byteArrayOf(1, 2, 3))
         assertFailsWith<ValueException> { pssh.setKeyIds(listOf(Uuid.fromLongs(0, 1))) }
     }
+
+    @Test
+    fun `test crypto period is read from a rotating header`() {
+        val header = WidevinePsshData(
+            key_ids = listOf(Uuid.parse("11111111-2222-3333-4444-555555555555").toByteArray().toByteString()),
+            crypto_period_index = 7,
+            crypto_period_seconds = 3600,
+        )
+        val pssh = PSSH.new(systemId = WV_UUID, initData = header)
+
+        assertEquals(7, pssh.cryptoPeriodIndex)
+        assertEquals(3600, pssh.cryptoPeriodSeconds)
+    }
+
+    @Test
+    fun `test content without rotation reports no crypto period`() {
+        val k1 = Uuid.parse("11111111-2222-3333-4444-555555555555")
+        val pssh = PSSH.new(systemId = WV_UUID, initData = wvData(k1))
+
+        assertNull(pssh.cryptoPeriodIndex)
+        assertNull(pssh.cryptoPeriodSeconds)
+    }
+
+    @Test
+    fun `test setting the crypto period keeps the rest of the header`() {
+        val k1 = Uuid.parse("11111111-2222-3333-4444-555555555555")
+        val header = WidevinePsshData(
+            key_ids = listOf(k1.toByteArray().toByteString()),
+            crypto_period_index = 1,
+            crypto_period_seconds = 3600,
+            protection_scheme = 0x63656E63,
+        )
+        val pssh = PSSH.new(systemId = WV_UUID, initData = header)
+
+        pssh.setCryptoPeriodIndex(2)
+
+        assertEquals(2, pssh.cryptoPeriodIndex)
+        assertEquals(3600, pssh.cryptoPeriodSeconds, "the period length must be left alone")
+        assertEquals(setOf(k1), pssh.keyIds().toSet(), "the key ids must be left alone")
+        assertEquals("AESCTR", pssh.encryptionScheme, "the scheme must be left alone")
+
+        // The rewritten header has to survive a round trip through a real box.
+        assertEquals(2, PSSH(pssh.export()).cryptoPeriodIndex)
+    }
+
+    @Test
+    fun `test crypto period rejects playready boxes and negative indexes`() {
+        val k1 = Uuid.parse("11111111-2222-3333-4444-555555555555")
+        val widevine = PSSH.new(systemId = WV_UUID, initData = wvData(k1))
+        assertFailsWith<ValueException> { widevine.setCryptoPeriodIndex(-1) }
+
+        val playready = PSSH.new(systemId = WV_UUID, initData = wvData(k1))
+        playready.toPlayready()
+        assertFailsWith<ValueException> { playready.setCryptoPeriodIndex(1) }
+        assertNull(playready.cryptoPeriodIndex, "a PlayReady header has no crypto period")
+    }
 }

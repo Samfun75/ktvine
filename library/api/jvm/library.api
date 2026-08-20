@@ -98,9 +98,12 @@ public final class org/samfun/ktvine/core/PSSH {
 	public synthetic fun <init> ([BZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun export ()[B
 	public final fun exportBase64 ()Ljava/lang/String;
+	public final fun getCryptoPeriodIndex ()Ljava/lang/Integer;
+	public final fun getCryptoPeriodSeconds ()Ljava/lang/Integer;
 	public final fun getEncryptionScheme ()Ljava/lang/String;
 	public final fun getInitData ()[B
 	public final fun keyIds ()Ljava/util/List;
+	public final fun setCryptoPeriodIndex (I)V
 	public final fun setKeyIds (Ljava/util/List;)V
 	public final fun setKeyIdsAny (Ljava/util/List;)V
 	public final fun toPlayready (Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;)V
