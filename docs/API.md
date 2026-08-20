@@ -1,169 +1,132 @@
-# ktvine API Reference
+# ktvine — conceptual guide
 
-This document summarizes the public surface of the ktvine library. It’s organized by package and class, with short contracts for inputs/outputs and error modes.
+The per-symbol reference is generated from the source by Dokka and published to
+GitHub Pages; build it locally with `./gradlew :library:dokkaHtml` and open
+`library/build/dokka/html/index.html`.
 
-- Target platforms: JVM and Android (Kotlin Multiplatform).
-- Protobuf models: generated via Square Wire and compatible with pywidevine schemas.
+This page explains only the things a signature cannot: what the pieces are for, what order
+to call them in, and where the sharp edges are. It deliberately lists no parameter tables,
+because those are what drifted last time.
 
-Contents
-- org.samfun.ktvine.cdm
-- org.samfun.ktvine.core
-- org.samfun.ktvine.crypto
-- org.samfun.ktvine.utils
+## What this library is
 
----
+ktvine implements the **client half** of the Widevine license exchange, ported from
+[pywidevine](https://github.com/devine-dl/pywidevine). It loads a device, builds a signed
+license request from a PSSH, verifies and parses the server's response, and hands back the
+decrypted content keys.
 
-org.samfun.ktvine.cdm
+It ships **no HTTP client**. You move the bytes to and from your own license server. It also
+does no device provisioning, and there is no PlayReady CDM — see "PlayReady scope" below.
 
-Cdm
-- Purpose: Open/close sessions, craft LICENSE_REQUEST messages, verify/parse LICENSE responses, and expose decrypted keys.
-- Construction
-  - static fromDevice(device: Device): Cdm
-    - Input: a parsed Widevine Device (WVD v2)
-    - Output: new Cdm instance bound to that device
-- Session management
-  - open(): ByteString
-    - Output: session id
-    - Errors: TooManySessionsException if >16 sessions
-  - close(sessionId: ByteString)
-    - Errors: InvalidSessionException if unknown id
-- Service certificate (privacy mode)
-  - setServiceCertificate(sessionId: ByteString, certificate: ByteArray?): String?
-    - Input: raw SignedDrmCertificate bytes or SignedMessage-wrapped; null clears current
-    - Output: provider id; when clearing, previous provider id
-    - Errors: InvalidSessionException, DecodeException, SignatureMismatchException
-  - setServiceCertificate(sessionId: ByteString, certificateBase64: String?): String?
-    - Input: Base64 version of above; null clears
-    - Output/Errors: same as overload
-  - getServiceCertificate(sessionId: ByteString): SignedDrmCertificate?
-    - Output: current certificate (if any)
-    - Errors: InvalidSessionException
-- License flow
-  - getLicenseChallenge(sessionId: ByteString, pssh: PSSH, licenseType: LicenseType = STREAMING, privacyMode: Boolean = true): ByteArray
-    - Input: session id, parsed PSSH, optional license type and privacy mode flag
-    - Output: SignedMessage(LICENSE_REQUEST) bytes
-    - Notes: Stores internal request context for parseLicense
-    - Errors: InvalidSessionException, InvalidInitDataException
-  - parseLicense(sessionId: ByteString, licenseMessage: ByteArray)
-    - Input: SignedMessage(LICENSE) bytes from license server
-    - Effects: Verifies MAC/signature, decrypts keys, stores on session
-    - Errors: InvalidSessionException, InvalidLicenseTypeException, DecodeException, SignatureMismatchException
-  - getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key>
-    - Output: decrypted keys; optional type filter
-    - Errors: InvalidSessionException
+## The flow
 
----
+```kotlin
+val device = Device.loads(wvdBytes)          // or Device.loads(base64)
+val cdm = Cdm.fromDevice(device)
 
-org.samfun.ktvine.core
+val sessionId = cdm.open()
+try {
+    // Optional, for privacy mode. Cdm.COMMON_PRIVACY_CERT is bundled, or POST
+    // Cdm.SERVICE_CERTIFICATE_CHALLENGE to your license server to obtain one.
+    cdm.setServiceCertificate(sessionId, Cdm.COMMON_PRIVACY_CERT)
 
-Device
-- Purpose: Represents a Widevine Device (WVD v2), including client id, private key, and metadata.
-- Properties: type (DeviceTypes), securityLevel (Int), flags (Map), privateKeyDer (ByteArray), clientId (ClientIdentification), vmp (FileHashes?), systemId (Int)
-- static loads(data: ByteArray): Device
-  - Input: WVD v2 bytes (magic "WVD", version 2)
-  - Output: Device
-  - Errors: ValueException (bad magic/version/lengths)
-- static loads(data: String): Device
-  - Input: Base64-encoded WVD v2
-  - Output/Errors: as above
-- static buildWvdV2(type: DeviceTypes, securityLevel: Int, privateKeyDer: ByteArray, clientIdBytes: ByteArray): ByteArray
-  - Output: raw WVD v2 bytes for storage/transport
+    val challenge = cdm.getLicenseChallenge(sessionId, PSSH(psshBase64))
+    val response = yourHttpClient.post(licenseUrl, challenge)   // your code
+    cdm.parseLicense(sessionId, response)
 
-DeviceTypes
-- Enum: CHROME(1), ANDROID(2)
+    cdm.getKeys(sessionId).forEach { println("${it.kid}: ${it.key.toHexString()}") }
+} finally {
+    cdm.close(sessionId)
+}
+```
 
-Key
-- Purpose: Decrypted content key (KID + key bytes), with optional permissions for OPERATOR_SESSION.
-- Properties: type (String), kid (UUID), key (ByteArray), permissions (List<String>)
-- static fromContainer(container: License.KeyContainer, encKey: ByteArray): Key
-  - Input: protobuf key container and content decryption key (CEK)
-  - Output: decrypted Key
+Everything on `Cdm` is `suspend`, and a `Cdm` is safe to share between coroutines: it holds
+one mutex for the session map and one per session, and never holds both at once.
 
-Session (internal)
-- Holds session id, optional service certificate, request contexts, and decrypted keys.
+A `Cdm` allows `Cdm.MAX_NUM_OF_SESSIONS` (16) concurrent sessions. `close` frees a slot.
 
-PSSH
-- Purpose: Parse/build PSSH boxes; convert between Widevine and PlayReady; extract KIDs.
-- Constructors: PSSH(base64: String), PSSH(bytes: ByteArray), PSSH(box: PsshBox)
-- Properties: initData: ByteArray (raw header content)
-- keyIds(): List<UUID>
-  - Output: list of KIDs if available (WV/PlayReady)
-  - Errors: ValueException (unsupported format)
-- dump(): ByteArray / dumps(): String
-  - Output: PSSH box in bytes/Base64
-- toWidevine()
-  - Effect: convert current content to Widevine PSSH
-  - Errors: ValueException if already Widevine
-- toPlayready(laUrl: String? = null, luiUrl: String? = null, dsId: ByteArray? = null, decryptorSetup: String? = null, customData: String? = null)
-  - Effect: convert to PlayReady v4.3.0.0 with optional fields
-  - Errors: ValueException if already PlayReady
-- setKeyIds(keyIds: List<UUID>)
-  - Effect: overwrite KIDs (for Widevine only)
-  - Errors: ValueException if not Widevine
-- setKeyIdsAny(keyIds: List<Any>)
-  - Effect: convenience wrapper accepting UUID | String(hex/base64) | ByteArray
-- static parseKeyIds(keyIds: List<Any>): List<UUID>
-  - Output: normalized UUID list; throws IllegalArgumentException on bad types
-- static new(systemId: UUID, keyIds: List<UUID>? = null, initData: Any? = null, version: Int = 0, flags: Int = 0): PSSH
-  - Output: new PSSH object; validates version/keyIds/initData combinations
-  - Errors: ValueException on invalid combinations or types
+## Sessions and ordering
 
----
+`parseLicense` only works for a session that has already produced a challenge: the request
+context needed to derive the keys is stored by `getLicenseChallenge`, keyed by request id,
+and consumed by `parseLicense`. Calling `parseLicense` without a prior challenge — or twice
+for the same one — raises `InvalidContextException`.
 
-org.samfun.ktvine.crypto
+After a successful `parseLicense`, `getLicense(sessionId)` returns the decoded `License`, so
+you can read `policy` (`can_persist`, `can_renew`, `rental_duration_seconds`,
+`renewal_server_url`, …) for offline or renewal flows.
 
-Top-level helpers (all suspend where crypto is invoked):
-- rsaPssSignSha1(privateKeyDer: ByteArray, data: ByteArray): ByteArray
-- rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature: ByteArray): Boolean
-- rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray
-- rsaOaepDecrypt(privateKeyDer: ByteArray, data: ByteArray): ByteArray
-- aesCmac(key: ByteArray, data: ByteArray): ByteArray
-- aesCbcDecrypt(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray
-- aesCbcDecryptNoPadding(key: ByteArray, iv: ByteArray, data: ByteArray): ByteArray (alias)
-- aesCbcEncryptNoPadding(key: ByteArray, iv: ByteArray, plaintextNoPad: ByteArray): ByteArray
-- hmacSha256(key: ByteArray, data: ByteArray): ByteArray
-- randomBytes(count: Int): ByteArray
-- pkcs7Pad(data: ByteArray, blockSize: Int = 16): ByteArray
-- pkcs7Unpad(data: ByteArray, blockSize: Int = 16): ByteArray
+`getLicenseChallenge(requestType = RENEWAL | RELEASE)` builds a request that references the
+license already parsed for the session instead of the content. **This path has never been
+exercised against a live server** — see the caveat in `docs/plans/library-improvements.md`.
 
-Notes
-- Private key inputs use PKCS#1 DER; public keys use X.509 DER.
-- AES-CBC encrypt helper expects caller-provided PKCS#7 padded plaintext.
+## PSSH input
 
----
+`PSSH(...)` accepts more than a `pssh` box. It tries, in order: an ISOBMFF box sequence, a
+bare `WidevinePsshData` CENC header, a bare PlayReady header or PlayReady Object, and — in
+lenient mode, the default — wraps anything else verbatim as the init data of a v0 Widevine
+box, which is what services with custom init data (Netflix MSL) need. Pass `strict = true`
+to reject that last case with `DecodeException`.
 
-org.samfun.ktvine.utils
+`PSSH.parseAll(...)` returns every box in a multi-DRM init segment;
+`PSSH.fromInitSegment(bytes, systemId)` picks one by DRM system. The constructors take only
+the first box.
 
-Extensions
-- UUID.toByteArray(): ByteArray
-- ByteString.uuidFromByteString(): UUID
-- ByteString.uuidFromHexByteString(): UUID
-- ByteString.uuidFromByteArray(): UUID (numeric representation)
-- Int.toLEU16(): ByteArray
-- Int.toLEU32(): ByteArray
-- ByteArray.toHexString(): String
-- ByteString?.kidToUuid(): UUID
+## Key IDs
 
-Types
-- typealias PsshBox = ProtectionSystemSpecificHeaderBox (mp4parser)
+Key IDs are messier than they look, and ktvine follows pywidevine here:
 
-Exceptions
-- KtvineException (base)
-- TooManySessionsException
-- InvalidSessionException
-- DecodeException
-- SignatureMismatchException
-- InvalidInitDataException
-- InvalidLicenseTypeException
-- ValueException
-- InvalidBoxException
+- A 16-byte `KeyContainer.id` is a big-endian UUID.
+- An all-digits ASCII id is a **decimal number**, not bytes. Widevine's own test content
+  sends `"0000000000000001"`, which is the UUID `…-000000000001`, not `3030…3031`.
+- A short id is zero-padded on the right.
+- Raw id bytes are **never** Base64. Use `String.kidToUuid()` for genuinely Base64 input.
 
----
+**PlayReady KIDs are little-endian GUIDs** and ktvine byte-swaps them on read and write.
+This is a deliberate divergence from pywidevine, which does not swap and therefore disagrees
+with the manifest's own `cenc:default_KID`. The manifest is treated as the authority.
 
-Usage Notes and Edge Cases
-- Always call Cdm.getLicenseChallenge before parseLicense; the request context is required to verify and decrypt.
-- For privacy mode, set a service certificate prior to building the license challenge and leave privacyMode=true.
-- PSSH.keyIds() attempts WV first, then PlayReady; some legacy or nonconforming PSSH payloads may not be supported.
-- Key.fromContainer returns raw key bytes after PKCS#7 unpadding; if the container held unpadded data, the original bytes are returned.
-- Crypto operations are suspend and should be called from a coroutine context.
+## Errors
 
+Everything the library throws derives from `KtvineException`, so one catch suffices. The
+subtypes mirror pywidevine's: `TooManySessionsException`, `InvalidSessionException`,
+`InvalidContextException`, `InvalidInitDataException`, `InvalidLicenseTypeException`,
+`InvalidLicenseMessageException`, `SignatureMismatchException`, `NoKeysLoadedException`,
+`DeviceMismatchException`, `DecodeException`, `ValueException`, `InvalidBoxException`.
+
+Malformed input from a license server surfaces as `DecodeException`, never as a platform
+null-pointer error.
+
+## Logging
+
+The library is quiet by default — only warnings and above reach the platform log. Raise it
+while debugging an exchange:
+
+```kotlin
+KtvineLog.setMinSeverity(Severity.Verbose)   // or setLogger(yourKermitLogger)
+```
+
+Verbose includes a hex dump of the init data being parsed, which you may consider sensitive.
+
+## Multiplatform notes
+
+`commonMain` is pure Kotlin. Targets are JVM, Android, iOS (x64, arm64, simulator arm64)
+and linuxX64.
+
+- `kotlin.uuid.Uuid` is still experimental in Kotlin 2.2 and appears in this library's public
+  API, so **consumers must opt in** (`@OptIn(ExperimentalUuidApi::class)` or the compiler
+  flag).
+- `Device.load` / `Device.dump` take an okio `FileSystem` explicitly, because
+  `FileSystem.SYSTEM` is not part of okio's common API. Pass it from a platform source set.
+- AES-CMAC is implemented in-tree per RFC 4493, because no cryptography-kotlin provider
+  offers it on every target. It is pinned by the RFC vectors on every platform.
+
+## PlayReady scope
+
+PlayReady is supported **only** at the PSSH-header level: parse a PlayReady Object to
+extract KIDs, and convert Widevine ⇄ PlayReady. There is no PlayReady CDM — no device
+provisioning, no XMR license parsing, no ECC P-256, no license acquisition, and no Embedded
+License Store. This matches pywidevine's scope; a real PlayReady CDM is a separate protocol.
+
+Within that scope, only v4.3.0.0 headers can be generated, and headers are parsed with
+regexes rather than an XML parser.

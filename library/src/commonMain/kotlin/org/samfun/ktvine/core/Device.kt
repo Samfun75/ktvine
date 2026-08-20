@@ -45,14 +45,19 @@ public class Device(
         rawFlags = rawFlags,
     )
 
-    /** Write this device to [path] as a WVD v2 file, creating parent directories. */
-    public fun dump(path: Path, fileSystem: FileSystem = FileSystem.SYSTEM) {
+    /**
+     * Write this device to [path] as a WVD v2 file, creating parent directories.
+     *
+     * [fileSystem] is explicit because `FileSystem.SYSTEM` is not part of okio's common
+     * API; pass it from a platform source set, or a fake in tests.
+     */
+    public fun dump(path: Path, fileSystem: FileSystem) {
         path.parent?.let { fileSystem.createDirectories(it) }
         fileSystem.write(path) { write(dumps()) }
     }
 
     /** Write this device to [path] as a WVD v2 file, creating parent directories. */
-    public fun dump(path: String, fileSystem: FileSystem = FileSystem.SYSTEM): Unit = dump(path.toPath(), fileSystem)
+    public fun dump(path: String, fileSystem: FileSystem): Unit = dump(path.toPath(), fileSystem)
 
     public companion object {
         private val MAGIC = byteArrayOf('W'.code.toByte(), 'V'.code.toByte(), 'D'.code.toByte())
@@ -164,13 +169,16 @@ public class Device(
             return loads(bytes)
         }
 
-        /** Read a WVD v2 file from [path]. */
-        public fun load(path: Path, fileSystem: FileSystem = FileSystem.SYSTEM): Device =
-            loads(fileSystem.read(path) { readByteArray() })
+        /**
+         * Read a WVD v2 file from [path].
+         *
+         * [fileSystem] is explicit because `FileSystem.SYSTEM` is not part of okio's common
+         * API; pass it from a platform source set, or a fake in tests.
+         */
+        public fun load(path: Path, fileSystem: FileSystem): Device = loads(fileSystem.read(path) { readByteArray() })
 
         /** Read a WVD v2 file from [path]. */
-        public fun load(path: String, fileSystem: FileSystem = FileSystem.SYSTEM): Device =
-            load(path.toPath(), fileSystem)
+        public fun load(path: String, fileSystem: FileSystem): Device = load(path.toPath(), fileSystem)
 
         /**
          * Bring a WVD v1 blob forward to v2.

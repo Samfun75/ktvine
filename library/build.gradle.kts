@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
     alias(libs.plugins.wire)
+    alias(libs.plugins.dokka)
 }
 
 group = "io.github.samfun75"

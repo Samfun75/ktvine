@@ -21,7 +21,19 @@ dependencies {
 }
 ```
 
-This is a Kotlin Multiplatform library. The artifact publishes for JVM and Android. iOS/Linux targets may be added later.
+This is a Kotlin Multiplatform library, published for JVM, Android, iOS (x64, arm64,
+simulator arm64) and linuxX64.
+
+Two things to know before you start:
+
+- **The `Cdm` API is `suspend`.** Call it from a coroutine. A `Cdm` is safe to share
+  between coroutines.
+- **`kotlin.uuid.Uuid` appears in the public API** and is still experimental in Kotlin 2.2,
+  so you must opt in — `@OptIn(ExperimentalUuidApi::class)`, or the
+  `-opt-in=kotlin.uuid.ExperimentalUuidApi` compiler flag.
+
+The full API reference is generated with Dokka; see [docs/API.md](docs/API.md) for the
+conceptual guide.
 
 ## Quickstart
 
@@ -40,9 +52,11 @@ val cdm = Cdm.fromDevice(device)
 2) Open a session and optionally set a service certificate (privacy mode)
 
 ```kotlin
-val sessionId = cdm.open()
-// Optional: service cert as raw SignedDrmCertificate bytes or SignedMessage-wrapped bytes
-// cdm.setServiceCertificate(sessionId, serviceCertBytes)
+val sessionId = cdm.open() // suspend, like the rest of Cdm
+// Optional: raw SignedDrmCertificate bytes, SignedMessage-wrapped bytes, or Base64.
+// Cdm.COMMON_PRIVACY_CERT is bundled; otherwise POST Cdm.SERVICE_CERTIFICATE_CHALLENGE
+// to your license server to obtain one.
+// cdm.setServiceCertificate(sessionId, Cdm.COMMON_PRIVACY_CERT)
 ```
 
 3) Build a license challenge from a PSSH
@@ -64,7 +78,7 @@ val challenge = cdm.getLicenseChallenge(
 // licenseMessage: SignedMessage(LICENSE) payload from your server (raw bytes)
 cdm.parseLicense(sessionId, licenseMessage)
 
-val keys = cdm.getKeys(sessionId) // List<Key>
+val keys = cdm.getKeys(sessionId) // List<Key>; filter by KeyType with getKeys(sessionId, type)
 keys.forEach { println(it) }
 
 cdm.close(sessionId)
@@ -74,26 +88,38 @@ cdm.close(sessionId)
 
 PSSH parsing and conversion helpers are included:
 
-- Construct from Base64 or bytes: `PSSH(psshBase64)`, `PSSH(psshBytes)`
-- Extract KIDs: `pssh.keyIds()` → List<UUID>
-- Export: `pssh.dump()` (bytes), `pssh.dumps()` (Base64)
+- Construct from Base64 or bytes: `PSSH(psshBase64)`, `PSSH(psshBytes)`. Besides a full
+  `pssh` box these also accept a bare Widevine CENC header, a bare PlayReady header or
+  PlayReady Object, and — unless you pass `strict = true` — any custom init data, wrapped
+  verbatim in a v0 Widevine box.
+- Extract KIDs: `pssh.keyIds()` → `List<Uuid>` (`kotlin.uuid.Uuid`)
+- Export: `pssh.export()` (bytes), `pssh.exportBase64()` (Base64)
+- Multi-DRM init segments: `PSSH.parseAll(bytes)`, `PSSH.fromInitSegment(bytes, systemId)`
+- Encryption scheme: `pssh.encryptionScheme` (`AESCTR`, `AESCBC`, …), carried through conversion
 - Convert between systems:
   - `pssh.toWidevine()`
   - `pssh.toPlayready(laUrl, luiUrl, dsId, decryptorSetup, customData)` (builds v4.3.0.0 header)
 - Create new boxes: `PSSH.new(systemId, keyIds = ..., initData = ..., version = 0/1)`
-- Overwrite KIDs (Widevine): `pssh.setKeyIds(listOf(uuid1, uuid2))`
+- Overwrite KIDs: `pssh.setKeyIds(listOf(uuid1, uuid2))` (Widevine and PlayReady)
 
 ## Error handling
 
 Public methods throw typed exceptions you can catch:
 
+All of them derive from `KtvineException`, so a single catch is enough:
+
 - TooManySessionsException
 - InvalidSessionException
+- InvalidContextException
 - InvalidInitDataException
 - InvalidLicenseTypeException
+- InvalidLicenseMessageException
 - DecodeException
 - SignatureMismatchException
+- NoKeysLoadedException
+- DeviceMismatchException
 - ValueException
+- InvalidBoxException
 
 ## Differences from pywidevine
 

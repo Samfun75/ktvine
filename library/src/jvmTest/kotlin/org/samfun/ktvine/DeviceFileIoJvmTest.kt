@@ -38,10 +38,10 @@ class DeviceFileIoJvmTest {
         // Nested path on purpose: dump() must create the parent directories.
         val path = tempDir / "nested" / "device.wvd"
 
-        original.dump(path)
+        original.dump(path, FileSystem.SYSTEM)
         assertTrue(FileSystem.SYSTEM.exists(path), "dump() did not write the file")
 
-        val loaded = Device.load(path)
+        val loaded = Device.load(path, FileSystem.SYSTEM)
         assertEquals(original.systemId, loaded.systemId)
         assertEquals(original.type, loaded.type)
         assertEquals(original.securityLevel, loaded.securityLevel)
@@ -54,9 +54,9 @@ class DeviceFileIoJvmTest {
         val original = device()
         val path = (tempDir / "by-string.wvd").toString()
 
-        original.dump(path)
+        original.dump(path, FileSystem.SYSTEM)
 
-        assertContentEquals(original.dumps(), Device.load(path).dumps())
-        assertContentEquals(original.dumps(), Device.load(path.toPath()).dumps())
+        assertContentEquals(original.dumps(), Device.load(path, FileSystem.SYSTEM).dumps())
+        assertContentEquals(original.dumps(), Device.load(path.toPath(), FileSystem.SYSTEM).dumps())
     }
 }

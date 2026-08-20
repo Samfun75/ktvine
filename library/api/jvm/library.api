@@ -31,8 +31,6 @@ public final class org/samfun/ktvine/core/Device {
 	public synthetic fun <init> (Lorg/samfun/ktvine/core/DeviceTypes;ILjava/util/Map;[BLorg/samfun/ktvine/proto/ClientIdentification;Lorg/samfun/ktvine/proto/FileHashes;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun dump (Ljava/lang/String;Lokio/FileSystem;)V
 	public final fun dump (Lokio/Path;Lokio/FileSystem;)V
-	public static synthetic fun dump$default (Lorg/samfun/ktvine/core/Device;Ljava/lang/String;Lokio/FileSystem;ILjava/lang/Object;)V
-	public static synthetic fun dump$default (Lorg/samfun/ktvine/core/Device;Lokio/Path;Lokio/FileSystem;ILjava/lang/Object;)V
 	public final fun dumps ()[B
 	public final fun getClientId ()Lorg/samfun/ktvine/proto/ClientIdentification;
 	public final fun getFlags ()Ljava/util/Map;
@@ -50,8 +48,6 @@ public final class org/samfun/ktvine/core/Device$Companion {
 	public static synthetic fun buildWvdV2$default (Lorg/samfun/ktvine/core/Device$Companion;Lorg/samfun/ktvine/core/DeviceTypes;I[B[BIILjava/lang/Object;)[B
 	public final fun load (Ljava/lang/String;Lokio/FileSystem;)Lorg/samfun/ktvine/core/Device;
 	public final fun load (Lokio/Path;Lokio/FileSystem;)Lorg/samfun/ktvine/core/Device;
-	public static synthetic fun load$default (Lorg/samfun/ktvine/core/Device$Companion;Ljava/lang/String;Lokio/FileSystem;ILjava/lang/Object;)Lorg/samfun/ktvine/core/Device;
-	public static synthetic fun load$default (Lorg/samfun/ktvine/core/Device$Companion;Lokio/Path;Lokio/FileSystem;ILjava/lang/Object;)Lorg/samfun/ktvine/core/Device;
 	public final fun loads (Ljava/lang/String;)Lorg/samfun/ktvine/core/Device;
 	public final fun loads ([B)Lorg/samfun/ktvine/core/Device;
 	public final fun migrate (Ljava/lang/String;)Lorg/samfun/ktvine/core/Device;
