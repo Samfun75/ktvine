@@ -35,16 +35,6 @@ fun ByteString.uuidFromHexByteString(): Uuid = Uuid.parseHex(utf8())
 
 fun ByteArray.toUTF8(): String = decodeToString()
 
-/** Convert a [Uuid] to raw 16-byte array (big-endian). */
-fun Uuid.toByteArray(): ByteArray = toLongs { most, least ->
-    val buffer = ByteArray(16)
-    for (i in 0..7) {
-        buffer[i] = (most ushr 8 * (7 - i)).toByte()
-        buffer[i + 8] = (least ushr 8 * (7 - i)).toByte()
-    }
-    buffer
-}
-
 fun ByteArray.toUUID(): Uuid {
     if (size != 16) throw ValueException("A UUID must be exactly 16 bytes, not $size")
     var most = 0L

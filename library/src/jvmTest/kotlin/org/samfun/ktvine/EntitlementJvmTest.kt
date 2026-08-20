@@ -14,7 +14,6 @@ import org.samfun.ktvine.proto.WidevinePsshData
 import org.samfun.ktvine.utils.InvalidInitDataException
 import org.samfun.ktvine.utils.NoKeysLoadedException
 import org.samfun.ktvine.utils.ValueException
-import org.samfun.ktvine.utils.toByteArray
 import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

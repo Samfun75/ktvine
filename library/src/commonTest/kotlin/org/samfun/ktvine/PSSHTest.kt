@@ -13,7 +13,6 @@ import okio.ByteString.Companion.toByteString
 import org.samfun.ktvine.core.PSSH
 import org.samfun.ktvine.utils.decodeToStringUtf16LE
 import org.samfun.ktvine.utils.encodeToUtf16LE
-import org.samfun.ktvine.utils.toByteArray
 import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.toLEU16
 import org.samfun.ktvine.utils.toLEU32
