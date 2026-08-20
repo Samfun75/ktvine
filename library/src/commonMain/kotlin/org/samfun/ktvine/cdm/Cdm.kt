@@ -540,7 +540,8 @@ public class Cdm internal constructor(
         return block.toHexString().uppercase().encodeToByteArray().toByteString()
     }
 
-    private fun deriveContext(message: ByteArray): Pair<ByteArray, ByteArray> {
+    // internal so the golden vectors in CdmDerivationTest can pin them directly.
+    internal fun deriveContext(message: ByteArray): Pair<ByteArray, ByteArray> {
         fun encCtx(msg: ByteArray): ByteArray {
             val label = "ENCRYPTION".encodeToByteArray()
             val keySize = 128
@@ -565,7 +566,7 @@ public class Cdm internal constructor(
         return encCtx(message) to macCtx(message)
     }
 
-    private suspend fun deriveKeys(
+    internal suspend fun deriveKeys(
         encContext: ByteArray,
         macContext: ByteArray,
         key: ByteArray,
