@@ -1,0 +1,19 @@
+public final class org/samfun/ktvine/remote/RemoteCdm : org/samfun/ktvine/cdm/CdmApi {
+	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun close (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getKeys (Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getLicenseChallenge (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getSecurityLevel ()Ljava/lang/Integer;
+	public fun getServiceCertificateBase64 (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getSystemId ()Ljava/lang/Integer;
+	public fun open (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun parseLicense (Lokio/ByteString;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun setServiceCertificate (Lokio/ByteString;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/samfun/ktvine/remote/RemoteCdmException : org/samfun/ktvine/utils/KtvineException {
+	public fun <init> (ILjava/lang/String;)V
+	public final fun getServerMessage ()Ljava/lang/String;
+	public final fun getStatus ()I
+}
+

@@ -1,0 +1,33 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, linuxX64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.samfun75:remote>
+final class org.samfun.ktvine.remote/RemoteCdm : org.samfun.ktvine.cdm/CdmApi { // org.samfun.ktvine.remote/RemoteCdm|null[0]
+    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin/String, kotlin/String) // org.samfun.ktvine.remote/RemoteCdm.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.String){}[0]
+
+    final var securityLevel // org.samfun.ktvine.remote/RemoteCdm.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int? // org.samfun.ktvine.remote/RemoteCdm.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+    final var systemId // org.samfun.ktvine.remote/RemoteCdm.systemId|{}systemId[0]
+        final fun <get-systemId>(): kotlin/Int? // org.samfun.ktvine.remote/RemoteCdm.systemId.<get-systemId>|<get-systemId>(){}[0]
+
+    final suspend fun close(okio/ByteString) // org.samfun.ktvine.remote/RemoteCdm.close|close(okio.ByteString){}[0]
+    final suspend fun getKeys(okio/ByteString, org.samfun.ktvine.proto/License.KeyContainer.KeyType?): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.remote/RemoteCdm.getKeys|getKeys(okio.ByteString;org.samfun.ktvine.proto.License.KeyContainer.KeyType?){}[0]
+    final suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktvine.core/PSSH, org.samfun.ktvine.proto/LicenseType, kotlin/Boolean, org.samfun.ktvine.proto/LicenseRequest.RequestType): kotlin/ByteArray // org.samfun.ktvine.remote/RemoteCdm.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktvine.core.PSSH;org.samfun.ktvine.proto.LicenseType;kotlin.Boolean;org.samfun.ktvine.proto.LicenseRequest.RequestType){}[0]
+    final suspend fun getServiceCertificateBase64(okio/ByteString): kotlin/String? // org.samfun.ktvine.remote/RemoteCdm.getServiceCertificateBase64|getServiceCertificateBase64(okio.ByteString){}[0]
+    final suspend fun open(): okio/ByteString // org.samfun.ktvine.remote/RemoteCdm.open|open(){}[0]
+    final suspend fun parseLicense(okio/ByteString, kotlin/ByteArray) // org.samfun.ktvine.remote/RemoteCdm.parseLicense|parseLicense(okio.ByteString;kotlin.ByteArray){}[0]
+    final suspend fun setServiceCertificate(okio/ByteString, kotlin/String?): kotlin/String? // org.samfun.ktvine.remote/RemoteCdm.setServiceCertificate|setServiceCertificate(okio.ByteString;kotlin.String?){}[0]
+}
+
+final class org.samfun.ktvine.remote/RemoteCdmException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.remote/RemoteCdmException|null[0]
+    constructor <init>(kotlin/Int, kotlin/String) // org.samfun.ktvine.remote/RemoteCdmException.<init>|<init>(kotlin.Int;kotlin.String){}[0]
+
+    final val serverMessage // org.samfun.ktvine.remote/RemoteCdmException.serverMessage|{}serverMessage[0]
+        final fun <get-serverMessage>(): kotlin/String // org.samfun.ktvine.remote/RemoteCdmException.serverMessage.<get-serverMessage>|<get-serverMessage>(){}[0]
+    final val status // org.samfun.ktvine.remote/RemoteCdmException.status|{}status[0]
+        final fun <get-status>(): kotlin/Int // org.samfun.ktvine.remote/RemoteCdmException.status.<get-status>|<get-status>(){}[0]
+}

@@ -19,18 +19,29 @@ final enum class org.samfun.ktvine.core/DeviceTypes : kotlin/Enum<org.samfun.ktv
     final fun values(): kotlin/Array<org.samfun.ktvine.core/DeviceTypes> // org.samfun.ktvine.core/DeviceTypes.values|values#static(){}[0]
 }
 
-final class org.samfun.ktvine.cdm/Cdm { // org.samfun.ktvine.cdm/Cdm|null[0]
+abstract interface org.samfun.ktvine.cdm/CdmApi { // org.samfun.ktvine.cdm/CdmApi|null[0]
+    abstract suspend fun close(okio/ByteString) // org.samfun.ktvine.cdm/CdmApi.close|close(okio.ByteString){}[0]
+    abstract suspend fun getKeys(okio/ByteString, org.samfun.ktvine.proto/License.KeyContainer.KeyType? = ...): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.cdm/CdmApi.getKeys|getKeys(okio.ByteString;org.samfun.ktvine.proto.License.KeyContainer.KeyType?){}[0]
+    abstract suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktvine.core/PSSH, org.samfun.ktvine.proto/LicenseType = ..., kotlin/Boolean = ..., org.samfun.ktvine.proto/LicenseRequest.RequestType = ...): kotlin/ByteArray // org.samfun.ktvine.cdm/CdmApi.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktvine.core.PSSH;org.samfun.ktvine.proto.LicenseType;kotlin.Boolean;org.samfun.ktvine.proto.LicenseRequest.RequestType){}[0]
+    abstract suspend fun getServiceCertificateBase64(okio/ByteString): kotlin/String? // org.samfun.ktvine.cdm/CdmApi.getServiceCertificateBase64|getServiceCertificateBase64(okio.ByteString){}[0]
+    abstract suspend fun open(): okio/ByteString // org.samfun.ktvine.cdm/CdmApi.open|open(){}[0]
+    abstract suspend fun parseLicense(okio/ByteString, kotlin/ByteArray) // org.samfun.ktvine.cdm/CdmApi.parseLicense|parseLicense(okio.ByteString;kotlin.ByteArray){}[0]
+    abstract suspend fun setServiceCertificate(okio/ByteString, kotlin/String?): kotlin/String? // org.samfun.ktvine.cdm/CdmApi.setServiceCertificate|setServiceCertificate(okio.ByteString;kotlin.String?){}[0]
+}
+
+final class org.samfun.ktvine.cdm/Cdm : org.samfun.ktvine.cdm/CdmApi { // org.samfun.ktvine.cdm/Cdm|null[0]
     final val securityLevel // org.samfun.ktvine.cdm/Cdm.securityLevel|{}securityLevel[0]
         final fun <get-securityLevel>(): kotlin/Int // org.samfun.ktvine.cdm/Cdm.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
     final val systemId // org.samfun.ktvine.cdm/Cdm.systemId|{}systemId[0]
         final fun <get-systemId>(): kotlin/Int // org.samfun.ktvine.cdm/Cdm.systemId.<get-systemId>|<get-systemId>(){}[0]
 
     final suspend fun close(okio/ByteString) // org.samfun.ktvine.cdm/Cdm.close|close(okio.ByteString){}[0]
-    final suspend fun getKeys(okio/ByteString, org.samfun.ktvine.proto/License.KeyContainer.KeyType? = ...): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.cdm/Cdm.getKeys|getKeys(okio.ByteString;org.samfun.ktvine.proto.License.KeyContainer.KeyType?){}[0]
+    final suspend fun getKeys(okio/ByteString, org.samfun.ktvine.proto/License.KeyContainer.KeyType?): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.cdm/Cdm.getKeys|getKeys(okio.ByteString;org.samfun.ktvine.proto.License.KeyContainer.KeyType?){}[0]
     final suspend fun getKeysFromEntitlement(okio/ByteString, org.samfun.ktvine.core/PSSH): kotlin.collections/List<org.samfun.ktvine.core/Key> // org.samfun.ktvine.cdm/Cdm.getKeysFromEntitlement|getKeysFromEntitlement(okio.ByteString;org.samfun.ktvine.core.PSSH){}[0]
     final suspend fun getLicense(okio/ByteString): org.samfun.ktvine.proto/License? // org.samfun.ktvine.cdm/Cdm.getLicense|getLicense(okio.ByteString){}[0]
-    final suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktvine.core/PSSH, org.samfun.ktvine.proto/LicenseType = ..., kotlin/Boolean = ..., org.samfun.ktvine.proto/LicenseRequest.RequestType = ...): kotlin/ByteArray // org.samfun.ktvine.cdm/Cdm.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktvine.core.PSSH;org.samfun.ktvine.proto.LicenseType;kotlin.Boolean;org.samfun.ktvine.proto.LicenseRequest.RequestType){}[0]
+    final suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktvine.core/PSSH, org.samfun.ktvine.proto/LicenseType, kotlin/Boolean, org.samfun.ktvine.proto/LicenseRequest.RequestType): kotlin/ByteArray // org.samfun.ktvine.cdm/Cdm.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktvine.core.PSSH;org.samfun.ktvine.proto.LicenseType;kotlin.Boolean;org.samfun.ktvine.proto.LicenseRequest.RequestType){}[0]
     final suspend fun getServiceCertificate(okio/ByteString): org.samfun.ktvine.proto/SignedDrmCertificate? // org.samfun.ktvine.cdm/Cdm.getServiceCertificate|getServiceCertificate(okio.ByteString){}[0]
+    final suspend fun getServiceCertificateBase64(okio/ByteString): kotlin/String? // org.samfun.ktvine.cdm/Cdm.getServiceCertificateBase64|getServiceCertificateBase64(okio.ByteString){}[0]
     final suspend fun open(): okio/ByteString // org.samfun.ktvine.cdm/Cdm.open|open(){}[0]
     final suspend fun parseLicense(okio/ByteString, kotlin/ByteArray) // org.samfun.ktvine.cdm/Cdm.parseLicense|parseLicense(okio.ByteString;kotlin.ByteArray){}[0]
     final suspend fun setServiceCertificate(okio/ByteString, kotlin/ByteArray?): kotlin/String? // org.samfun.ktvine.cdm/Cdm.setServiceCertificate|setServiceCertificate(okio.ByteString;kotlin.ByteArray?){}[0]

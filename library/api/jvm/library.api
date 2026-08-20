@@ -1,21 +1,20 @@
-public final class org/samfun/ktvine/cdm/Cdm {
+public final class org/samfun/ktvine/cdm/Cdm : org/samfun/ktvine/cdm/CdmApi {
 	public static final field COMMON_PRIVACY_CERT Ljava/lang/String;
 	public static final field Companion Lorg/samfun/ktvine/cdm/Cdm$Companion;
 	public static final field MAX_NUM_OF_SESSIONS I
 	public static final field STAGING_PRIVACY_CERT Ljava/lang/String;
-	public final fun close (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun getKeys (Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun getKeys$default (Lorg/samfun/ktvine/cdm/Cdm;Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun close (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getKeys (Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getKeysFromEntitlement (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getLicense (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun getLicenseChallenge (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun getLicenseChallenge$default (Lorg/samfun/ktvine/cdm/Cdm;Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun getLicenseChallenge (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getSecurityLevel ()I
 	public final fun getServiceCertificate (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getServiceCertificateBase64 (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getSystemId ()I
-	public final fun open (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun parseLicense (Lokio/ByteString;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun setServiceCertificate (Lokio/ByteString;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun open (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun parseLicense (Lokio/ByteString;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun setServiceCertificate (Lokio/ByteString;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setServiceCertificate (Lokio/ByteString;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -23,6 +22,23 @@ public final class org/samfun/ktvine/cdm/Cdm$Companion {
 	public final fun fromDevice (Lorg/samfun/ktvine/core/Device;)Lorg/samfun/ktvine/cdm/Cdm;
 	public final fun getSERVICE_CERTIFICATE_CHALLENGE ()[B
 	public final fun unwrapEntitledKeys (Ljava/util/List;Lorg/samfun/ktvine/core/PSSH;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class org/samfun/ktvine/cdm/CdmApi {
+	public abstract fun close (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getKeys (Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun getKeys$default (Lorg/samfun/ktvine/cdm/CdmApi;Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun getLicenseChallenge (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun getLicenseChallenge$default (Lorg/samfun/ktvine/cdm/CdmApi;Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun getServiceCertificateBase64 (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun open (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun parseLicense (Lokio/ByteString;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun setServiceCertificate (Lokio/ByteString;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/samfun/ktvine/cdm/CdmApi$DefaultImpls {
+	public static synthetic fun getKeys$default (Lorg/samfun/ktvine/cdm/CdmApi;Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun getLicenseChallenge$default (Lorg/samfun/ktvine/cdm/CdmApi;Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class org/samfun/ktvine/core/Device {

@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ktvine"
 include(":library")
+include(":remote")

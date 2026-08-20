@@ -78,7 +78,7 @@ public class Cdm internal constructor(
     public val systemId: Int = 0,
     /** Security level of the device this CDM was built from, or 0 when unknown. */
     public val securityLevel: Int = 0,
-) {
+) : CdmApi {
     private val sessions = linkedMapOf<ByteString, Session>()
 
     // Monotonic: `sessions.size + 1` repeats a number after any close/open cycle, and the
@@ -229,7 +229,7 @@ public class Cdm internal constructor(
      * @return unique session identifier
      * @throws TooManySessionsException when [MAX_NUM_OF_SESSIONS] sessions are already open
      */
-    public suspend fun open(): ByteString = sessionsLock.withLock {
+    override suspend fun open(): ByteString = sessionsLock.withLock {
         // pywidevine compares with `>`, which lets a 17th session through; that is a bug,
         // and diverging from it is deliberate.
         if (sessions.size >= MAX_NUM_OF_SESSIONS) {
@@ -245,7 +245,7 @@ public class Cdm internal constructor(
      * @param sessionId id returned by [open]
      * @throws InvalidSessionException if the id is unknown
      */
-    public suspend fun close(sessionId: ByteString) {
+    override suspend fun close(sessionId: ByteString) {
         sessionsLock.withLock {
             sessions.remove(sessionId)
                 ?: throw InvalidSessionException("Session identifier $sessionId is invalid.")
@@ -312,7 +312,7 @@ public class Cdm internal constructor(
      * Overload of [setServiceCertificate] accepting a Base64-encoded certificate string.
      * Pass null to clear the currently set certificate.
      */
-    public suspend fun setServiceCertificate(sessionId: ByteString, certificateBase64: String?): String? {
+    override suspend fun setServiceCertificate(sessionId: ByteString, certificateBase64: String?): String? {
         val bytes = certificateBase64?.decodeBase64()?.toByteArray()
             ?: return setServiceCertificate(sessionId, null as ByteArray?)
         return setServiceCertificate(sessionId, bytes)
@@ -321,6 +321,10 @@ public class Cdm internal constructor(
     /**
      * Get the currently configured service certificate for a session, if any.
      */
+    /** The service certificate set for the session, re-encoded as Base64, or `null`. */
+    override suspend fun getServiceCertificateBase64(sessionId: ByteString): String? =
+        getServiceCertificate(sessionId)?.encode()?.toByteString()?.base64()
+
     public suspend fun getServiceCertificate(sessionId: ByteString): SignedDrmCertificate? {
         val s = session(sessionId)
         return s.lock.withLock { s.serviceCertificate }
@@ -342,12 +346,12 @@ public class Cdm internal constructor(
      *   has been parsed for this session
      * @throws ValueException if a RENEWAL is requested but the policy forbids it
      */
-    public suspend fun getLicenseChallenge(
+    override suspend fun getLicenseChallenge(
         sessionId: ByteString,
         pssh: PSSH,
-        licenseType: LicenseType = LicenseType.STREAMING,
-        privacyMode: Boolean = true,
-        requestType: LicenseRequest.RequestType = LicenseRequest.RequestType.NEW,
+        licenseType: LicenseType,
+        privacyMode: Boolean,
+        requestType: LicenseRequest.RequestType,
     ): ByteArray {
         val s = session(sessionId)
         val init = pssh.initData
@@ -433,7 +437,7 @@ public class Cdm internal constructor(
      * @throws DecodeException if parsing fails
      * @throws SignatureMismatchException if MAC verification fails
      */
-    public suspend fun parseLicense(sessionId: ByteString, licenseMessage: ByteArray) {
+    override suspend fun parseLicense(sessionId: ByteString, licenseMessage: ByteArray) {
         val s = session(sessionId)
         if (licenseMessage.isEmpty()) throw InvalidLicenseMessageException("Cannot parse an empty license_message")
 
@@ -627,7 +631,7 @@ public class Cdm internal constructor(
     /**
      * Convenience to get decrypted keys for the session. Optionally filter by [License.KeyContainer.KeyType].
      */
-    public suspend fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType? = null): List<Key> {
+    override suspend fun getKeys(sessionId: ByteString, type: License.KeyContainer.KeyType?): List<Key> {
         val s = session(sessionId)
         return s.lock.withLock { s.keys.filter { type == null || it.type == type } }
     }
