@@ -194,6 +194,12 @@ open class org.samfun.ktvine.utils/KtvineException : kotlin/Exception { // org.s
     constructor <init>(kotlin/String) // org.samfun.ktvine.utils/KtvineException.<init>|<init>(kotlin.String){}[0]
 }
 
+final object org.samfun.ktvine.core/Manifests { // org.samfun.ktvine.core/Manifests|null[0]
+    final fun defaultKeyIdsFromMpd(kotlin/String): kotlin.collections/List<kotlin.uuid/Uuid> // org.samfun.ktvine.core/Manifests.defaultKeyIdsFromMpd|defaultKeyIdsFromMpd(kotlin.String){}[0]
+    final fun psshFromM3u8(kotlin/String, kotlin/ByteArray? = ...): kotlin.collections/List<org.samfun.ktvine.core/PSSH> // org.samfun.ktvine.core/Manifests.psshFromM3u8|psshFromM3u8(kotlin.String;kotlin.ByteArray?){}[0]
+    final fun psshFromMpd(kotlin/String, kotlin/ByteArray = ...): kotlin.collections/List<org.samfun.ktvine.core/PSSH> // org.samfun.ktvine.core/Manifests.psshFromMpd|psshFromMpd(kotlin.String;kotlin.ByteArray){}[0]
+}
+
 final object org.samfun.ktvine.utils/KtvineLog { // org.samfun.ktvine.utils/KtvineLog|null[0]
     final fun reset() // org.samfun.ktvine.utils/KtvineLog.reset|reset(){}[0]
     final fun setLogger(co.touchlab.kermit/Logger) // org.samfun.ktvine.utils/KtvineLog.setLogger|setLogger(co.touchlab.kermit.Logger){}[0]

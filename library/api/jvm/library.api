@@ -80,6 +80,15 @@ public final class org/samfun/ktvine/core/Key$Companion {
 	public final fun fromContainer (Lorg/samfun/ktvine/proto/License$KeyContainer;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class org/samfun/ktvine/core/Manifests {
+	public static final field INSTANCE Lorg/samfun/ktvine/core/Manifests;
+	public final fun defaultKeyIdsFromMpd (Ljava/lang/String;)Ljava/util/List;
+	public final fun psshFromM3u8 (Ljava/lang/String;[B)Ljava/util/List;
+	public static synthetic fun psshFromM3u8$default (Lorg/samfun/ktvine/core/Manifests;Ljava/lang/String;[BILjava/lang/Object;)Ljava/util/List;
+	public final fun psshFromMpd (Ljava/lang/String;[B)Ljava/util/List;
+	public static synthetic fun psshFromMpd$default (Lorg/samfun/ktvine/core/Manifests;Ljava/lang/String;[BILjava/lang/Object;)Ljava/util/List;
+}
+
 public final class org/samfun/ktvine/core/PSSH {
 	public static final field Companion Lorg/samfun/ktvine/core/PSSH$Companion;
 	public fun <init> (Ljava/lang/String;Z)V
