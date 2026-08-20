@@ -1,7 +1,7 @@
 [versions]
 # The single source of truth for the published version. The release workflow checks the
 # README install snippet against the tag.
-ktvine = "0.3.0"
+ktvine = "1.0.0"
 
 agp = "8.13.0"
 kermit = "2.0.8"

@@ -108,6 +108,46 @@ KtvineLog.setMinSeverity(Severity.Verbose)   // or setLogger(yourKermitLogger)
 
 Verbose includes a hex dump of the init data being parsed, which you may consider sensitive.
 
+## Manifests
+
+`Manifests` pulls init data out of a manifest so you do not have to:
+
+```kotlin
+val pssh = Manifests.psshFromMpd(mpdXml).first()          // Widevine by default
+val pr   = Manifests.psshFromMpd(mpdXml, PSSH.PLAYREADY_SYSTEM_ID)
+val hls  = Manifests.psshFromM3u8(playlistText)           // inline #EXT-X-KEY data: URIs
+```
+
+`Manifests.defaultKeyIdsFromMpd(xml)` returns the manifest's own `cenc:default_KID` values,
+which is a useful independent cross-check of what a PSSH claims.
+
+Everything is parsed as real XML, not with regexes, and duplicate `ContentProtection`
+entries collapse. Nothing here touches the network.
+
+## Key rotation
+
+`PSSH.cryptoPeriodIndex` and `PSSH.cryptoPeriodSeconds` expose what a rotating header
+declares. To fetch the licence for the next period, retarget the PSSH and request again:
+
+```kotlin
+pssh.setCryptoPeriodIndex(pssh.cryptoPeriodIndex!! + 1)
+val challenge = cdm.getLicenseChallenge(sessionId, pssh)
+```
+
+## Remote CDM
+
+`ktvine-remote` is a separate artifact holding a `RemoteCdm` that speaks pywidevine's
+`serve.py` HTTP protocol, so the device can live on a server instead of in your process. It
+implements the same `CdmApi` as `Cdm`, and you supply the Ktor `HttpClient`, so this module
+picks no engine for you:
+
+```kotlin
+val cdm: CdmApi = RemoteCdm(HttpClient(CIO), "https://cdm.example.com", "my_device", secret)
+```
+
+Only `RequestType.NEW` is available remotely — the protocol has no renewal endpoint. The
+core library keeps zero networking dependencies; add `ktvine-remote` only if you want this.
+
 ## Multiplatform notes
 
 `commonMain` is pure Kotlin. Targets are JVM, Android, iOS (x64, arm64, simulator arm64)
@@ -128,5 +168,7 @@ extract KIDs, and convert Widevine ⇄ PlayReady. There is no PlayReady CDM — 
 provisioning, no XMR license parsing, no ECC P-256, no license acquisition, and no Embedded
 License Store. This matches pywidevine's scope; a real PlayReady CDM is a separate protocol.
 
-Within that scope, only v4.3.0.0 headers can be generated, and headers are parsed with
-regexes rather than an XML parser.
+Within that scope, only v4.3.0.0 headers can be generated. Headers are parsed as real XML
+(via xmlutil), with the key id path enforced per version — `DATA/KID` for 4.0.0.0,
+`DATA/PROTECTINFO/KID` for 4.1.0.0, `DATA/PROTECTINFO/KIDS/KID` for 4.2.0.0 and 4.3.0.0 —
+so a `<KID>` somewhere else in the document is not mistaken for a real one.
