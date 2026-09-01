@@ -222,7 +222,6 @@ public class PSSH {
 
         val kids = keyIds()
 
-        @Suppress("DEPRECATION")
         val scheme = encryptionScheme
         val widevine = WidevinePsshData(
             key_ids = kids.map { it.toByteArray().toByteString() },
@@ -292,8 +291,6 @@ public class PSSH {
             _systemId.contentEquals(PLAYREADY_SYSTEM_ID) -> {
                 if (_version == 1 || _keyIds.isNotEmpty()) _keyIds = keyIds
 
-                // Regex extraction of the carried-over elements is a stopgap until the header
-                // is parsed as real XML.
                 val existing = runCatching { PlayreadyHeader.parse(playreadyHeaderXml()) }.getOrNull()
                 _content = buildPlayreadyPro(
                     keyIds = keyIds,

@@ -247,7 +247,7 @@ internal data class PlayreadyHeader(
          * Serialize a v4.3.0.0 `WRMHEADER`.
          *
          * Output is deterministic: fixed element order, no insignificant whitespace, and
-         * every value escaped by the writer rather than by hand.
+         * every interpolated value escaped.
          */
         fun build(
             keyIds: List<Uuid>,

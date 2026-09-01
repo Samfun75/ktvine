@@ -2,7 +2,7 @@
 
 Kotlin Multiplatform library that mirrors the core functionality of pywidevine: open/close Widevine sessions, build signed license requests from PSSH, verify and parse license responses, and expose decrypted content keys.
 
-Built on the same protobuf models as pywidevine and designed to run on JVM and Android targets.
+Built on the same protobuf models as pywidevine and designed to run on JVM, Android, iOS and Linux targets.
 
 - Open/close sessions
 - Build SignedMessage(LICENSE_REQUEST) from a Widevine PSSH

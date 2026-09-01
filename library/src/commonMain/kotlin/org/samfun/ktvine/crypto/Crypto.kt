@@ -24,7 +24,7 @@ public suspend fun rsaPssSignSha1(privateKeyDer: ByteArray, data: ByteArray): By
     return privateKey.signatureGenerator().generateSignature(data)
 }
 
-/** Verify an RSA-PSS (SHA-1) signature using an X.509 DER public key. */
+/** Verify an RSA-PSS (SHA-1) signature using a PKCS#1 DER public key. */
 public suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, signature: ByteArray): Boolean {
     val rsa = crypto.get(RSA.PSS)
     val publicKey =
@@ -35,7 +35,7 @@ public suspend fun rsaPssVerifySha1(publicKeyDer: ByteArray, data: ByteArray, si
     return publicKey.signatureVerifier().tryVerifySignature(data, signature)
 }
 
-/** Encrypt with RSA-OAEP (SHA-1) using an X.509 DER public key. */
+/** Encrypt with RSA-OAEP (SHA-1) using a PKCS#1 DER public key. */
 public suspend fun rsaOaepEncrypt(publicKeyDer: ByteArray, data: ByteArray): ByteArray {
     val rsa = crypto.get(RSA.OAEP)
     val publicKey = rsa.publicKeyDecoder(SHA1).decodeFromByteArray(
