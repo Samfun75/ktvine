@@ -97,15 +97,15 @@ public class RemoteCdm(
         val data = request { client.get("$root/$deviceName/open") { authenticate() } }
 
         data["device"]?.jsonObject?.let { device ->
-            systemId = device["system_id"]?.jsonPrimitive?.content?.toIntOrNull()
-            securityLevel = device["security_level"]?.jsonPrimitive?.content?.toIntOrNull()
+            systemId = device.text("system_id")?.toIntOrNull()
+            securityLevel = device.text("security_level")?.toIntOrNull()
         }
 
         // pywidevine rejects the same two fields here (remotecdm.py:108).
         verify("System ID", expectedSystemId, systemId)
         verify("Security Level", expectedSecurityLevel, securityLevel)
 
-        val hex = data["session_id"]?.jsonPrimitive?.content
+        val hex = data.text("session_id")
             ?: throw DecodeException("Remote CDM did not return a session_id")
         return hex.decodeHexOrThrow("session_id")
     }
@@ -132,7 +132,7 @@ public class RemoteCdm(
                 }
             }
         }
-        return data["provider_id"]?.jsonPrimitive?.content
+        return data.text("provider_id")
     }
 
     override suspend fun getServiceCertificateBase64(sessionId: ByteString): String? {
@@ -142,7 +142,7 @@ public class RemoteCdm(
                 jsonBody { put("session_id", sessionId.hex()) }
             }
         }
-        return data["service_certificate"]?.jsonPrimitive?.content
+        return data.text("service_certificate")
     }
 
     override suspend fun getLicenseChallenge(
@@ -167,7 +167,7 @@ public class RemoteCdm(
             }
         }
 
-        val challenge = data["challenge_b64"]?.jsonPrimitive?.content
+        val challenge = data.text("challenge_b64")
             ?: throw DecodeException("Remote CDM did not return a challenge_b64")
         return challenge.decodeBase64()?.toByteArray()
             ?: throw DecodeException("Remote CDM returned a challenge_b64 that is not Base64")
@@ -199,19 +199,21 @@ public class RemoteCdm(
 
         return keys.map { entry ->
             val key = entry.jsonObject
-            val keyType = key["type"]?.jsonPrimitive?.content
+            val keyType = key.text("type")
                 ?: throw DecodeException("A returned key has no type")
 
             Key(
                 type = runCatching { License.KeyContainer.KeyType.valueOf(keyType) }.getOrNull()
                     ?: throw DecodeException("A returned key has an unknown type '$keyType'"),
-                kid = key["key_id"]?.jsonPrimitive?.content?.let { hex ->
+                kid = key.text("key_id")?.let { hex ->
                     runCatching { Uuid.parseHex(hex) }.getOrNull()
                         ?: throw DecodeException("A returned key has a key_id that is not hex: $hex")
                 } ?: throw DecodeException("A returned key has no key_id"),
-                key = key["key"]?.jsonPrimitive?.content?.decodeHexOrThrow("key")?.toByteArray()
+                key = key.text("key")?.decodeHexOrThrow("key")?.toByteArray()
                     ?: throw DecodeException("A returned key has no key"),
-                permissions = key["permissions"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
+                permissions = key["permissions"]?.jsonArray
+                    ?.mapNotNull { entry -> entry.takeIf { it !is JsonNull }?.jsonPrimitive?.content }
+                    ?: emptyList(),
             )
         }
     }
@@ -248,15 +250,18 @@ public class RemoteCdm(
             throw DecodeException("Remote CDM returned a body that is not a JSON object, $e")
         }
 
-        val status = envelope["status"]?.jsonPrimitive?.content?.toIntOrNull()
+        val status = envelope.text("status")?.toIntOrNull()
             ?: throw DecodeException("Remote CDM response has no status field")
         if (status != 200) {
-            throw RemoteCdmException(status, envelope["message"]?.jsonPrimitive?.content ?: "no message")
+            throw RemoteCdmException(status, envelope.text("message") ?: "no message")
         }
 
         // Endpoints that return nothing omit "data" entirely, or send an explicit null.
         return envelope["data"] as? JsonObject ?: JsonObject(emptyMap())
     }
+
+    /** JsonNull is a JsonPrimitive whose content is the text "null", so it must be excluded. */
+    private fun JsonObject.text(key: String): String? = this[key]?.takeIf { it !is JsonNull }?.jsonPrimitive?.content
 
     private fun String.decodeHexOrThrow(field: String): ByteString = try {
         decodeHex()

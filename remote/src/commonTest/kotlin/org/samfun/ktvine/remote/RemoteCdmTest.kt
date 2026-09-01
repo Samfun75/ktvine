@@ -25,6 +25,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -255,6 +256,25 @@ class RemoteCdmTest {
 
         assertEquals(sessionHex.decodeHex(), cdmExpecting(4464, 3).open())
         assertEquals(sessionHex.decodeHex(), cdmExpecting(null, null).open())
+    }
+
+    @Test
+    fun `test a json null field reads as absent rather than the text null`() = runTest {
+        val recorder = Recorder()
+        // pywidevine's serve sends an explicit null here when no certificate is set.
+        val cdm = cdmFor(recorder) { path ->
+            if ("get_service_certificate" in path) {
+                ok("""{"service_certificate":null}""")
+            } else {
+                ok("""{"provider_id":null}""")
+            }
+        }
+
+        assertNull(
+            cdm.getServiceCertificateBase64(sessionHex.decodeHex()),
+            "a JSON null must not surface as the string \"null\"",
+        )
+        assertNull(cdm.setServiceCertificate(sessionHex.decodeHex(), null))
     }
 
     @Test
