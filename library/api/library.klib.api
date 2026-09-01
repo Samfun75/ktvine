@@ -182,10 +182,6 @@ final class org.samfun.ktvine.utils/InvalidLicenseMessageException : org.samfun.
     constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidLicenseMessageException.<init>|<init>(kotlin.String){}[0]
 }
 
-final class org.samfun.ktvine.utils/InvalidLicenseTypeException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidLicenseTypeException|null[0]
-    constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidLicenseTypeException.<init>|<init>(kotlin.String){}[0]
-}
-
 final class org.samfun.ktvine.utils/InvalidSessionException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/InvalidSessionException|null[0]
     constructor <init>(kotlin/String) // org.samfun.ktvine.utils/InvalidSessionException.<init>|<init>(kotlin.String){}[0]
 }
@@ -243,8 +239,6 @@ final fun org.samfun.ktvine.crypto/pkcs7Pad(kotlin/ByteArray, kotlin/Int = ...):
 final fun org.samfun.ktvine.crypto/pkcs7Unpad(kotlin/ByteArray, kotlin/Int = ...): kotlin/ByteArray // org.samfun.ktvine.crypto/pkcs7Unpad|pkcs7Unpad(kotlin.ByteArray;kotlin.Int){}[0]
 final fun org.samfun.ktvine.crypto/randomBytes(kotlin/Int): kotlin/ByteArray // org.samfun.ktvine.crypto/randomBytes|randomBytes(kotlin.Int){}[0]
 final fun org.samfun.ktvine.crypto/randomInt(kotlin/Int, kotlin/Int): kotlin/Int // org.samfun.ktvine.crypto/randomInt|randomInt(kotlin.Int;kotlin.Int){}[0]
-final fun org.samfun.ktvine.utils/escapeXml(kotlin/String): kotlin/String // org.samfun.ktvine.utils/escapeXml|escapeXml(kotlin.String){}[0]
-final fun org.samfun.ktvine.utils/unescapeXml(kotlin/String): kotlin/String // org.samfun.ktvine.utils/unescapeXml|unescapeXml(kotlin.String){}[0]
 final suspend fun org.samfun.ktvine.crypto/aesCbcDecrypt(kotlin/ByteArray, kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/aesCbcDecrypt|aesCbcDecrypt(kotlin.ByteArray;kotlin.ByteArray;kotlin.ByteArray){}[0]
 final suspend fun org.samfun.ktvine.crypto/aesCbcDecryptNoPadding(kotlin/ByteArray, kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/aesCbcDecryptNoPadding|aesCbcDecryptNoPadding(kotlin.ByteArray;kotlin.ByteArray;kotlin.ByteArray){}[0]
 final suspend fun org.samfun.ktvine.crypto/aesCbcEncryptNoPadding(kotlin/ByteArray, kotlin/ByteArray, kotlin/ByteArray): kotlin/ByteArray // org.samfun.ktvine.crypto/aesCbcEncryptNoPadding|aesCbcEncryptNoPadding(kotlin.ByteArray;kotlin.ByteArray;kotlin.ByteArray){}[0]

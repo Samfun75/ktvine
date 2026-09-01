@@ -171,7 +171,6 @@ public final class org/samfun/ktvine/utils/ExtensionsKt {
 	public static final fun containsSubarray ([B[B)Z
 	public static final fun decodeToStringUtf16LE ([B)Ljava/lang/String;
 	public static final fun encodeToUtf16LE (Ljava/lang/String;)[B
-	public static final fun escapeXml (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun kidToUuid (Ljava/lang/String;)Lkotlin/uuid/Uuid;
 	public static final fun kidToUuid (Lokio/ByteString;)Lkotlin/uuid/Uuid;
 	public static final fun swapGuidEndianness ([B)[B
@@ -181,7 +180,6 @@ public final class org/samfun/ktvine/utils/ExtensionsKt {
 	public static final fun toLittleEndianByteArray (Lkotlin/uuid/Uuid;)[B
 	public static final fun toUTF8 ([B)Ljava/lang/String;
 	public static final fun toUUID ([B)Lkotlin/uuid/Uuid;
-	public static final fun unescapeXml (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun uuidFromByteArray (Lokio/ByteString;)Lkotlin/uuid/Uuid;
 	public static final fun uuidFromByteString (Lokio/ByteString;)Lkotlin/uuid/Uuid;
 	public static final fun uuidFromHexByteString (Lokio/ByteString;)Lkotlin/uuid/Uuid;
@@ -201,10 +199,6 @@ public final class org/samfun/ktvine/utils/InvalidInitDataException : org/samfun
 }
 
 public final class org/samfun/ktvine/utils/InvalidLicenseMessageException : org/samfun/ktvine/utils/KtvineException {
-	public fun <init> (Ljava/lang/String;)V
-}
-
-public final class org/samfun/ktvine/utils/InvalidLicenseTypeException : org/samfun/ktvine/utils/KtvineException {
 	public fun <init> (Ljava/lang/String;)V
 }
 

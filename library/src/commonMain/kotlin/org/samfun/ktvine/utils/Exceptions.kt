@@ -18,9 +18,6 @@ public class SignatureMismatchException(message: String) : KtvineException(messa
 /** Init data or PSSH is missing/invalid for a request. */
 public class InvalidInitDataException(message: String) : KtvineException(message)
 
-/** The requested license type is not a valid value. */
-public class InvalidLicenseTypeException(message: String) : KtvineException(message)
-
 /** The license message is missing, empty, or not a LICENSE. */
 public class InvalidLicenseMessageException(message: String) : KtvineException(message)
 

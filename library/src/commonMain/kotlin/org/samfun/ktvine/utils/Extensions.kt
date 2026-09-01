@@ -164,42 +164,6 @@ private fun decimalStringToUuid(digits: String): Uuid {
 /** Convert a Base64-encoded KID [String] to a [Uuid]. */
 public fun String.kidToUuid(): Uuid = Base64.decode(this).toByteString().kidToUuid()
 
-/** Escape the five XML predefined entities so interpolated text cannot break the document. */
-public fun escapeXml(value: String): String = buildString(value.length) {
-    for (c in value) {
-        when (c) {
-            '&' -> append("&amp;")
-            '<' -> append("&lt;")
-            '>' -> append("&gt;")
-            '"' -> append("&quot;")
-            '\'' -> append("&apos;")
-            else -> append(c)
-        }
-    }
-}
-
-/** Reverse of [escapeXml] for the five predefined entities and numeric character references. */
-public fun unescapeXml(value: String): String {
-    if (!value.contains('&')) return value
-    return Regex("&(#x?[0-9A-Fa-f]+|amp|lt|gt|quot|apos);").replace(value) { match ->
-        when (val entity = match.groupValues[1]) {
-            "amp" -> "&"
-            "lt" -> "<"
-            "gt" -> ">"
-            "quot" -> "\""
-            "apos" -> "'"
-            else -> {
-                val code = if (entity.startsWith("#x") || entity.startsWith("#X")) {
-                    entity.drop(2).toIntOrNull(16)
-                } else {
-                    entity.drop(1).toIntOrNull()
-                }
-                code?.let { it.toChar().toString() } ?: match.value
-            }
-        }
-    }
-}
-
 /** True when [needle] occurs anywhere in this array. */
 public fun ByteArray.containsSubarray(needle: ByteArray): Boolean {
     if (needle.isEmpty()) return true

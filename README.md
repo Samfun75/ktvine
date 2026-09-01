@@ -114,7 +114,6 @@ All of them derive from `KtvineException`, so a single catch is enough:
 - InvalidSessionException
 - InvalidContextException
 - InvalidInitDataException
-- InvalidLicenseTypeException
 - InvalidLicenseMessageException
 - DecodeException
 - SignatureMismatchException

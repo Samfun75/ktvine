@@ -90,9 +90,9 @@ with the manifest's own `cenc:default_KID`. The manifest is treated as the autho
 
 Everything the library throws derives from `KtvineException`, so one catch suffices. The
 subtypes mirror pywidevine's: `TooManySessionsException`, `InvalidSessionException`,
-`InvalidContextException`, `InvalidInitDataException`, `InvalidLicenseTypeException`,
-`InvalidLicenseMessageException`, `SignatureMismatchException`, `NoKeysLoadedException`,
-`DeviceMismatchException`, `DecodeException`, `ValueException`, `InvalidBoxException`.
+`InvalidContextException`, `InvalidInitDataException`, `InvalidLicenseMessageException`,
+`SignatureMismatchException`, `NoKeysLoadedException`, `DeviceMismatchException`,
+`DecodeException`, `ValueException`, `InvalidBoxException`.
 
 Malformed input from a license server surfaces as `DecodeException`, never as a platform
 null-pointer error.
