@@ -21,7 +21,7 @@ provisioning. Callers move bytes to and from their own license server.
 
 ```
 build.gradle.kts              root; all plugins declared with `apply false`
-settings.gradle.kts           two modules: :library and :remote
+settings.gradle.kts           three modules: :library, :remote, :serve
 gradle/libs.versions.toml     version catalog — the only place to bump deps
 gradle.properties             configuration-cache + build-cache ON
 docs/API.md                   conceptual guide; the symbol reference is Dokka-generated
@@ -60,6 +60,11 @@ library/src/
 remote/src/
   commonMain/…/RemoteCdm.kt         CdmApi over pywidevine's serve.py HTTP protocol
   commonTest/…/RemoteCdmTest.kt     wire-format tests against Ktor MockEngine
+
+serve/src/                          JVM only: Ktor server engines are not as portable
+  commonMain/…/ServeConfig.kt       devices, users, forced privacy, Server header
+  commonMain/…/Routing.kt           Route.ktvineCdm — the serve protocol, routing only
+  commonTest/…/ServeRoutingTest.kt  the wire contract plus ktvine's own client end to end
 ```
 
 ## Build system
@@ -97,8 +102,10 @@ Dependencies (commonMain):
 - `implementation(kermit)` — logging, routed through `KtvineLog`.
 
 The `:remote` module adds `ktor-client-core` (engine-agnostic) and
-`kotlinx-serialization-json` used only through its runtime `JsonElement` API. The core
-library keeps zero networking dependencies.
+`kotlinx-serialization-json` used only through its runtime `JsonElement` API. `:serve` adds
+`ktor-server-core` on the same terms — routing only, no engine — and is JVM-only because
+server engines do not span the six targets the client does. Both are opt-in artifacts
+(`ktvine-remote`, `ktvine-serve`); the core library keeps zero networking dependencies.
 
 Common commands:
 ```powershell
@@ -232,9 +239,13 @@ changing protocol behaviour — ktvine is meant to mirror it.
 
 Mapping: `cdm.py` → `cdm/Cdm.kt`, `pssh.py` → `core/PSSH.kt`,
 `device.py` → `core/Device.kt`, `key.py` → `core/Key.kt`, `session.py` → `core/Session.kt`,
-`exceptions.py` → `utils/Exceptions.kt`, `remotecdm.py` → `remote/…/RemoteCdm.kt`.
-There is no ktvine counterpart to `serve.py`, `main.py` (CLI), or `Cdm.decrypt`
-(shaka-packager).
+`exceptions.py` → `utils/Exceptions.kt`, `remotecdm.py` → `remote/…/RemoteCdm.kt`,
+`serve.py` → `serve/…/Routing.kt`. There is no ktvine counterpart to `main.py` (CLI) or
+`Cdm.decrypt` (shaka-packager).
+
+`:serve` reimplements the *protocol*, not the code: pywidevine is GPL-3.0-only and ktvine
+is Apache-2.0, so paths, JSON field names and status codes are matched while the Kotlin and
+its messages are ktvine's own. Keep it that way when extending it.
 
 ### Known divergences from pywidevine
 
@@ -269,7 +280,9 @@ exceptions) was closed by the plan. What actually differs now:
 - **`RemoteCdm`'s device check is opt-in.** pywidevine requires the expected
   `system_id`/`security_level`; ktvine's are nullable constructor arguments, so omitting them
   accepts whatever device the server holds.
-- **No `Cdm.decrypt`** (shaka-packager), no CLI, no `serve.py`.
+- **No `Cdm.decrypt`** (shaka-packager) and no CLI.
+- **`:serve` is JVM-only and routing-only.** It ships a `Route.ktvineCdm(config)` extension
+  rather than owning an engine, so the consumer picks one; pywidevine's `serve` owns aiohttp.
 - **A bare `WRMHEADER` is accepted but its KIDs cannot be read.** The `PSSH` cascade stores
   it verbatim, then `keyIds()` reads the first four bytes as a PRO length and fails with
   "corrupt". pywidevine has the same hole, so this is inherited rather than introduced —
@@ -297,9 +310,16 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
    at runtime** — the full `commonTest` suite passes under WSL, including the RFC 4493 CMAC
    vectors, a complete offline license exchange and the XML parser. iOS needs a Mac; the
    `iosSimulatorArm64Test` CI entry is enabled, so the first macOS CI run is the proof.
-2. **`RemoteCdm` has never talked to a real server.** Its tests use Ktor's `MockEngine` and
-   assert the exact requests and envelope that pywidevine's `serve.py` defines, so it is
-   pinned against the reference *source*, not a live deployment.
+2. **`RemoteCdm` is verified against a live `pywidevine serve` 1.8.0.** Every endpoint was
+   exercised end to end — open/close, both service-certificate calls, challenge, parse and
+   get_keys — recovering all eight of Google's published keys through the server, with and
+   without privacy mode. A server running `force_privacy_mode` refuses a non-privacy
+   exchange and that 403 surfaces as a typed `RemoteCdmException`. Cross-testing found two
+   real defects the mocks could not: `RemoteCdm` decoded a JSON `null` as the *text*
+   `"null"` (pywidevine's server sends one for an unset service certificate), and its client
+   opens with a `HEAD /` probe demanding a `pywidevine serve` version in the `Server`
+   header. Neither live run is automated, so re-run them by hand after touching the wire
+   format.
 3. **Renewal is untested against a live server.** The round trip works offline
    (`CdmOfflineLicenseTest`): the context is keyed on the request id from the license the
    renewal names, which is the only id the response can echo. Two assumptions are unproven
