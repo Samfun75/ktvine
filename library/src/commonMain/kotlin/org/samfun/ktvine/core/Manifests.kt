@@ -40,9 +40,8 @@ public object Manifests {
         forEachContentProtection(xml) { scheme, childName, text ->
             if (scheme != wanted) return@forEachContentProtection
             val pssh = when (childName) {
-                // A cenc:pssh is a full box; an mspr:pro is a bare PlayReady Object, which
-                // the PSSH cascade wraps for us.
-                "PSSH", "PRO" -> runCatching { PSSH(text) }.getOrNull()
+                // Strict: junk here means a broken manifest, not custom init data to wrap.
+                "PSSH", "PRO" -> runCatching { PSSH(text, strict = true) }.getOrNull()
                 else -> null
             } ?: return@forEachContentProtection
             found.getOrPut(pssh.exportBase64()) { pssh }
@@ -105,7 +104,7 @@ public object Manifests {
             val payload = uri.substringAfter("base64,", missingDelimiterValue = "")
             if (payload.isEmpty()) continue
 
-            val pssh = runCatching { PSSH(payload) }.getOrNull() ?: continue
+            val pssh = runCatching { PSSH(payload, strict = true) }.getOrNull() ?: continue
             found.getOrPut(pssh.exportBase64()) { pssh }
         }
 
