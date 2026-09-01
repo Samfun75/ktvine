@@ -19,3 +19,6 @@ client_id.bin
 library/src/commonTest/kotlin/org/samfun/ktvine/device/
 library/src/commonTest/resources/device/*
 !library/src/commonTest/resources/device/README.md
+
+# Implementation plans — session working notes, kept local
+docs/plans/
