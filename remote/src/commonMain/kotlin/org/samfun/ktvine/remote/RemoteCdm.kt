@@ -32,6 +32,7 @@ import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.proto.LicenseRequest
 import org.samfun.ktvine.proto.LicenseType
 import org.samfun.ktvine.utils.DecodeException
+import org.samfun.ktvine.utils.DeviceMismatchException
 import org.samfun.ktvine.utils.KtvineException
 import org.samfun.ktvine.utils.ValueException
 import kotlin.uuid.ExperimentalUuidApi
@@ -63,12 +64,18 @@ public class RemoteCdmException(
  * @param baseUrl the server root, with or without a trailing slash
  * @param deviceName the device the server should use, as named in its config
  * @param secret the value sent as the `X-Secret-Key` header
+ * @param expectedSystemId if given, [open] rejects a server whose device reports a
+ *   different Widevine system id
+ * @param expectedSecurityLevel if given, [open] rejects a server whose device reports a
+ *   different security level
  */
 public class RemoteCdm(
     private val client: HttpClient,
     baseUrl: String,
     private val deviceName: String,
     private val secret: String,
+    private val expectedSystemId: Int? = null,
+    private val expectedSecurityLevel: Int? = null,
 ) : CdmApi {
 
     private val root: String = baseUrl.trimEnd('/')
@@ -82,6 +89,10 @@ public class RemoteCdm(
     public var securityLevel: Int? = null
         private set
 
+    /**
+     * @throws DeviceMismatchException if the server's device does not match
+     *   [expectedSystemId] or [expectedSecurityLevel], when either was given
+     */
     override suspend fun open(): ByteString {
         val data = request { client.get("$root/$deviceName/open") { authenticate() } }
 
@@ -89,6 +100,10 @@ public class RemoteCdm(
             systemId = device["system_id"]?.jsonPrimitive?.content?.toIntOrNull()
             securityLevel = device["security_level"]?.jsonPrimitive?.content?.toIntOrNull()
         }
+
+        // pywidevine rejects the same two fields here (remotecdm.py:108).
+        verify("System ID", expectedSystemId, systemId)
+        verify("Security Level", expectedSecurityLevel, securityLevel)
 
         val hex = data["session_id"]?.jsonPrimitive?.content
             ?: throw DecodeException("Remote CDM did not return a session_id")
@@ -199,6 +214,13 @@ public class RemoteCdm(
                 permissions = key["permissions"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
             )
         }
+    }
+
+    private fun verify(what: String, expected: Int?, reported: Int?) {
+        if (expected == null || expected == reported) return
+        throw DeviceMismatchException(
+            "The $what specified ($expected) does not match the one in the API response (${reported ?: "none"}).",
+        )
     }
 
     private fun HttpRequestBuilder.authenticate() {

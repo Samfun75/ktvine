@@ -19,6 +19,7 @@ import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.proto.LicenseRequest
 import org.samfun.ktvine.proto.LicenseType
 import org.samfun.ktvine.utils.DecodeException
+import org.samfun.ktvine.utils.DeviceMismatchException
 import org.samfun.ktvine.utils.ValueException
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -224,6 +225,36 @@ class RemoteCdmTest {
             )
         }
         assertTrue(recorder.requests.isEmpty(), "nothing should have been sent")
+    }
+
+    @Test
+    fun `test open rejects a server whose device does not match`() = runTest {
+        val recorder = Recorder()
+        val engine = MockEngine { request ->
+            recorder.requests += request
+            respond(
+                content = ByteReadChannel(
+                    ok("""{"session_id":"$sessionHex","device":{"system_id":4464,"security_level":3}}"""),
+                ),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+
+        fun cdmExpecting(systemId: Int?, securityLevel: Int?) = RemoteCdm(
+            HttpClient(engine),
+            "https://cdm.example.com",
+            "test_device",
+            "s3cret",
+            expectedSystemId = systemId,
+            expectedSecurityLevel = securityLevel,
+        )
+
+        assertFailsWith<DeviceMismatchException> { cdmExpecting(1234, null).open() }
+        assertFailsWith<DeviceMismatchException> { cdmExpecting(null, 1).open() }
+
+        assertEquals(sessionHex.decodeHex(), cdmExpecting(4464, 3).open())
+        assertEquals(sessionHex.decodeHex(), cdmExpecting(null, null).open())
     }
 
     @Test

@@ -145,8 +145,16 @@ implements the same `CdmApi` as `Cdm`, and you supply the Ktor `HttpClient`, so 
 picks no engine for you:
 
 ```kotlin
-val cdm: CdmApi = RemoteCdm(HttpClient(CIO), "https://cdm.example.com", "my_device", secret)
+val cdm: CdmApi = RemoteCdm(
+    HttpClient(CIO), "https://cdm.example.com", "my_device", secret,
+    // Optional: open() then rejects a server holding a different device.
+    expectedSystemId = 4464, expectedSecurityLevel = 3,
+)
 ```
+
+The server picks the device by name, so pass `expectedSystemId` / `expectedSecurityLevel` if
+it matters which one you get — `open()` raises `DeviceMismatchException` when the server
+reports something else. Leave them out to accept whatever the server holds.
 
 Only `RequestType.NEW` is available remotely — the protocol has no renewal endpoint. The
 core library keeps zero networking dependencies; add `ktvine-remote` only if you want this.

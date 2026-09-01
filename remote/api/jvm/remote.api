@@ -1,5 +1,6 @@
 public final class org/samfun/ktvine/remote/RemoteCdm : org/samfun/ktvine/cdm/CdmApi {
-	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getKeys (Lokio/ByteString;Lorg/samfun/ktvine/proto/License$KeyContainer$KeyType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getLicenseChallenge (Lokio/ByteString;Lorg/samfun/ktvine/core/PSSH;Lorg/samfun/ktvine/proto/LicenseType;ZLorg/samfun/ktvine/proto/LicenseRequest$RequestType;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

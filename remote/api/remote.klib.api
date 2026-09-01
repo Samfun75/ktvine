@@ -7,7 +7,7 @@
 
 // Library unique name: <io.github.samfun75:remote>
 final class org.samfun.ktvine.remote/RemoteCdm : org.samfun.ktvine.cdm/CdmApi { // org.samfun.ktvine.remote/RemoteCdm|null[0]
-    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin/String, kotlin/String) // org.samfun.ktvine.remote/RemoteCdm.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.String){}[0]
+    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin/String, kotlin/String, kotlin/Int? = ..., kotlin/Int? = ...) // org.samfun.ktvine.remote/RemoteCdm.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.String;kotlin.Int?;kotlin.Int?){}[0]
 
     final var securityLevel // org.samfun.ktvine.remote/RemoteCdm.securityLevel|{}securityLevel[0]
         final fun <get-securityLevel>(): kotlin/Int? // org.samfun.ktvine.remote/RemoteCdm.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
