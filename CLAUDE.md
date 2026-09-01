@@ -220,11 +220,9 @@ on server-supplied fields. Missing-but-required protobuf fields go through the i
 `orDecodeError(field)` helper and surface as `DecodeException`. The only remaining `!!`
 are on the hardcoded Google root certificate, which is a compile-time constant.
 
-`NoKeysLoadedException` is thrown by `getKeysFromEntitlement`. Two types are declared but
-never thrown: `DeviceMismatchException` (pywidevine raises it in `RemoteCdm.open` when the
-server's device does not match the one the caller asked for — ktvine's `RemoteCdm` records
-`systemId`/`securityLevel` but never checks them) and `InvalidLicenseTypeException` (§1.5
-retargeted its call sites to `InvalidLicenseMessageException` and left the type behind).
+Every declared type has a throw site: `NoKeysLoadedException` from `getKeysFromEntitlement`,
+`DeviceMismatchException` from `RemoteCdm.open`. Keep it that way — a declared-but-unthrown
+exception is dead weight in a frozen ABI.
 
 ## The reference implementation
 
@@ -263,14 +261,14 @@ exceptions) was closed by the plan. What actually differs now:
   `pssh.py:265`).
 - `PSSH.setKeyIds` on PlayReady boxes, and `PSSH.new(keyIds=…)` building a real PRO.
 - `Cdm.getLicense`, `Cdm.getKeysFromEntitlement`, `PSSH.cryptoPeriodIndex`/`setCryptoPeriodIndex`.
-- `Manifests` — no pywidevine counterpart.
+- `Manifests` — no pywidevine counterpart. It parses PSSH strictly, unlike the lenient
+  default the `PSSH` constructors use.
 
 **ktvine has less:**
 
-- **`RemoteCdm` does not verify the server's device.** pywidevine takes the expected
-  `system_id`/`security_level` and raises `DeviceMismatch` from `open()` when the server
-  reports different ones (`remotecdm.py:108-112`). ktvine records them on the instance and
-  never compares, so you can silently be handed a different device than you asked for.
+- **`RemoteCdm`'s device check is opt-in.** pywidevine requires the expected
+  `system_id`/`security_level`; ktvine's are nullable constructor arguments, so omitting them
+  accepts whatever device the server holds.
 - **No `Cdm.decrypt`** (shaka-packager), no CLI, no `serve.py`.
 - **A bare `WRMHEADER` is accepted but its KIDs cannot be read.** The `PSSH` cascade stores
   it verbatim, then `keyIds()` reads the first four bytes as a PRO length and fails with
@@ -292,8 +290,8 @@ AES-CBC, HMAC-SHA256, and `CryptographyRandom` for all randomness.
 
 ## Known issues to be aware of when editing
 
-Ordered roughly by severity. `docs/plans/library-improvements.md` (git-ignored) has the plan;
-**every phase is now done** and the plan is closed out at `1.0.0`.
+Ordered roughly by severity. Everything the improvement plan tracked is done and the API
+is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
 
 1. **iOS has never been run.** All four native targets compile, and **linuxX64 is verified
    at runtime** — the full `commonTest` suite passes under WSL, including the RFC 4493 CMAC
@@ -302,29 +300,16 @@ Ordered roughly by severity. `docs/plans/library-improvements.md` (git-ignored) 
 2. **`RemoteCdm` has never talked to a real server.** Its tests use Ktor's `MockEngine` and
    assert the exact requests and envelope that pywidevine's `serve.py` defines, so it is
    pinned against the reference *source*, not a live deployment.
-3. **Renewal cannot currently complete, not just "is unsigned differently".**
-   `getLicenseChallenge(requestType = RENEWAL | RELEASE)` derives a fresh context and files
-   it under a **newly generated `requestId` that is never put on the wire** — a RENEWAL's
-   `content_id` is an `ExistingLicense`, which carries no request id. The server can only
-   echo the *original* `license.id.request_id`, and `parseLicense` deleted that context
-   entry when it parsed the first license. So the renewal response fails the
-   `s.context[requestId]` lookup with `InvalidContextException`, before the separate
-   question of signing with `macKeyClient` rather than the device key ever arises. Each
-   renewal attempt also leaves an orphaned entry in `Session.context`. Only the
-   pre-license error path is tested (`RequestTypeJvmTest`); pywidevine has no renewal
-   support to copy, so fixing this needs a live server to say what the response echoes.
-   See plan §2.7.
-4. **`compileCommonMainKotlinMetadata` is not in `check`.** It failed silently for a while
-   because `commonMain` referenced `FileSystem.SYSTEM`, which okio does not expose in common
-   metadata — that breaks the KMP metadata artifact and therefore publishing, without any
-   test noticing. Fixed, but nothing guards against a repeat; consider wiring it into `check`.
-   Running `dokkaHtml` happens to catch it, since Dokka drives metadata compilation.
-5. **Two public helpers are dead, and `1.0.0` is not tagged yet.** `escapeXml` and
-   `unescapeXml` in `utils/Extensions.kt` have no caller — `PlayreadyHeader` escapes with
-   its own private `escape()` — and `unescapeXml`'s numeric-character-reference branch
-   truncates astral code points (`it.toChar()`). `InvalidLicenseTypeException` is likewise
-   never thrown. The published tags stop at `v0.0.3`, so removing them is free right now
-   and an ABI break the moment `1.0.0` ships under `apiCheck`.
+3. **Renewal is untested against a live server.** The round trip works offline
+   (`CdmOfflineLicenseTest`): the context is keyed on the request id from the license the
+   renewal names, which is the only id the response can echo. Two assumptions are unproven
+   — that a server does echo it, and that signing with the device key is right. The proto
+   says a request's algorithm comes from its certificate, which is why this does not use
+   `macKeyClient`; revisit only with a real renewal to observe.
+4. **Only `linuxX64Test` and the JVM/Android suites run locally.** `check` now also builds
+   the metadata artifact, so a JDK-only reference in `commonMain` fails the build instead of
+   silently breaking publishing — that hole is closed, do not reopen it by dropping the
+   `compileCommonMainKotlinMetadata` dependency from `check`.
 
 ## Secrets and fixtures
 
