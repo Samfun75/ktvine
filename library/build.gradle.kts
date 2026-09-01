@@ -116,6 +116,11 @@ tasks.register<Test>("integrationTest") {
     outputs.upToDateWhen { false }
 }
 
+// Nothing else builds the metadata artifact publishing depends on.
+tasks.named("check") {
+    dependsOn("compileCommonMainKotlinMetadata")
+}
+
 wire {
     sourcePath {
         srcDirs("src/commonMain/proto")

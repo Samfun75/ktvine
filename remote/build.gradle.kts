@@ -65,6 +65,11 @@ kotlin {
     }
 }
 
+// Nothing else builds the metadata artifact publishing depends on.
+tasks.named("check") {
+    dependsOn("compileCommonMainKotlinMetadata")
+}
+
 mavenPublishing {
     publishToMavenCentral()
 
