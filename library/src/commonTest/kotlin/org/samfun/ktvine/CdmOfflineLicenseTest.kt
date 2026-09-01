@@ -73,9 +73,12 @@ class CdmOfflineLicenseTest {
         initData = WidevinePsshData(key_ids = listOf(contentKid.toByteArray().toByteString())),
     )
 
+    /** The request id a server would quote back in `License.id`. */
     private fun requestIdOf(challenge: ByteArray): ByteString {
         val request = LicenseRequest.ADAPTER.decode(SignedMessage.ADAPTER.decode(challenge).msg!!)
-        return request.content_id!!.widevine_pssh_data!!.request_id!!
+        val contentId = request.content_id!!
+        return contentId.widevine_pssh_data?.request_id
+            ?: contentId.existing_license!!.license_id!!.request_id!!
     }
 
     /** Build the response a license server would return for [challenge]. */
@@ -84,6 +87,7 @@ class CdmOfflineLicenseTest {
         device: ThrowawayDevice,
         challenge: ByteArray,
         tamperWithSignature: Boolean = false,
+        policy: License.Policy? = null,
     ): ByteArray {
         val signedRequest = SignedMessage.ADAPTER.decode(challenge)
         val requestBytes = signedRequest.msg!!.toByteArray()
@@ -98,6 +102,7 @@ class CdmOfflineLicenseTest {
 
         val license = License(
             id = LicenseIdentification(request_id = requestIdOf(challenge)),
+            policy = policy,
             key = listOf(
                 License.KeyContainer(
                     id = contentKid.toByteArray().toByteString(),
@@ -172,6 +177,56 @@ class CdmOfflineLicenseTest {
         // The context is stored per session, keyed by request id.
         assertFailsWith<org.samfun.ktvine.utils.InvalidContextException> {
             cdm.parseLicense(second, response)
+        }
+    }
+
+    @Test
+    fun `test a renewal exchange completes and refreshes the keys`() = runTest {
+        val device = throwawayDevice()
+        val cdm = Cdm.fromDevice(device.device)
+        val sessionId = cdm.open()
+
+        val challenge = cdm.getLicenseChallenge(sessionId, pssh(), privacyMode = false)
+        val renewable = License.Policy(can_renew = true)
+        cdm.parseLicense(sessionId, issueLicense(cdm, device, challenge, policy = renewable))
+
+        val originalRequestId = requestIdOf(challenge)
+
+        val renewal = cdm.getLicenseChallenge(
+            sessionId,
+            pssh(),
+            privacyMode = false,
+            requestType = LicenseRequest.RequestType.RENEWAL,
+        )
+
+        val renewalRequest = LicenseRequest.ADAPTER.decode(SignedMessage.ADAPTER.decode(renewal).msg!!)
+        assertEquals(LicenseRequest.RequestType.RENEWAL, renewalRequest.type)
+        assertEquals(originalRequestId, renewalRequest.content_id!!.existing_license!!.license_id!!.request_id)
+
+        // Keyed on a fresh id instead, this threw InvalidContextException.
+        cdm.parseLicense(sessionId, issueLicense(cdm, device, renewal, policy = renewable))
+
+        val keys = cdm.getKeys(sessionId)
+        assertEquals(1, keys.size)
+        assertContentEquals(contentKey, keys[0].key)
+    }
+
+    @Test
+    fun `test a renewal is refused when the policy forbids it`() = runTest {
+        val device = throwawayDevice()
+        val cdm = Cdm.fromDevice(device.device)
+        val sessionId = cdm.open()
+
+        val challenge = cdm.getLicenseChallenge(sessionId, pssh(), privacyMode = false)
+        cdm.parseLicense(sessionId, issueLicense(cdm, device, challenge, policy = License.Policy(can_renew = false)))
+
+        assertFailsWith<org.samfun.ktvine.utils.ValueException> {
+            cdm.getLicenseChallenge(
+                sessionId,
+                pssh(),
+                privacyMode = false,
+                requestType = LicenseRequest.RequestType.RENEWAL,
+            )
         }
     }
 

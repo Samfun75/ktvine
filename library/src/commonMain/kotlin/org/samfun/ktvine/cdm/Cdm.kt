@@ -357,7 +357,6 @@ public class Cdm internal constructor(
         val init = pssh.initData
         if (init.isEmpty()) throw InvalidInitDataException("A pssh must be provided.")
 
-        val requestId: ByteString = buildRequestId(s.number)
         val requestTime = Clock.System.now().epochSeconds
 
         val serviceCertificate = s.lock.withLock { s.serviceCertificate }
@@ -370,21 +369,28 @@ public class Cdm internal constructor(
             null
         }
 
-        val contentId = when (requestType) {
-            LicenseRequest.RequestType.NEW -> LicenseRequest.ContentIdentification(
-                widevine_pssh_data = LicenseRequest.ContentIdentification.WidevinePsshData(
-                    pssh_data = listOf(init.toByteString()),
-                    license_type = licenseType,
-                    request_id = requestId,
-                ),
-            )
+        // An ExistingLicense has no request id, so a renewal's response echoes the license's.
+        val (contentId, echoedRequestId) = when (requestType) {
+            LicenseRequest.RequestType.NEW -> {
+                val requestId = buildRequestId(s.number)
+                LicenseRequest.ContentIdentification(
+                    widevine_pssh_data = LicenseRequest.ContentIdentification.WidevinePsshData(
+                        pssh_data = listOf(init.toByteString()),
+                        license_type = licenseType,
+                        request_id = requestId,
+                    ),
+                ) to requestId
+            }
 
             // RENEWAL and RELEASE identify the license already held, not the content.
-            else -> LicenseRequest.ContentIdentification(
-                existing_license = LicenseRequest.ContentIdentification.ExistingLicense(
-                    license_id = existingLicenseId(s, requestType),
-                ),
-            )
+            else -> {
+                val licenseId = existingLicenseId(s, requestType)
+                LicenseRequest.ContentIdentification(
+                    existing_license = LicenseRequest.ContentIdentification.ExistingLicense(
+                        license_id = licenseId,
+                    ),
+                ) to licenseId.request_id.orDecodeError("License.id.request_id")
+            }
         }
 
         val lr = LicenseRequest(
@@ -400,7 +406,7 @@ public class Cdm internal constructor(
         KtvineLog.d {
             "Generating License Request - " +
                 "Session ID: $sessionId, " +
-                "Request ID: $requestId, " +
+                "Request ID: $echoedRequestId, " +
                 "Request Time: $requestTime, " +
                 "License Type: $licenseType, " +
                 "Privacy Mode: $privacyMode, " +
@@ -421,7 +427,7 @@ public class Cdm internal constructor(
         )
 
         val (encCtx, macCtx) = deriveContext(encodedLr)
-        s.lock.withLock { s.context[requestId] = encCtx to macCtx }
+        s.lock.withLock { s.context[echoedRequestId] = encCtx to macCtx }
 
         return sm.encode()
     }

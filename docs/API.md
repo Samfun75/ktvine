@@ -57,8 +57,11 @@ you can read `policy` (`can_persist`, `can_renew`, `rental_duration_seconds`,
 `renewal_server_url`, …) for offline or renewal flows.
 
 `getLicenseChallenge(requestType = RENEWAL | RELEASE)` builds a request that references the
-license already parsed for the session instead of the content. **This path has never been
-exercised against a live server** — see the caveat in `docs/plans/library-improvements.md`.
+license already parsed for the session instead of the content, so the new context is filed
+under that license's request id — the only id the server can quote back. The round trip is
+covered offline by `CdmOfflineLicenseTest`, but **has never been exercised against a live
+server**, and it still signs with the device key rather than `macKeyClient`; see the caveat
+in `docs/plans/library-improvements.md`.
 
 ## PSSH input
 
