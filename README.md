@@ -17,9 +17,9 @@ Gradle (Kotlin DSL):
 
 ```kotlin
 dependencies {
-    implementation("io.github.samfun75:ktvine:1.0.0")
+    implementation("io.github.samfun75:ktvine:1.0.0-RC1")
     // Optional: talk to a pywidevine-compatible CDM server instead of holding a device.
-    // implementation("io.github.samfun75:ktvine-remote:1.0.0")
+    // implementation("io.github.samfun75:ktvine-remote:1.0.0-RC1")
 }
 ```
 

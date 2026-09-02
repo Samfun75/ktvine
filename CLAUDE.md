@@ -13,7 +13,7 @@ It deliberately does **not** ship an HTTP client, a license-server proxy, or dev
 provisioning. Callers move bytes to and from their own license server.
 
 - Maven coordinates: `io.github.samfun75:ktvine`
-- Current version: `1.0.0` (declared once, in `gradle/libs.versions.toml`)
+- Current version: `1.0.0-RC1` (declared once, in `gradle/libs.versions.toml`)
 - License: Apache-2.0
 - Repo: https://github.com/samfun75/ktvine
 
