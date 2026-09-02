@@ -2,9 +2,11 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
+    # ci/verify-ios is temporary scaffolding for the iOS proving run; drop it before merge.
+    branches: [ "main", "ci/verify-ios" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
   workflow_call:
 
 permissions:
@@ -49,8 +51,45 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Diagnostic on the iOS job: confirm a simulator runtime exists before relying on it.
+      - name: List available simulators
+        if: matrix.target == 'iosSimulatorArm64Test'
+        run: xcrun simctl list runtimes
+
       - name: Build
         run: ./gradlew ${{ matrix.target }} --stacktrace
+
+      # A green iOS run with zero executed tests is a false pass — the whole point of this
+      # job is to prove the crypto/XML paths run on-device, so assert they actually did.
+      - name: Confirm iOS tests actually ran
+        if: matrix.target == 'iosSimulatorArm64Test'
+        run: |
+          shopt -s globstar nullglob
+          reports=(**/build/test-results/iosSimulatorArm64Test/TEST-*.xml)
+          if [ ${#reports[@]} -eq 0 ]; then
+            echo "::error::no iosSimulatorArm64Test result files were produced"
+            exit 1
+          fi
+          total=0
+          for f in "${reports[@]}"; do
+            tests=$(grep -oE 'tests="[0-9]+"' "$f" | head -1 | grep -oE '[0-9]+')
+            skipped=$(grep -oE 'skipped="[0-9]+"' "$f" | head -1 | grep -oE '[0-9]+')
+            run=$(( ${tests:-0} - ${skipped:-0} ))
+            total=$(( total + run ))
+            echo "  $(basename "$f"): ${tests:-0} tests, ${skipped:-0} skipped"
+          done
+          echo "iOS tests actually executed: $total"
+          if [ "$total" -eq 0 ]; then
+            echo "::error::iosSimulatorArm64Test produced result files but ran 0 tests"
+            exit 1
+          fi
+          for expect in AesCmacTest CdmOfflineLicenseTest; do
+            if ! ls **/build/test-results/iosSimulatorArm64Test/TEST-*"$expect"*.xml >/dev/null 2>&1; then
+              echo "::error::$expect did not run on iOS — it is a load-bearing native check"
+              exit 1
+            fi
+          done
+          echo "AesCmacTest and CdmOfflineLicenseTest both ran on iOS"
 
       - name: Upload test reports
         if: failure()
@@ -58,7 +97,7 @@ jobs:
         with:
           name: test-reports-${{ matrix.os }}
           path: |
-            library/build/reports/tests/
-            library/build/test-results/
+            **/build/reports/tests/
+            **/build/test-results/
           retention-days: 7
           if-no-files-found: ignore
