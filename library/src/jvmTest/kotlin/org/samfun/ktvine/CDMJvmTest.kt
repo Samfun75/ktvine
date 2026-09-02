@@ -39,7 +39,7 @@ class CDMJvmTest {
     }
 
     private fun cdmOrSkip(): Cdm? {
-        val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return null
+        val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return null
         return Cdm.fromDevice(Device.loads(data))
     }
 

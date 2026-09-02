@@ -49,7 +49,7 @@ library/src/
   commonTest/…/AesCmacTest.kt       RFC 4493 CMAC + AES-CBC/HMAC vectors (runs on all targets)
   commonTest/…/PSSHTest.kt          PSSH round-trips (pure, no fixtures)
   commonTest/…/DeviceCommonTest.kt  Device negative cases
-  commonTest/resources/device/      BINARY FIXTURES — see "Secrets" below
+  commonTest/resources/device/{widevine,playready}/  BINARY FIXTURES — see "Secrets" below
   commonTest/resources/playlist/    *.mpd / *.m3u8 manifests used by tests
   jvmAndAndroidTest/…/TestFixtures.kt  classpath fixture loader shared by both JVM test sets
   jvmTest/…/CDMJvmTest.kt           RSA-PSS unit test (hermetic)
@@ -333,16 +333,21 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
 
 ## Secrets and fixtures
 
-`library/src/commonTest/resources/device/` holds `private_key.pem`, `client_id.bin`,
-`google_avd.wvd`, and `google_avd.b64.txt` — **a real Widevine device private key and
-its client identification blob**. `.gitignore` now excludes that whole directory
-(everything except its tracked `README.md`), plus `*.wvd`, `*.pem`, and `client_id.bin`
+`library/src/commonTest/resources/device/` holds real DRM provisioning material in two
+subfolders: `widevine/` (`google_avd.wvd`, `google_avd.b64.txt`, `client_id.bin`,
+`private_key.pem` — a real Widevine device) and `playready/` (six SL3000 PlayReady devices,
+each `*.prd` + `bgroupcert.dat` + `zgpriv.dat`). `.gitignore` excludes the whole tree except
+the tracked `README.md`s, plus `*.wvd`, `*.pem`, `*.prd`, `*.dat`, and `client_id.bin`
 repo-wide. Do not commit them, and do not paste their contents into any output.
+
+**The PlayReady devices are unused.** ktvine has no PlayReady CDM, so a `.prd` device does
+nothing today — using one would need device provisioning, XMR license parsing and ECC P-256,
+a separate effort that does not exist yet. Only `widevine/` is read by the current suite.
 
 Tests load fixtures from the test classpath through `TestFixtures` in
 `src/jvmAndAndroidTest` (paths are relative to `commonTest/resources`, e.g.
-`device/google_avd.wvd`). `TestFixtures.orSkip(...)` prints an explicit `SKIP:` line
-and returns `null` when a fixture is absent, so a checkout without them still goes
+`device/widevine/google_avd.wvd`). `TestFixtures.orSkip(...)` prints an explicit `SKIP:`
+line and returns `null` when a fixture is absent, so a checkout without them still goes
 green without hiding the fact.
 
 ## Conventions

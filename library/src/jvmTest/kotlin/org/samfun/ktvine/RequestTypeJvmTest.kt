@@ -26,7 +26,7 @@ class RequestTypeJvmTest {
     @Test
     fun `test a new request carries the pssh and not an existing license`() {
         runBlocking {
-            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
+            val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return@runBlocking
             val cdm = Cdm.fromDevice(Device.loads(data))
             val sessionId = cdm.open()
 
@@ -41,7 +41,7 @@ class RequestTypeJvmTest {
     @Test
     fun `test renewal before a license is parsed reports missing context`() {
         runBlocking {
-            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
+            val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return@runBlocking
             val cdm = Cdm.fromDevice(Device.loads(data))
             val sessionId = cdm.open()
 

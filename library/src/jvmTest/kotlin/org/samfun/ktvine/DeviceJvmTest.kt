@@ -27,8 +27,8 @@ class DeviceJvmTest {
 
     @Test
     fun `test loads wvd v2 from client id and private key`() {
-        val clientIdRaw = TestFixtures.orSkip("device/client_id.bin") ?: return
-        val privateKeyDer = pemToDer(TestFixtures.orSkip("device/private_key.pem") ?: return)
+        val clientIdRaw = TestFixtures.orSkip("device/widevine/client_id.bin") ?: return
+        val privateKeyDer = pemToDer(TestFixtures.orSkip("device/widevine/private_key.pem") ?: return)
 
         // Build a v2 WVD with ANDROID type and security level 3
         val wvd = Device.buildWvdV2(DeviceTypes.ANDROID, 3, privateKeyDer, clientIdRaw)
@@ -70,7 +70,7 @@ class DeviceJvmTest {
 
     @Test
     fun `test loads wvd v2 from wvd file`() {
-        val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return
+        val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return
         val device = Device.loads(data)
 
         // Parse expected values directly from client_id for comparison
@@ -82,14 +82,14 @@ class DeviceJvmTest {
         assertEquals(DeviceTypes.ANDROID, device.type)
         assertEquals(3, device.securityLevel)
         // If private_key.pem is available, compare exactly; otherwise, just ensure key is present
-        val expectedPk: ByteArray? = TestFixtures.readOrNull("device/private_key.pem")?.let { pemToDer(it) }
+        val expectedPk: ByteArray? = TestFixtures.readOrNull("device/widevine/private_key.pem")?.let { pemToDer(it) }
         if (expectedPk != null) {
             assertEquals(expectedPk.toList(), device.privateKeyDer.toList())
         } else {
             assert(device.privateKeyDer.isNotEmpty())
         }
         // If client_id.bin is available, compare exactly; otherwise, just ensure a non-empty client id
-        val expectedClientId: ByteArray? = TestFixtures.readOrNull("device/client_id.bin")
+        val expectedClientId: ByteArray? = TestFixtures.readOrNull("device/widevine/client_id.bin")
         if (expectedClientId != null) {
             assertEquals(expectedClientId.toList(), device.clientId.encode().toList())
         } else {
@@ -119,7 +119,7 @@ class DeviceJvmTest {
 
     @Test
     fun `test loads google avd wvd if present`() {
-        val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return
+        val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return
         val device = Device.loads(data)
         // Basic sanity checks
         println("SysId: ${device.systemId}")
@@ -184,7 +184,7 @@ class DeviceJvmTest {
 
     @Test
     fun `test cdm keeps the device system id and security level`() {
-        val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return
+        val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return
         val device = Device.loads(data)
         val cdm = Cdm.fromDevice(device)
 

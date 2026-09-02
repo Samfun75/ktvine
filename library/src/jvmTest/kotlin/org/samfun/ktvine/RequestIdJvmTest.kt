@@ -33,7 +33,7 @@ class RequestIdJvmTest {
     @Test
     fun `test android devices emit a 32 byte uppercase hex request id`() {
         runBlocking {
-            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
+            val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return@runBlocking
             val device = Device.loads(data)
             assertEquals(DeviceTypes.ANDROID, device.type, "fixture is expected to be an Android device")
 
@@ -55,7 +55,7 @@ class RequestIdJvmTest {
     @Test
     fun `test request ids differ between sessions`() {
         runBlocking {
-            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
+            val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return@runBlocking
             val device = Device.loads(data)
 
             val first = requestIdOf(challengeFrom(device)).decodeToString()

@@ -12,13 +12,19 @@ xcuserdata
 #So we don't accidentally commit our private keys
 *.gpg
 
-# Widevine device fixtures — real provisioning material, never commit
+# Device fixtures — real provisioning material, never commit.
+# Widevine: *.wvd, *.pem, client_id.bin. PlayReady: *.prd, *.dat (bgroupcert/zgpriv).
 *.wvd
 *.pem
+*.prd
+*.dat
 client_id.bin
 library/src/commonTest/kotlin/org/samfun/ktvine/device/
-library/src/commonTest/resources/device/*
-!library/src/commonTest/resources/device/README.md
+# Ignore everything under the fixtures tree except the tracked READMEs.
+library/src/commonTest/resources/device/**
+!library/src/commonTest/resources/device/
+!library/src/commonTest/resources/device/**/
+!library/src/commonTest/resources/device/**/README.md
 
 # Implementation plans — session working notes, kept local
 docs/plans/

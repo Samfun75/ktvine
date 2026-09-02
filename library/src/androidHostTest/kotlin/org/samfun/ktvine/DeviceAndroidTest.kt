@@ -24,7 +24,7 @@ class DeviceAndroidTest {
 
     @Test
     fun `test loads wvd v2 from wvd file android`() {
-        val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return
+        val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return
         val device = Device.loads(data)
 
         val clientId = ClientIdentification.ADAPTER.decode(device.clientId.encode())
@@ -36,7 +36,7 @@ class DeviceAndroidTest {
         assertEquals(3, device.securityLevel)
 
         // Private key check if available
-        val expectedPk: ByteArray? = TestFixtures.readOrNull("device/private_key.pem")?.let { pemToDer(it) }
+        val expectedPk: ByteArray? = TestFixtures.readOrNull("device/widevine/private_key.pem")?.let { pemToDer(it) }
         if (expectedPk != null) {
             assertEquals(expectedPk.toList(), device.privateKeyDer.toList())
         } else {
@@ -44,7 +44,7 @@ class DeviceAndroidTest {
         }
 
         // ClientId check if available
-        val expectedClientId: ByteArray? = TestFixtures.readOrNull("device/client_id.bin")
+        val expectedClientId: ByteArray? = TestFixtures.readOrNull("device/widevine/client_id.bin")
         if (expectedClientId != null) {
             assertEquals(expectedClientId.toList(), device.clientId.encode().toList())
         } else {

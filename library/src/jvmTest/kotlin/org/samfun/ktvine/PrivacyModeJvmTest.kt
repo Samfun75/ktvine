@@ -26,7 +26,7 @@ class PrivacyModeJvmTest {
     @Test
     fun `test privacy mode encrypts the client id to the service certificate`() {
         runBlocking {
-            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
+            val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return@runBlocking
             val cdm = Cdm.fromDevice(Device.loads(data))
             val sessionId = cdm.open()
 
@@ -46,7 +46,7 @@ class PrivacyModeJvmTest {
     @Test
     fun `test privacy mode off sends the plaintext client id`() {
         runBlocking {
-            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
+            val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return@runBlocking
             val cdm = Cdm.fromDevice(Device.loads(data))
             val sessionId = cdm.open()
 

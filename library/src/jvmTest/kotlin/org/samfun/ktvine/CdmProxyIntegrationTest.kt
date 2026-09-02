@@ -28,7 +28,7 @@ class CdmProxyIntegrationTest {
     @Test
     fun `test widevine proxy returns keys when device available`() {
         runBlocking {
-            val data = TestFixtures.orSkip("device/google_avd.wvd") ?: return@runBlocking
+            val data = TestFixtures.orSkip("device/widevine/google_avd.wvd") ?: return@runBlocking
 
             val device = Device.loads(data)
             val cdm = Cdm.fromDevice(device)
