@@ -306,10 +306,13 @@ AES-CBC, HMAC-SHA256, and `CryptographyRandom` for all randomness.
 Ordered roughly by severity. Everything the improvement plan tracked is done and the API
 is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
 
-1. **iOS has never been run.** All four native targets compile, and **linuxX64 is verified
-   at runtime** — the full `commonTest` suite passes under WSL, including the RFC 4493 CMAC
-   vectors, a complete offline license exchange and the XML parser. iOS needs a Mac; the
-   `iosSimulatorArm64Test` CI entry is enabled, so the first macOS CI run is the proof.
+1. **Every target is now verified at runtime.** linuxX64 passes the full `commonTest` suite
+   under WSL, and **iOS passes it on a GitHub Actions `macos-latest` runner** — the RFC 4493
+   CMAC vectors, a complete offline license exchange and the XML parser all execute on the
+   simulator. The `iosSimulatorArm64Test` job carries a gate that fails when the task reports
+   zero executed tests or when `AesCmacTest` / `CdmOfflineLicenseTest` / `PlayreadyOracleTest`
+   are missing: a Gradle test task that runs nothing still exits green, which is how iOS
+   looked "passing" while being unverified. Do not remove that gate.
 2. **`RemoteCdm` is verified against a live `pywidevine serve` 1.8.0.** Every endpoint was
    exercised end to end — open/close, both service-certificate calls, challenge, parse and
    get_keys — recovering all eight of Google's published keys through the server, with and
