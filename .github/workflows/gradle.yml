@@ -59,37 +59,47 @@ jobs:
       - name: Build
         run: ./gradlew ${{ matrix.target }} --stacktrace
 
-      # A green iOS run with zero executed tests is a false pass — the whole point of this
+      # A green iOS run with zero executed tests is a false pass - the whole point of this
       # job is to prove the crypto/XML paths run on-device, so assert they actually did.
+      # Kept to bash 3.2 features: macOS runners have no globstar.
       - name: Confirm iOS tests actually ran
         if: matrix.target == 'iosSimulatorArm64Test'
         run: |
-          shopt -s globstar nullglob
-          reports=(**/build/test-results/iosSimulatorArm64Test/TEST-*.xml)
-          if [ ${#reports[@]} -eq 0 ]; then
+          echo "--- test-results directories present ---"
+          find . -type d -path '*build/test-results*' 2>/dev/null | head -20
+
+          reports=$(find . -type f -path '*build/test-results/iosSimulatorArm64Test/*' -name 'TEST-*.xml' 2>/dev/null)
+          if [ -z "$reports" ]; then
             echo "::error::no iosSimulatorArm64Test result files were produced"
             exit 1
           fi
+
+          # A heredoc terminator cannot be indented, and a pipe would lose $total to a
+          # subshell, so the list goes through a file.
+          echo "$reports" > "$RUNNER_TEMP/ios-reports.txt"
           total=0
-          for f in "${reports[@]}"; do
-            tests=$(grep -oE 'tests="[0-9]+"' "$f" | head -1 | grep -oE '[0-9]+')
-            skipped=$(grep -oE 'skipped="[0-9]+"' "$f" | head -1 | grep -oE '[0-9]+')
-            run=$(( ${tests:-0} - ${skipped:-0} ))
-            total=$(( total + run ))
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            tests=$(grep -o 'tests="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*' || echo 0)
+            skipped=$(grep -o 'skipped="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*' || echo 0)
+            total=$(( total + ${tests:-0} - ${skipped:-0} ))
             echo "  $(basename "$f"): ${tests:-0} tests, ${skipped:-0} skipped"
-          done
+          done < "$RUNNER_TEMP/ios-reports.txt"
+
           echo "iOS tests actually executed: $total"
           if [ "$total" -eq 0 ]; then
             echo "::error::iosSimulatorArm64Test produced result files but ran 0 tests"
             exit 1
           fi
-          for expect in AesCmacTest CdmOfflineLicenseTest; do
-            if ! ls **/build/test-results/iosSimulatorArm64Test/TEST-*"$expect"*.xml >/dev/null 2>&1; then
-              echo "::error::$expect did not run on iOS — it is a load-bearing native check"
+
+          # These are the paths iOS was unverified on: CMAC, a full offline licence, and XML.
+          for expect in AesCmacTest CdmOfflineLicenseTest PlayreadyOracleTest; do
+            if ! echo "$reports" | grep -q "$expect"; then
+              echo "::error::$expect did not run on iOS - it is a load-bearing native check"
               exit 1
             fi
+            echo "  ran on iOS: $expect"
           done
-          echo "AesCmacTest and CdmOfflineLicenseTest both ran on iOS"
 
       - name: Upload test reports
         if: failure()
