@@ -237,4 +237,4 @@ See LICENSE.
 
 ---
 
-Built with [Claude Code](https://claude.com/claude-code).
+After 0.0.3 Built with [Claude Code](https://claude.com/claude-code).
