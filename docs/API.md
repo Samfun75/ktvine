@@ -21,25 +21,8 @@ does no device provisioning, and there is no PlayReady CDM — see "PlayReady sc
 
 ## The flow
 
-```kotlin
-val device = Device.loads(wvdBytes)          // or Device.loads(base64)
-val cdm = Cdm.fromDevice(device)
-
-val sessionId = cdm.open()
-try {
-    // Optional, for privacy mode. Cdm.COMMON_PRIVACY_CERT is bundled, or POST
-    // Cdm.SERVICE_CERTIFICATE_CHALLENGE to your license server to obtain one.
-    cdm.setServiceCertificate(sessionId, Cdm.COMMON_PRIVACY_CERT)
-
-    val challenge = cdm.getLicenseChallenge(sessionId, PSSH(psshBase64))
-    val response = yourHttpClient.post(licenseUrl, challenge)   // your code
-    cdm.parseLicense(sessionId, response)
-
-    cdm.getKeys(sessionId).forEach { println("${it.kid}: ${it.key.toHexString()}") }
-} finally {
-    cdm.close(sessionId)
-}
-```
+The call sequence and a runnable example live in the [README](../README.md#quickstart).
+What it does not say:
 
 Everything on `Cdm` is `suspend`, and a `Cdm` is safe to share between coroutines: it holds
 one mutex for the session map and one per session, and never holds both at once.
@@ -66,15 +49,12 @@ in `docs/plans/library-improvements.md`.
 
 ## PSSH input
 
-`PSSH(...)` accepts more than a `pssh` box. It tries, in order: an ISOBMFF box sequence, a
-bare `WidevinePsshData` CENC header, a bare PlayReady header or PlayReady Object, and — in
-lenient mode, the default — wraps anything else verbatim as the init data of a v0 Widevine
-box, which is what services with custom init data (Netflix MSL) need. Pass `strict = true`
-to reject that last case with `DecodeException`.
-
-`PSSH.parseAll(...)` returns every box in a multi-DRM init segment;
-`PSSH.fromInitSegment(bytes, systemId)` picks one by DRM system. The constructors take only
-the first box.
+The [README](../README.md#pssh-utilities) lists what `PSSH(...)` accepts. The part that
+matters here is that it is a *cascade*, tried in order — ISOBMFF box, bare `WidevinePsshData`
+CENC header, bare PlayReady header or PRO, then the lenient catch-all. A bare CENC header is
+accepted only when re-encoding reproduces the input byte for byte, because protobuf will
+happily "parse" many non-protobuf blobs. `strict = true` removes the catch-all, which is what
+you want when the bytes came from a manifest rather than from a caller.
 
 ## Key IDs
 
@@ -92,14 +72,13 @@ with the manifest's own `cenc:default_KID`. The manifest is treated as the autho
 
 ## Errors
 
-Everything the library throws derives from `KtvineException`, so one catch suffices. The
-subtypes mirror pywidevine's: `TooManySessionsException`, `InvalidSessionException`,
-`InvalidContextException`, `InvalidInitDataException`, `InvalidLicenseMessageException`,
-`SignatureMismatchException`, `NoKeysLoadedException`, `DeviceMismatchException`,
-`DecodeException`, `ValueException`, `InvalidBoxException`.
+Everything the library throws derives from `KtvineException`, so one catch suffices; the
+subtypes are listed in the [README](../README.md#error-handling).
 
-Malformed input from a license server surfaces as `DecodeException`, never as a platform
-null-pointer error.
+The guarantee worth relying on: malformed input from a license server surfaces as
+`DecodeException`, never as a platform null-pointer error. Every optional protobuf field the
+protocol makes mandatory is checked, so a hostile or broken response cannot reach you as an
+`NPE` from inside the parser.
 
 ## Logging
 
@@ -138,27 +117,33 @@ pssh.setCryptoPeriodIndex(pssh.cryptoPeriodIndex!! + 1)
 val challenge = cdm.getLicenseChallenge(sessionId, pssh)
 ```
 
-## Remote CDM
+## Remote CDM and serving one
 
-`ktvine-remote` is a separate artifact holding a `RemoteCdm` that speaks pywidevine's
-`serve.py` HTTP protocol, so the device can live on a server instead of in your process. It
-implements the same `CdmApi` as `Cdm`, and you supply the Ktor `HttpClient`, so this module
-picks no engine for you:
+`ktvine-remote` puts the device on a server and `ktvine-serve` is that server; the
+[README](../README.md#ktvine-remote-keep-the-device-on-a-server) covers both dependencies
+and usage. The parts a signature will not tell you:
 
-```kotlin
-val cdm: CdmApi = RemoteCdm(
-    HttpClient(CIO), "https://cdm.example.com", "my_device", secret,
-    // Optional: open() then rejects a server holding a different device.
-    expectedSystemId = 4464, expectedSecurityLevel = 3,
-)
-```
+**They speak pywidevine's `serve.py` protocol, not a ktvine-specific one.** That is
+deliberate: ktvine's `RemoteCdm` can drive a `pywidevine serve` instance, and pywidevine's
+own `RemoteCdm` can drive `ktvine-serve`. Both directions are exercised by hand against the
+real implementations; keep it that way when extending either side.
 
-The server picks the device by name, so pass `expectedSystemId` / `expectedSecurityLevel` if
-it matters which one you get — `open()` raises `DeviceMismatchException` when the server
-reports something else. Leave them out to accept whatever the server holds.
+**pywidevine's client opens with a `HEAD /` probe** and refuses any server whose `Server`
+header does not name a `pywidevine serve` version it supports. `ServeConfig.serverHeader`
+defaults to a string that identifies ktvine while declaring the protocol version it
+implements, which is what makes that client work. Change it and you lock those clients out.
 
-Only `RequestType.NEW` is available remotely — the protocol has no renewal endpoint. The
-core library keeps zero networking dependencies; add `ktvine-remote` only if you want this.
+**A licence server's JSON `null` means absent**, not the string `"null"` — relevant if you
+extend the client, because the two are easy to confuse in kotlinx-serialization and a real
+`pywidevine serve` sends `null` for an unset service certificate.
+
+`forcePrivacyMode` on the server rejects a challenge whose session has no service
+certificate, and that rejection reaches the caller as a typed `RemoteCdmException` carrying
+the server's own message rather than as a transport error.
+
+Only `RequestType.NEW` crosses the wire — the protocol has no renewal endpoint, and
+`RemoteCdm` rejects `RENEWAL`/`RELEASE` locally rather than sending something the server
+cannot honour.
 
 ## Multiplatform notes
 
