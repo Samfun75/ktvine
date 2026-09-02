@@ -2,8 +2,7 @@ name: Build
 
 on:
   push:
-    # ci/verify-ios is temporary scaffolding for the iOS proving run; drop it before merge.
-    branches: [ "main", "ci/verify-ios" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
