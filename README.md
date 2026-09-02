@@ -9,7 +9,8 @@ Built on the same protobuf models as pywidevine and designed to run on JVM, Andr
 - Verify SignedMessage(LICENSE) responses, decrypt keys
 - Parse/build PSSH boxes (Widevine ⇄ PlayReady), extract KIDs
 
-See also: API docs in docs/API.md
+**API reference:** <https://samfun75.github.io/ktvine/> — conceptual guide in
+[docs/API.md](docs/API.md).
 
 ## Installation
 
@@ -20,6 +21,8 @@ dependencies {
     implementation("io.github.samfun75:ktvine:1.0.0-RC1")
     // Optional: talk to a pywidevine-compatible CDM server instead of holding a device.
     // implementation("io.github.samfun75:ktvine-remote:1.0.0-RC1")
+    // Optional (JVM only): serve your own CDM over that same protocol.
+    // implementation("io.github.samfun75:ktvine-serve:1.0.0-RC1")
 }
 ```
 
@@ -34,8 +37,8 @@ Two things to know before you start:
   so you must opt in — `@OptIn(ExperimentalUuidApi::class)`, or the
   `-opt-in=kotlin.uuid.ExperimentalUuidApi` compiler flag.
 
-The full API reference is generated with Dokka; see [docs/API.md](docs/API.md) for the
-conceptual guide.
+The per-symbol API reference is generated with Dokka and published at
+<https://samfun75.github.io/ktvine/>; [docs/API.md](docs/API.md) is the conceptual guide.
 
 ## Quickstart
 
@@ -148,10 +151,90 @@ suspend fun main() {
 }
 ```
 
+## ktvine-remote — keep the device on a server
+
+The device's private key never enters your process: every operation is an HTTP call to a
+[pywidevine-compatible](https://github.com/devine-dl/pywidevine) CDM server, so one device can
+back many clients. It implements the same `CdmApi` as `Cdm`, and you supply the Ktor engine,
+so this module picks none for you.
+
+```kotlin
+dependencies {
+    implementation("io.github.samfun75:ktvine-remote:1.0.0-RC1")
+    implementation("io.ktor:ktor-client-cio:3.0.3") // any Ktor engine you like
+}
+```
+
+```kotlin
+val cdm: CdmApi = RemoteCdm(
+    client = HttpClient(CIO),
+    baseUrl = "https://cdm.example.com",
+    deviceName = "my_device",
+    secret = System.getenv("KTVINE_SECRET"),
+    // Optional: open() then refuses a server holding a different device.
+    expectedSystemId = 4464,
+    expectedSecurityLevel = 3,
+)
+
+val session = cdm.open()
+try {
+    val challenge = cdm.getLicenseChallenge(session, PSSH(psshBase64))
+    cdm.parseLicense(session, postToYourLicenseServer(challenge))
+    cdm.getKeys(session).forEach { println("${it.kid}: ${it.key.toHexString()}") }
+} finally {
+    cdm.close(session)
+}
+```
+
+`RequestType.RENEWAL` and `RELEASE` are rejected locally — the serve protocol has no endpoint
+for them.
+
+## ktvine-serve — run your own CDM server
+
+The mirror image: hold the device once and serve it over that same protocol, so both ktvine's
+`RemoteCdm` and pywidevine's own client can drive it. This module ships **routing only** — you
+mount it in your own Ktor application and choose the engine. JVM only, because Ktor's server
+engines do not span the targets the client does.
+
+```kotlin
+dependencies {
+    implementation("io.github.samfun75:ktvine-serve:1.0.0-RC1")
+    implementation("io.ktor:ktor-server-cio:3.0.3") // you pick the engine
+}
+```
+
+```kotlin
+val config = ServeConfig(
+    devices = mapOf("my_device" to Device.loads(wvdBytes)),
+    users = mapOf(
+        System.getenv("KTVINE_SECRET") to ServeUser("alice", devices = setOf("my_device")),
+    ),
+    // Refuse a challenge whose session has no service certificate.
+    forcePrivacyMode = true,
+)
+
+embeddedServer(CIO, port = 8786) {
+    routing { ktvineCdm(config) }
+}.start(wait = true)
+```
+
+Callers authenticate with an `X-Secret-Key` header. The device's private key never leaves the
+server, so treat those secrets as credentials and serve this over TLS.
+
 ## API reference
 
-KDoc is provided throughout the codebase; you can also read a compact overview in docs/API.md.
+Every public declaration carries KDoc. The generated reference for all three modules lives at
+<https://samfun75.github.io/ktvine/>, and [docs/API.md](docs/API.md) is the conceptual guide
+that explains what a signature cannot. Build the reference locally with:
+
+```
+./gradlew dokkaHtmlMultiModule   # -> build/dokka/htmlMultiModule/index.html
+```
 
 ## License
 
 See LICENSE.
+
+---
+
+Built with [Claude Code](https://claude.com/claude-code).

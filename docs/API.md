@@ -1,8 +1,9 @@
 # ktvine — conceptual guide
 
 The per-symbol reference is generated from the source by Dokka and published to
-GitHub Pages; build it locally with `./gradlew :library:dokkaHtml` and open
-`library/build/dokka/html/index.html`.
+**<https://samfun75.github.io/ktvine/>**, covering `ktvine`, `ktvine-remote` and
+`ktvine-serve`. Build it locally with `./gradlew dokkaHtmlMultiModule` and open
+`build/dokka/htmlMultiModule/index.html`.
 
 This page explains only the things a signature cannot: what the pieces are for, what order
 to call them in, and where the sharp edges are. It deliberately lists no parameter tables,
