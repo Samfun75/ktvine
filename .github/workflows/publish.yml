@@ -28,10 +28,13 @@ jobs:
             echo "::error::Release tag $TAG does not match ktvine = $CATALOG in gradle/libs.versions.toml"
             exit 1
           fi
-          if ! grep -q "io.github.samfun75:ktvine:$CATALOG" README.md; then
-            echo "::error::README install snippet does not reference version $CATALOG"
-            exit 1
-          fi
+          # Every module takes this one catalog version, so every snippet must name it.
+          for artifact in ktvine ktvine-remote ktvine-serve ktprd ktprd-remote ktprd-serve; do
+            if ! grep -q "io.github.samfun75:$artifact:$CATALOG" README.md; then
+              echo "::error::README install snippet for $artifact does not reference $CATALOG"
+              exit 1
+            fi
+          done
 
       - name: Verify the build before publishing
         run: ./gradlew check --stacktrace
