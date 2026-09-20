@@ -23,11 +23,16 @@ dependencies {
     // implementation("io.github.samfun75:ktvine-remote:1.0.0-RC1")
     // Optional (JVM only): serve your own CDM over that same protocol.
     // implementation("io.github.samfun75:ktvine-serve:1.0.0-RC1")
+
+    // Optional: PlayReady, the same story with a different DRM system.
+    // implementation("io.github.samfun75:ktprd:1.0.0-RC1")
+    // implementation("io.github.samfun75:ktprd-remote:1.0.0-RC1")
+    // implementation("io.github.samfun75:ktprd-serve:1.0.0-RC1")
 }
 ```
 
-This is a Kotlin Multiplatform library, published for JVM, Android, iOS (x64, arm64,
-simulator arm64) and linuxX64.
+These are Kotlin Multiplatform libraries, published for JVM, Android, iOS (x64, arm64,
+simulator arm64) and linuxX64. The two `-serve` artifacts are JVM only.
 
 Two things to know before you start:
 
@@ -221,9 +226,50 @@ embeddedServer(CIO, port = 8786) {
 Callers authenticate with an `X-Secret-Key` header. The device's private key never leaves the
 server, so treat those secrets as credentials and serve this over TLS.
 
+## ktprd — PlayReady
+
+`ktvine` is Widevine. **`ktprd` is the PlayReady half**: load a `.prd` device, open a session,
+build a signed SOAP license challenge from a `WRMHEADER`, and read the content keys out of the
+XMR license the server returns. Same shape, same conventions, same repository — a separate
+artifact so a Widevine-only consumer pays nothing for it.
+
+```kotlin
+dependencies {
+    implementation("io.github.samfun75:ktprd:1.0.0-RC1")
+}
+```
+
+```kotlin
+val device = PlayreadyDevice.load("device.prd", FileSystem.SYSTEM)
+val cdm = PlayreadyCdm.fromDevice(device)
+
+val session = cdm.open()
+val header = WrmHeader.from(PSSH(psshBase64)).first()
+
+// You move the bytes; ktprd never opens a socket.
+val challenge = cdm.getLicenseChallenge(session, header, RevocationList.SUPPORTED_LIST_IDS)
+val response = yourHttpClient.post(header.header.laUrl!!, challenge)
+
+cdm.parseLicense(session, response)
+cdm.getKeys(session).forEach { println("${it.kid}:${it.key.toHexString()}") }
+cdm.close(session)
+```
+
+It also does the things around the edges: `Provisioning` turns a `bgroupcert.dat` and a
+`zgpriv.dat` into a `.prd` (and back), `CertificateChain.verify()` checks a device really chains
+up to Microsoft's root, `WrmHeader.verifyChecksum` confirms a recovered key is the right one, and
+a server rejection arrives as a named `DRM_RESULT` rather than a bare status code.
+
+`ktprd-remote` and `ktprd-serve` mirror `ktvine-remote` and `ktvine-serve` against
+`pyplayready serve`'s protocol — `RemotePlayreadyCdm` for the client, `Route.ktprdCdm(config)`
+for the server.
+
+**What it is not:** there is no PlayReady CLI, and no decryption of media — like the Widevine
+side, ktprd stops at the content key.
+
 ## API reference
 
-Every public declaration carries KDoc. The generated reference for all three modules lives at
+Every public declaration carries KDoc. The generated reference for all six modules lives at
 <https://samfun75.github.io/ktvine/>, and [docs/API.md](docs/API.md) is the conceptual guide
 that explains what a signature cannot. Build the reference locally with:
 

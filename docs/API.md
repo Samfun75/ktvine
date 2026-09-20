@@ -1,9 +1,9 @@
 # ktvine — conceptual guide
 
 The per-symbol reference is generated from the source by Dokka and published to
-**<https://samfun75.github.io/ktvine/>**, covering `ktvine`, `ktvine-remote` and
-`ktvine-serve`. Build it locally with `./gradlew dokkaHtmlMultiModule` and open
-`build/dokka/htmlMultiModule/index.html`.
+**<https://samfun75.github.io/ktvine/>**, covering `ktvine`, `ktvine-remote`, `ktvine-serve`,
+`ktprd`, `ktprd-remote` and `ktprd-serve`. Build it locally with
+`./gradlew dokkaHtmlMultiModule` and open `build/dokka/htmlMultiModule/index.html`.
 
 This page explains only the things a signature cannot: what the pieces are for, what order
 to call them in, and where the sharp edges are. It deliberately lists no parameter tables,
@@ -16,8 +16,11 @@ ktvine implements the **client half** of the Widevine license exchange, ported f
 license request from a PSSH, verifies and parses the server's response, and hands back the
 decrypted content keys.
 
-It ships **no HTTP client**. You move the bytes to and from your own license server. It also
-does no device provisioning, and there is no PlayReady CDM — see "PlayReady scope" below.
+It ships **no HTTP client**. You move the bytes to and from your own license server, and it
+does no Widevine device provisioning.
+
+PlayReady is a separate protocol and lives in separate artifacts, `ktprd{,-remote,-serve}` —
+see "PlayReady" below. What `ktvine` itself knows about PlayReady stops at the PSSH header.
 
 ## The flow
 
@@ -158,14 +161,79 @@ and linuxX64.
 - AES-CMAC is implemented in-tree per RFC 4493, because no cryptography-kotlin provider
   offers it on every target. It is pinned by the RFC vectors on every platform.
 
-## PlayReady scope
+## PlayReady
 
-PlayReady is supported **only** at the PSSH-header level: parse a PlayReady Object to
-extract KIDs, and convert Widevine ⇄ PlayReady. There is no PlayReady CDM — no device
-provisioning, no XMR license parsing, no ECC P-256, no license acquisition, and no Embedded
-License Store. This matches pywidevine's scope; a real PlayReady CDM is a separate protocol.
+Two different things carry the PlayReady name in this repository, and the split matters.
 
-Within that scope, only v4.3.0.0 headers can be generated. Headers are parsed as real XML
-(via xmlutil), with the key id path enforced per version — `DATA/KID` for 4.0.0.0,
-`DATA/PROTECTINFO/KID` for 4.1.0.0, `DATA/PROTECTINFO/KIDS/KID` for 4.2.0.0 and 4.3.0.0 —
-so a `<KID>` somewhere else in the document is not mistaken for a real one.
+**`ktvine` handles PlayReady headers.** `PSSH` parses a PlayReady Object to extract KIDs and
+converts Widevine ⇄ PlayReady; `PlayreadyHeader` reads and writes a `WRMHEADER`, and
+`PSSH.wrmHeaders()` hands back every type-`0x01` record's document verbatim. Only v4.3.0.0
+headers can be *generated*. Headers are parsed as real XML (via xmlutil), with the key id path
+enforced per version — `DATA/KID` for 4.0.0.0, `DATA/PROTECTINFO/KID` for 4.1.0.0,
+`DATA/PROTECTINFO/KIDS/KID` for 4.2.0.0 and 4.3.0.0 — so a `<KID>` somewhere else in the
+document is not mistaken for a real one. A bare `WRMHEADER` handed to `PSSH` is wrapped into a
+synthetic PlayReady Object on ingest, so its key ids read back rather than failing as "corrupt".
+
+**`ktprd` is the PlayReady CDM.** Load a `.prd`, open a session, build a signed SOAP challenge
+from a `WRMHEADER`, parse the XMR license the server returns, read the content keys. The
+[README](../README.md#ktprd--playready) has the call sequence. What a signature will not tell
+you:
+
+`PlayreadyCdm` mirrors `Cdm` deliberately — everything `suspend`, okio `ByteString` session
+handles, one mutex for the session map and one per session never held at once, and the same
+16-session cap compared with `>=`. If you know one, you know the other.
+
+**`getLicenseChallenge` must run before `parseLicense`**, for the same reason as Widevine: the
+session's XML key is what the license is encrypted to, and it is established by the challenge.
+
+**The challenge is built as a string, not through a DOM.** Its `DigestValue` covers the `<LA>`
+element byte for byte and its `SignatureValue` covers `<SignedInfo>` byte for byte, so any
+serializer that re-orders an attribute or self-closes an empty element produces a challenge a
+real server rejects. The offline exchange test plays the server and re-derives both from the
+transmitted bytes, which is what keeps this honest without a network.
+
+**PlayReady keys are not Widevine keys.** `PlayreadyKey` is its own type — `kid`, `key`,
+`keyType`, `cipherType`, `keyLength` — because `Key.type` is bound to the Widevine proto enum.
+
+**`WrmHeader.verifyChecksum` is worth calling.** A license can return the right key id with the
+wrong key; the header's `CHECKSUM` attribute is what catches it. `AESCTR` and `COCKTAIL` are the
+two algorithms with a defined checksum, and anything else is an error rather than a pass.
+
+**Revocation data persists only if you give it somewhere to live.** `PlayreadyCdm.fromDevice`
+takes a `RevocationStore`, defaulting to one that keeps nothing, so every challenge advertises
+version 0. Pass `FileRevocationStore` (with an okio `FileSystem`, for the same reason
+`Device.load` does) and the CDM merges what each license response returns and advertises the
+newer versions next time.
+
+**`Provisioning` is a library API, not a CLI.** It turns a `bgroupcert.dat` plus a `zgpriv.dat`
+— or a wrapped `zgpriv_protected.dat` — into a v3 `.prd`, reprovisions one with fresh leaf keys,
+and exports back out to the raw files.
+
+**Chain verification is not automatic.** A CDM never verifies its own chain; call
+`CertificateChain.verify()` yourself if you want to know a device really chains up to
+Microsoft's root.
+
+### What ktprd is not
+
+There is no PlayReady CLI and no media decryption — like the Widevine side, ktprd stops at the
+content key. Of the PlayReady Object record types only `0x01`, the header record, is handled:
+the Embedded License Store (`0x03`) is skipped. `ktprd` is a reimplementation of the protocol
+from public research, not a port: pyplayready is CC BY-NC-ND and was used only as a behavioural
+oracle.
+
+## Multiplatform notes for ktprd
+
+The same six targets, and the same two consumer-facing consequences — `Uuid` opt-in, and an
+explicit okio `FileSystem` for anything that touches files.
+
+- **P-256 is implemented in-tree**, on `com.ionspin.kotlin:bignum`. cryptography-kotlin offers
+  ECDSA and ECDH on every target but exposes no point arithmetic, and ElGamal decryption needs
+  the full point `C2 − d·C1`, not just a shared secret's X coordinate. So the curve, ECDSA (with
+  RFC 6979 deterministic k) and ElGamal are all ktprd's own code, pinned by NIST CAVP and RFC
+  6979 vectors that run on every target and cross-checked against the provider on the JVM. This
+  is the same call as ktvine's in-tree AES-CMAC, for the same reason.
+- **That arithmetic is not constant-time**, because `bignum` is not. A client-side CDM holds its
+  own keys locally, so this is acceptable here; it would not be in a server handing out keys for
+  someone else.
+- Coordinates encode as **fixed 32-byte big-endian**. pyplayready rounds to an even byte count
+  and emits 30 bytes when the top two bytes are zero; that is an upstream bug, not a format.

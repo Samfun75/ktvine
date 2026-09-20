@@ -9,10 +9,15 @@ It implements the client half of the Widevine DRM license exchange: load a devic
 (WVD), open a session, build a signed `LICENSE_REQUEST` from a PSSH, verify and
 parse the server's `LICENSE` response, and expose the decrypted content keys.
 
-It deliberately does **not** ship an HTTP client, a license-server proxy, or device
+It deliberately does **not** ship an HTTP client, a license-server proxy, or Widevine device
 provisioning. Callers move bytes to and from their own license server.
 
-- Maven coordinates: `io.github.samfun75:ktvine`
+Alongside it, **ktprd** is a PlayReady CDM in the same repository and the same shape: a `.prd`
+device, a `WRMHEADER`, a signed SOAP challenge, an XMR license, content keys out. It is a
+reimplementation from public research, not a port — see "The reference implementations".
+
+- Maven coordinates: `io.github.samfun75:ktvine{,-remote,-serve}` and
+  `io.github.samfun75:ktprd{,-remote,-serve}`
 - Current version: `1.0.0-RC1` (declared once, in `gradle/libs.versions.toml`)
 - License: Apache-2.0
 - Repo: https://github.com/samfun75/ktvine
@@ -21,7 +26,7 @@ provisioning. Callers move bytes to and from their own license server.
 
 ```
 build.gradle.kts              root; all plugins declared with `apply false`
-settings.gradle.kts           three modules: :library, :remote, :serve
+settings.gradle.kts           six modules: ktvine's three, then ktprd's three
 gradle/libs.versions.toml     version catalog — the only place to bump deps
 gradle.properties             configuration-cache + build-cache ON
 docs/API.md                   conceptual guide; the symbol reference is Dokka-generated
@@ -65,6 +70,38 @@ serve/src/                          JVM only: Ktor server engines are not as por
   commonMain/…/ServeConfig.kt       devices, users, forced privacy, Server header
   commonMain/…/Routing.kt           Route.ktvineCdm — the serve protocol, routing only
   commonTest/…/ServeRoutingTest.kt  the wire contract plus ktvine's own client end to end
+
+ktprd/src/                          the PlayReady CDM; package root org.samfun.ktprd
+  commonMain/kotlin/org/samfun/ktprd/
+    crypto/P256.kt        curve params, add/double/negate, scalarMultiply, fixed 32-byte encoding
+    crypto/Ecdsa.kt       sign/verify over SHA-256, raw r‖s, RFC 6979 deterministic k
+    crypto/ElGamal.kt     encrypt to 128 bytes, decrypt to M.x
+    crypto/KeyWrap.kt     SP 800-108 CMAC KDF + RFC 3394 unwrap, for zgpriv_protected.dat
+    crypto/PrCrypto.kt    aesEcbEncrypt, sha256, sha1 — what :library lacks
+    core/EccKey.kt        a P-256 pair held as a 32-byte scalar; 32/96-byte blob codec
+    core/PlayreadyDevice.kt   .prd v1/v2/v3 parse+build, on core/Device.kt's conventions
+    core/PlayreadyKey.kt  a content key; own type because Key.type is bound to the Widevine enum
+    core/WrmHeader.kt     protocol version + AESCTR/COCKTAIL checksum over :library's parse
+    bcert/                BCertTypes, Certificate, CertificateChain, Provisioning
+    xmr/                  XmrLicense, XmrObjectType — TLV parse and content-key extraction
+    soap/ChallengeBuilder.kt  the challenge as an exact string, never through a DOM
+    soap/SoapMessage.kt   envelope on send, Fault → PlayreadyServerException on receive
+    soap/LicenseResponse.kt   parse + verify, over the received bytes
+    cdm/PlayreadyCdm.kt   session lifecycle, challenge, license parsing
+    cdm/PlayreadyCdmApi.kt    the subset PlayreadyCdm and RemotePlayreadyCdm share
+    revocation/           RevocationList (RLVI/RLV2/BPrRL), RevocationStore
+    utils/DrmResult.kt    the DRM_RESULT table, map lookup
+    utils/Binary.kt       ByteReader/ByteWriter — every parse error is typed
+  commonTest/…/P256Test.kt, EcdsaTest.kt, ElGamalTest.kt, KeyWrapTest.kt  the pinning vectors
+  commonTest/…/CdmOfflineExchangeTest.kt  a full exchange against TestLicenseServer, all targets
+  commonTest/…/WrmHeaderTest.kt, RevocationListTest.kt, XmrLicenseTest.kt
+  jvmTest/…/PlayreadyDeviceJvmTest.kt, ProvisioningJvmTest.kt   the real .prd fixtures
+  jvmTest/…/EcdsaProviderCrossJvmTest.kt   ktprd's ECDSA against cryptography-kotlin's
+  jvmTest/…/PlayreadyCdmConcurrencyJvmTest.kt   fails if either mutex is removed
+  jvmTest/…/PlayreadyProxyIntegrationTest.kt    NETWORK: test.playready.microsoft.com, opt-in
+
+ktprd-remote/src/…/RemotePlayreadyCdm.kt    PlayreadyCdmApi over pyplayready serve's protocol
+ktprd-serve/src/…/Routing.kt                Route.ktprdCdm — JVM only, for the same reason
 ```
 
 ## Build system
@@ -107,6 +144,15 @@ The `:remote` module adds `ktor-client-core` (engine-agnostic) and
 server engines do not span the six targets the client does. Both are opt-in artifacts
 (`ktvine-remote`, `ktvine-serve`); the core library keeps zero networking dependencies.
 
+`:ktprd` declares `api(:library)` and adds one dependency of its own,
+`com.ionspin.kotlin:bignum` for the P-256 arithmetic. It depends on `:library` to reuse `PSSH`,
+`PlayreadyHeader`, the UTF-16LE codec and GUID helpers, `aesCmac`/`aesCbc*`/`pkcs7*`/
+`randomBytes`/`constantTimeEquals`, and the `KtvineException` base — so a PlayReady-only
+consumer does transitively pull `wire-runtime`. That is the accepted cost of not duplicating the
+header parsing and letting the two drift. It re-declares `implementation(bundles.cryptography)`
+because `:library` keeps those `implementation`-scoped, the same reason `:serve` does.
+`:ktprd-remote` and `:ktprd-serve` mirror `:remote` and `:serve` exactly, including JVM-only.
+
 Common commands:
 ```powershell
 .\gradlew.bat :library:compileKotlinJvm            # fastest sanity check
@@ -115,7 +161,17 @@ Common commands:
 .\gradlew.bat :library:testAndroidHostTest
 .\gradlew.bat :library:integrationTest             # NETWORK: live proxy.widevine.com
 .\gradlew.bat :library:publishToMavenLocal
+
+.\gradlew.bat :ktprd:jvmTest                       # hermetic; excludes *IntegrationTest
+.\gradlew.bat :ktprd:integrationTest               # NETWORK: test.playready.microsoft.com
+.\gradlew.bat :ktprd-serve:jvmTest                 # ktprd's client against ktprd's server
 ```
+
+Note: the local default JDK matters. `apiCheck`/`apiDump` run through
+binary-compatibility-validator, which cannot read class file major version 67 — a JDK 23
+default fails `check` with "Unsupported class file major version 67" before any code is at
+fault. CI uses JDK 21; locally, pass
+`-Dorg.gradle.java.home=<jdk17-or-21>` if the default is newer.
 
 Note: `publishToMavenCentral` must be run with `--no-configuration-cache`
 (see `publish.yml:23`). Signing is gated on the `PUBLISH` env var being set.
@@ -200,19 +256,24 @@ deadlock. `CdmConcurrencyJvmTest` fails if either is removed.
 - `PSSH.new(systemId, keyIds, initData, version, flags)` builds synthetic boxes; passing
   only `keyIds` now populates a real CENC header or PRO rather than leaving `_content` empty.
 
-### Scope of PlayReady support
+### Scope of PlayReady support in `:library`
 
-PlayReady is supported **only** at the PSSH-header level: parse a PlayReady Object to
-extract KIDs, and convert Widevine ⇄ PlayReady. There is no PlayReady CDM — no device
-provisioning (`bgroupcert.dat` / `zgpriv.dat`), no XMR license parsing, no ECC P-256
-crypto, no license acquisition, and no Embedded License Store (PRO record type `0x03`;
-only type `0x01`, the header record, is handled). This matches pywidevine's scope. A
-real PlayReady CDM is a separate protocol — see `pyplayready`.
+`:library` handles PlayReady **headers** only: parse a PlayReady Object to extract KIDs, and
+convert Widevine ⇄ PlayReady. The CDM half — device, certificate chain, XMR license, ECC —
+lives in `:ktprd`, which builds on these types rather than duplicating them. The Embedded
+License Store (PRO record type `0x03`) is still unhandled on both sides; only type `0x01`, the
+header record, is read.
 
 Headers are parsed with a real pull parser (`PlayreadyHeader`, on xmlutil), with the KID
 path enforced per version, and `setKeyIds()` rebuilds the PRO. Two limits remain: only
 v4.3.0.0 can be *generated*, and a single document-level `ALGID` is carried through
 conversion rather than the per-KID scheme v4.2.0.0+ allows.
+
+`PlayreadyHeader` is public and lossless because `:ktprd` needs both: `raw` keeps the source
+document verbatim (a challenge signs those exact bytes) and `signedKeyIds` keeps each KID's
+`ALGID` and `CHECKSUM`. `PSSH.wrmHeaders()` returns every type-`0x01` record, not just the
+first. A bare `WRMHEADER` is wrapped into a synthetic PRO on ingest, which closes the hole
+where it used to be stored verbatim and then fail `keyIds()` as "corrupt".
 
 ## Error model
 
@@ -231,7 +292,14 @@ Every declared type has a throw site: `NoKeysLoadedException` from `getKeysFromE
 `DeviceMismatchException` from `RemoteCdm.open`. Keep it that way — a declared-but-unthrown
 exception is dead weight in a frozen ABI.
 
-## The reference implementation
+`:ktprd` extends the same tree: `KtprdException : KtvineException`, then `InvalidPrdException`,
+`InvalidCertificateException`, `InvalidCertificateChainException`, `InvalidXmrLicenseException`,
+`XmrSignatureException`, `InvalidWrmHeaderException`, `InvalidChecksumException`,
+`InvalidSoapMessageException`, `InvalidLicenseResponseException`, `PlayreadyServerException`
+and `InvalidRevocationListException`. Rooting them in `KtvineException` is what lets
+`serve/Routing.kt`'s existing catch keep working. The same no-dead-exceptions rule applies.
+
+## The reference implementations
 
 pywidevine is checked out locally at `C:\Users\Samfun\Code\PycharmProjects\pywidevine`.
 Read `pywidevine/cdm.py`, `pssh.py`, `device.py`, `key.py`, `session.py` before
@@ -242,10 +310,6 @@ Mapping: `cdm.py` → `cdm/Cdm.kt`, `pssh.py` → `core/PSSH.kt`,
 `exceptions.py` → `utils/Exceptions.kt`, `remotecdm.py` → `remote/…/RemoteCdm.kt`,
 `serve.py` → `serve/…/Routing.kt`. There is no ktvine counterpart to `main.py` (CLI) or
 `Cdm.decrypt` (shaka-packager).
-
-`:serve` reimplements the *protocol*, not the code: pywidevine is GPL-3.0-only and ktvine
-is Apache-2.0, so paths, JSON field names and status codes are matched while the Kotlin and
-its messages are ktvine's own. Keep it that way when extending it.
 
 ### Known divergences from pywidevine
 
@@ -263,6 +327,10 @@ exceptions) was closed by the plan. What actually differs now:
   17th session through.
 - **`pkcs7Unpad` throws on bad padding.** Matches `Padding.unpad`; ktvine's old behaviour
   of returning the input handed back a failed decrypt as if it were a key.
+- **A bare `WRMHEADER` is wrapped into a synthetic PRO on ingest.** pywidevine stores it
+  verbatim, so `keyIds()` then reads the first four bytes as a PRO length and fails with
+  "corrupt". ktvine inherited that hole and closed it; `PsshPlayreadyIngestTest` pins all three
+  shapes — full PRO, bare record, bare header.
 
 **ktvine has more:**
 
@@ -283,10 +351,47 @@ exceptions) was closed by the plan. What actually differs now:
 - **No `Cdm.decrypt`** (shaka-packager) and no CLI.
 - **`:serve` is JVM-only and routing-only.** It ships a `Route.ktvineCdm(config)` extension
   rather than owning an engine, so the consumer picks one; pywidevine's `serve` owns aiohttp.
-- **A bare `WRMHEADER` is accepted but its KIDs cannot be read.** The `PSSH` cascade stores
-  it verbatim, then `keyIds()` reads the first four bytes as a PRO length and fails with
-  "corrupt". pywidevine has the same hole, so this is inherited rather than introduced —
-  but wrapping a bare header into a synthetic PRO on ingest would close it.
+
+### pyplayready — an oracle, never a source
+
+pyplayready 0.8.1 is checked out at `C:\Users\Samfun\Code\PycharmProjects\pyplayready` and is
+the behavioural reference for `:ktprd`. **It is CC BY-NC-ND 4.0** — non-commercial,
+no-derivatives, incompatible with Apache-2.0, and a line-by-line translation would be a
+derivative work. This is the rule `:serve` already follows against GPL-3.0 pywidevine, but
+stricter:
+
+- **Match** the binary formats, algorithms, constants, wire protocol and JSON/route shapes.
+  Those are facts about PlayReady, public research, not pyplayready's expression.
+- **Do not** copy code, structure-for-structure layout, identifier sets, comments or error
+  strings. The Kotlin naming, decomposition and messages are ktprd's own.
+- Use it only by **running it and asserting ktprd agrees**, the pattern `PlayreadyOracleTest`
+  established. Keep it that way when extending `:ktprd`.
+
+Mapping: `cdm.py` → `cdm/PlayreadyCdm.kt`, `device/*.py` → `core/PlayreadyDevice.kt` and
+`bcert/`, `license/xmr.py` → `xmr/`, `system/wrmheader.py` → `core/WrmHeader.kt` plus
+`:library`'s `PlayreadyHeader`, `crypto/*.py` → `crypto/`, `misc/` → `revocation/` and
+`utils/DrmResult.kt`, `remote/remotecdm.py` → `ktprd-remote/`, `serve.py` → `ktprd-serve/`.
+
+### Known divergences from pyplayready
+
+- **Point coordinates encode as a fixed 32 bytes.** pyplayready's `Util.to_bytes` rounds to an
+  even byte count and emits 30 when the top two bytes are zero. That is a latent upstream bug.
+- **`PlayreadyCdm.open()` compares `>=` against `MAX_NUM_OF_SESSIONS`**, so the cap is 16 and
+  not 17 — the same deliberate divergence ktvine makes from pywidevine.
+- **No `child.securityLevel > parent.expirationDate` adjacency check** in chain verification.
+  Upstream has one; it compares a security level against a timestamp and is a bug.
+- **The WMDRM network revocation list is never reported as verified.** Its signature is over a
+  160-bit Microsoft curve that no public implementation verifies; upstream's check returns
+  `true` unconditionally, which is worse than admitting it. `RevocationEntry.verified` is false
+  for it, so a caller can see the difference.
+- **The challenge is emitted as a string, not via a DOM.** pyplayready serialises through
+  ElementTree and then `html.unescape`s to undo the escaping of the embedded WRMHEADER; writing
+  the bytes directly makes that unnecessary and removes a class of serializer-fidelity bugs.
+- **ktprd has no CLI** — `main.py` has no counterpart, the same as on the Widevine side.
+
+`:serve` reimplements the *protocol*, not the code: pywidevine is GPL-3.0-only and ktvine
+is Apache-2.0, so paths, JSON field names and status codes are matched while the Kotlin and
+its messages are ktvine's own. Keep it that way when extending it.
 
 ## Crypto notes
 
@@ -301,6 +406,24 @@ wrong.
 Everything else comes from `cryptography-provider-optimal`: RSA-PSS/SHA-1, RSA-OAEP/SHA-1,
 AES-CBC, HMAC-SHA256, and `CryptographyRandom` for all randomness.
 
+**`:ktprd` does the same thing again for P-256, and for the same reason.** cryptography-kotlin
+0.5.0 offers ECDSA and ECDH P-256 on all six targets but exposes **no point arithmetic** — no
+add, no arbitrary scalar multiply — and ECDH yields only the shared secret's X coordinate,
+while ElGamal decryption needs the full point `C2 − d·C1`. `cryptography-bigint` is a transport
+type with no operators. So `crypto/P256.kt` implements the curve on `com.ionspin.kotlin:bignum`,
+and `Ecdsa` and `ElGamal` are built on that rather than juggling two key representations
+(provider raw-scalar private key import is rejected by the JDK and Apple providers anyway).
+ECDSA uses **RFC 6979 deterministic k**, so signing is reproducible and testable.
+
+That code is pinned by NIST CAVP scalar-multiplication and ECDSA vectors, the RFC 6979 §A.2.5
+vectors and the RFC 3394 key-wrap vectors, all in `commonTest` so they run on iOS and linuxX64;
+`EcdsaProviderCrossJvmTest` then cross-checks against cryptography-kotlin's own verifier on the
+JVM. Get the curve wrong and every derived key is wrong, exactly as with `aesCmac`.
+
+**It is not constant-time**, because `bignum` is not (neither is ECPy, which pyplayready uses).
+That is acceptable for a client-side CDM holding its own keys locally and is stated in KDoc;
+do not let it drift into a context where it is not.
+
 ## Known issues to be aware of when editing
 
 Ordered roughly by severity. Everything the improvement plan tracked is done and the API
@@ -310,9 +433,10 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
    under WSL, and **iOS passes it on a GitHub Actions `macos-latest` runner** — the RFC 4493
    CMAC vectors, a complete offline license exchange and the XML parser all execute on the
    simulator. The `iosSimulatorArm64Test` job carries a gate that fails when the task reports
-   zero executed tests or when `AesCmacTest` / `CdmOfflineLicenseTest` / `PlayreadyOracleTest`
-   are missing: a Gradle test task that runs nothing still exits green, which is how iOS
-   looked "passing" while being unverified. Do not remove that gate.
+   zero executed tests or when `AesCmacTest` / `CdmOfflineLicenseTest` / `PlayreadyOracleTest` /
+   `P256Test` / `CdmOfflineExchangeTest` are missing: a Gradle test task that runs nothing still
+   exits green, which is how iOS looked "passing" while being unverified. Do not remove that
+   gate, and add to it whenever a new load-bearing native path appears.
 2. **`RemoteCdm` is verified against a live `pywidevine serve` 1.8.0.** Every endpoint was
    exercised end to end — open/close, both service-certificate calls, challenge, parse and
    get_keys — recovering all eight of Google's published keys through the server, with and
@@ -334,6 +458,41 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
    silently breaking publishing — that hole is closed, do not reopen it by dropping the
    `compileCommonMainKotlinMetadata` dependency from `check`.
 
+### ktprd specifically
+
+5. **The challenge is verified against two real license servers.** `:ktprd:integrationTest`
+   recovers Microsoft's published Tears of Steel key
+   (`6f651ae1-dbe4-4434-bcb4-690d1564c41c`) from `test.playready.microsoft.com` at SL150, SL2000
+   and SL3000, and the key passes the content header's own `CHECKSUM`. `ktvine-keyservice` adds
+   Axinom (`drm-playready-licensing.axprod.net`) and recovers all four of their published keys
+   across the single-key and multi-key CMAF vectors. So `ChallengeBuilder`'s byte-exactness is
+   established, not merely argued. `CdmOfflineExchangeTest` still guards it on every target and
+   in CI; re-run the live ones by hand after touching the challenge.
+
+   **A `ckt:` key in the test server's `cfg=` query is now rejected** with "Invalid config data
+   in ckt" (`0x8004C604`), before the challenge is read. pyplayready 0.8.1 still sends one, so
+   its `test` command fails against the live server today; ktprd omits it. `KTPRD_LICENSE_SERVER`
+   overrides the URL when Microsoft's accepted keys drift again.
+6. **Scalable / `ECC_256_VIA_SYMMETRIC` licences are verified against a real server.** Axinom's
+   CMAF cbcs vectors issue exactly these, and ktprd recovers Axinom's published keys from them
+   through `ktvine-keyservice`'s `playready-axinom-*` sources — so the de-interleave and the
+   AES-ECB unwrap chain are observed, not just synthetic. They are *not* covered by an automated
+   test in this repo; the coverage lives next door.
+7. **`RemotePlayreadyCdm` has not been cross-tested against a live `pyplayready serve`.** Its
+   wire format is covered by `MockEngine` tests and end to end against `:ktprd-serve`, which is
+   exactly the coverage that missed two real defects on the Widevine side. Run both directions
+   by hand — ktprd's client against pyplayready's server and back — after any wire change, and
+   record the result here as item 2 does for `RemoteCdm`.
+8. **Revocation list signatures are only partly checked.** `RLVI`/`RLV2` and the PlayReady
+   runtime and application lists verify against a CRL-signer chain or a bare appended key; the
+   legacy WMDRM network list cannot be verified at all and reports `verified = false` rather
+   than pretending. `DEVICE_REVOCATION` and `APP_REVOCATION` payloads are carried, not parsed.
+9. **A `WRMHEADER` names one track's KIDs, not the presentation's.** A multi-key DASH stream
+   carries one content header per AdaptationSet and needs one exchange each; a Widevine PSSH
+   names them all and needs one. Nothing in ktprd is wrong here, but a caller that requests only
+   the first header silently gets one key out of three — which is exactly what
+   `ktvine-keyservice` did before it was fixed to walk every header.
+
 ## Secrets and fixtures
 
 `library/src/commonTest/resources/device/` holds real DRM provisioning material in two
@@ -343,27 +502,36 @@ each `*.prd` + `bgroupcert.dat` + `zgpriv.dat`). `.gitignore` excludes the whole
 the tracked `README.md`s, plus `*.wvd`, `*.pem`, `*.prd`, `*.dat`, and `client_id.bin`
 repo-wide. Do not commit them, and do not paste their contents into any output.
 
-**The PlayReady devices are unused.** ktvine has no PlayReady CDM, so a `.prd` device does
-nothing today — using one would need device provisioning, XMR license parsing and ECC P-256,
-a separate effort that does not exist yet. Only `widevine/` is read by the current suite.
+**Both folders are in use now.** `:library`'s suite reads `widevine/`; `:ktprd`'s JVM suite
+reads `playready/` — all six devices parse, all six chains verify to the Microsoft root, and
+`ProvisioningJvmTest` round-trips a device built from a real `bgroupcert.dat` and `zgpriv.dat`.
 
 Tests load fixtures from the test classpath through `TestFixtures` in
 `src/jvmAndAndroidTest` (paths are relative to `commonTest/resources`, e.g.
 `device/widevine/google_avd.wvd`). `TestFixtures.orSkip(...)` prints an explicit `SKIP:`
 line and returns `null` when a fixture is absent, so a checkout without them still goes
-green without hiding the fact.
+green without hiding the fact. `:ktprd` has its own copy of `TestFixtures` — `:library`'s is
+not published — and its build points a test-resource directory at
+`library/src/commonTest/resources` rather than duplicating the secret store.
+
+Anything that has to run on iOS or linuxX64 cannot use those fixtures at all, since they are
+JVM-classpath-only. `:ktprd`'s `TestDevice` manufactures a throwaway device for exactly that
+reason; its chain terminates at a made-up root, so it is good for everything except
+`CertificateChain.verify()`.
 
 ## Conventions
 
-- Package root `org.samfun.ktvine`; Android namespace `io.github.samfun75.ktvine`;
-  Maven group `io.github.samfun75`.
+- Package root `org.samfun.ktvine`, or `org.samfun.ktprd` in the three ktprd modules; Android
+  namespace `io.github.samfun75.ktvine` / `io.github.samfun75.ktprd`; Maven group
+  `io.github.samfun75`.
 - Public API carries KDoc. Follow that when adding public declarations.
 - Behaviour is intentionally mirrored from pywidevine. When in doubt about a
-  protocol detail, match pywidevine's `cdm.py` / `pssh.py` / `device.py`.
+  protocol detail, match pywidevine's `cdm.py` / `pssh.py` / `device.py`. For PlayReady, match
+  pyplayready's *behaviour* only — see "pyplayready — an oracle, never a source".
 - The version lives once, in `gradle/libs.versions.toml` (`ktvine = "..."`). The README
   install snippet must match; `publish.yml` fails the release if it or the tag disagrees.
 - `explicitApi()` is on: every public declaration needs an explicit visibility and return
-  type. `apiCheck` compares the ABI against `library/api/`; run `./gradlew apiDump` after
+  type. `apiCheck` compares the ABI against each module's `api/`; run `./gradlew apiDump` after
   an intentional API change.
 - ktlint runs in `check`. Run `./gradlew ktlintFormat` before committing.
 - Dependency versions belong in `gradle/libs.versions.toml`, never inline.
