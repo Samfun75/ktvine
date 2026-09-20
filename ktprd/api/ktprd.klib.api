@@ -1,0 +1,756 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, linuxX64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.samfun75:ktprd>
+final enum class org.samfun.ktprd.bcert/BCertFeature : kotlin/Enum<org.samfun.ktprd.bcert/BCertFeature> { // org.samfun.ktprd.bcert/BCertFeature|null[0]
+    enum entry ANTI_ROLLBACK_CLOCK // org.samfun.ktprd.bcert/BCertFeature.ANTI_ROLLBACK_CLOCK|null[0]
+    enum entry DEPRECATED_SECURE_STOP // org.samfun.ktprd.bcert/BCertFeature.DEPRECATED_SECURE_STOP|null[0]
+    enum entry RECEIVER // org.samfun.ktprd.bcert/BCertFeature.RECEIVER|null[0]
+    enum entry RESERVED_LICENSE_SYNC // org.samfun.ktprd.bcert/BCertFeature.RESERVED_LICENSE_SYNC|null[0]
+    enum entry RESERVED_METERING // org.samfun.ktprd.bcert/BCertFeature.RESERVED_METERING|null[0]
+    enum entry RESERVED_SYMMETRIC_OPTIMIZATION // org.samfun.ktprd.bcert/BCertFeature.RESERVED_SYMMETRIC_OPTIMIZATION|null[0]
+    enum entry SECURE_CLOCK // org.samfun.ktprd.bcert/BCertFeature.SECURE_CLOCK|null[0]
+    enum entry SERVER_BASIC_EDITION // org.samfun.ktprd.bcert/BCertFeature.SERVER_BASIC_EDITION|null[0]
+    enum entry SERVER_PREMIUM_EDITION // org.samfun.ktprd.bcert/BCertFeature.SERVER_PREMIUM_EDITION|null[0]
+    enum entry SERVER_STANDARD_EDITION // org.samfun.ktprd.bcert/BCertFeature.SERVER_STANDARD_EDITION|null[0]
+    enum entry SHARED_CERTIFICATE // org.samfun.ktprd.bcert/BCertFeature.SHARED_CERTIFICATE|null[0]
+    enum entry SUPPORTS_CRLS // org.samfun.ktprd.bcert/BCertFeature.SUPPORTS_CRLS|null[0]
+    enum entry SUPPORTS_PLAYREADY_3_FEATURES // org.samfun.ktprd.bcert/BCertFeature.SUPPORTS_PLAYREADY_3_FEATURES|null[0]
+    enum entry TRANSMITTER // org.samfun.ktprd.bcert/BCertFeature.TRANSMITTER|null[0]
+    enum entry UNKNOWN // org.samfun.ktprd.bcert/BCertFeature.UNKNOWN|null[0]
+
+    final val entries // org.samfun.ktprd.bcert/BCertFeature.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktprd.bcert/BCertFeature> // org.samfun.ktprd.bcert/BCertFeature.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktprd.bcert/BCertFeature.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktprd.bcert/BCertFeature.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktprd.bcert/BCertFeature // org.samfun.ktprd.bcert/BCertFeature.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktprd.bcert/BCertFeature> // org.samfun.ktprd.bcert/BCertFeature.values|values#static(){}[0]
+
+    final object Companion { // org.samfun.ktprd.bcert/BCertFeature.Companion|null[0]
+        final fun of(kotlin/Int): org.samfun.ktprd.bcert/BCertFeature // org.samfun.ktprd.bcert/BCertFeature.Companion.of|of(kotlin.Int){}[0]
+    }
+}
+
+final enum class org.samfun.ktprd.bcert/BCertKeyUsage : kotlin/Enum<org.samfun.ktprd.bcert/BCertKeyUsage> { // org.samfun.ktprd.bcert/BCertKeyUsage|null[0]
+    enum entry ENCRYPT_KEY // org.samfun.ktprd.bcert/BCertKeyUsage.ENCRYPT_KEY|null[0]
+    enum entry ENCRYPT_KEY_SAMPLE_PROTECTION_AES128CTR // org.samfun.ktprd.bcert/BCertKeyUsage.ENCRYPT_KEY_SAMPLE_PROTECTION_AES128CTR|null[0]
+    enum entry ENCRYPT_KEY_SAMPLE_PROTECTION_RC4 // org.samfun.ktprd.bcert/BCertKeyUsage.ENCRYPT_KEY_SAMPLE_PROTECTION_RC4|null[0]
+    enum entry ISSUER_ALL // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_ALL|null[0]
+    enum entry ISSUER_APPLICATION // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_APPLICATION|null[0]
+    enum entry ISSUER_CRL // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_CRL|null[0]
+    enum entry ISSUER_DEVICE // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_DEVICE|null[0]
+    enum entry ISSUER_DOMAIN // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_DOMAIN|null[0]
+    enum entry ISSUER_INDIVIDUAL // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_INDIVIDUAL|null[0]
+    enum entry ISSUER_LINK // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_LINK|null[0]
+    enum entry ISSUER_METERING // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_METERING|null[0]
+    enum entry ISSUER_PROVISIONING_MODEL_AUTH // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_PROVISIONING_MODEL_AUTH|null[0]
+    enum entry ISSUER_SECURE_TIME_SERVER // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_SECURE_TIME_SERVER|null[0]
+    enum entry ISSUER_SERVER // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_SERVER|null[0]
+    enum entry ISSUER_SIGN_KEY_FILE // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_SIGN_KEY_FILE|null[0]
+    enum entry ISSUER_SIGN_LICENSE // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_SIGN_LICENSE|null[0]
+    enum entry ISSUER_SILVERLIGHT // org.samfun.ktprd.bcert/BCertKeyUsage.ISSUER_SILVERLIGHT|null[0]
+    enum entry PRND_ENCRYPT_KEY_DEPRECATED // org.samfun.ktprd.bcert/BCertKeyUsage.PRND_ENCRYPT_KEY_DEPRECATED|null[0]
+    enum entry RESERVED // org.samfun.ktprd.bcert/BCertKeyUsage.RESERVED|null[0]
+    enum entry SIGN // org.samfun.ktprd.bcert/BCertKeyUsage.SIGN|null[0]
+    enum entry SIGN_CRL // org.samfun.ktprd.bcert/BCertKeyUsage.SIGN_CRL|null[0]
+    enum entry SIGN_KEY_FILE // org.samfun.ktprd.bcert/BCertKeyUsage.SIGN_KEY_FILE|null[0]
+    enum entry SIGN_LICENSE // org.samfun.ktprd.bcert/BCertKeyUsage.SIGN_LICENSE|null[0]
+    enum entry SIGN_RESPONSE // org.samfun.ktprd.bcert/BCertKeyUsage.SIGN_RESPONSE|null[0]
+    enum entry UNKNOWN // org.samfun.ktprd.bcert/BCertKeyUsage.UNKNOWN|null[0]
+
+    final val entries // org.samfun.ktprd.bcert/BCertKeyUsage.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktprd.bcert/BCertKeyUsage> // org.samfun.ktprd.bcert/BCertKeyUsage.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktprd.bcert/BCertKeyUsage.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktprd.bcert/BCertKeyUsage.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktprd.bcert/BCertKeyUsage // org.samfun.ktprd.bcert/BCertKeyUsage.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktprd.bcert/BCertKeyUsage> // org.samfun.ktprd.bcert/BCertKeyUsage.values|values#static(){}[0]
+
+    final object Companion { // org.samfun.ktprd.bcert/BCertKeyUsage.Companion|null[0]
+        final fun of(kotlin/Int): org.samfun.ktprd.bcert/BCertKeyUsage // org.samfun.ktprd.bcert/BCertKeyUsage.Companion.of|of(kotlin.Int){}[0]
+    }
+}
+
+final enum class org.samfun.ktprd.bcert/BCertObjectType : kotlin/Enum<org.samfun.ktprd.bcert/BCertObjectType> { // org.samfun.ktprd.bcert/BCertObjectType|null[0]
+    enum entry BASIC // org.samfun.ktprd.bcert/BCertObjectType.BASIC|null[0]
+    enum entry DEVICE // org.samfun.ktprd.bcert/BCertObjectType.DEVICE|null[0]
+    enum entry DOMAIN // org.samfun.ktprd.bcert/BCertObjectType.DOMAIN|null[0]
+    enum entry EXT_DATA_CONTAINER // org.samfun.ktprd.bcert/BCertObjectType.EXT_DATA_CONTAINER|null[0]
+    enum entry EXT_DATA_HWID // org.samfun.ktprd.bcert/BCertObjectType.EXT_DATA_HWID|null[0]
+    enum entry EXT_DATA_SIGNATURE // org.samfun.ktprd.bcert/BCertObjectType.EXT_DATA_SIGNATURE|null[0]
+    enum entry EXT_DATA_SIGN_KEY // org.samfun.ktprd.bcert/BCertObjectType.EXT_DATA_SIGN_KEY|null[0]
+    enum entry FEATURE // org.samfun.ktprd.bcert/BCertObjectType.FEATURE|null[0]
+    enum entry KEY // org.samfun.ktprd.bcert/BCertObjectType.KEY|null[0]
+    enum entry MANUFACTURER // org.samfun.ktprd.bcert/BCertObjectType.MANUFACTURER|null[0]
+    enum entry METERING // org.samfun.ktprd.bcert/BCertObjectType.METERING|null[0]
+    enum entry PC // org.samfun.ktprd.bcert/BCertObjectType.PC|null[0]
+    enum entry SECURITY_VERSION // org.samfun.ktprd.bcert/BCertObjectType.SECURITY_VERSION|null[0]
+    enum entry SECURITY_VERSION_2 // org.samfun.ktprd.bcert/BCertObjectType.SECURITY_VERSION_2|null[0]
+    enum entry SERVER // org.samfun.ktprd.bcert/BCertObjectType.SERVER|null[0]
+    enum entry SIGNATURE // org.samfun.ktprd.bcert/BCertObjectType.SIGNATURE|null[0]
+    enum entry SILVERLIGHT // org.samfun.ktprd.bcert/BCertObjectType.SILVERLIGHT|null[0]
+    enum entry UNKNOWN // org.samfun.ktprd.bcert/BCertObjectType.UNKNOWN|null[0]
+
+    final val entries // org.samfun.ktprd.bcert/BCertObjectType.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktprd.bcert/BCertObjectType> // org.samfun.ktprd.bcert/BCertObjectType.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktprd.bcert/BCertObjectType.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktprd.bcert/BCertObjectType.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktprd.bcert/BCertObjectType // org.samfun.ktprd.bcert/BCertObjectType.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktprd.bcert/BCertObjectType> // org.samfun.ktprd.bcert/BCertObjectType.values|values#static(){}[0]
+
+    final object Companion { // org.samfun.ktprd.bcert/BCertObjectType.Companion|null[0]
+        final fun of(kotlin/Int): org.samfun.ktprd.bcert/BCertObjectType // org.samfun.ktprd.bcert/BCertObjectType.Companion.of|of(kotlin.Int){}[0]
+    }
+}
+
+final enum class org.samfun.ktprd.bcert/BCertType : kotlin/Enum<org.samfun.ktprd.bcert/BCertType> { // org.samfun.ktprd.bcert/BCertType|null[0]
+    enum entry APPLICATION // org.samfun.ktprd.bcert/BCertType.APPLICATION|null[0]
+    enum entry CRL_SIGNER // org.samfun.ktprd.bcert/BCertType.CRL_SIGNER|null[0]
+    enum entry DEVICE // org.samfun.ktprd.bcert/BCertType.DEVICE|null[0]
+    enum entry DOMAIN // org.samfun.ktprd.bcert/BCertType.DOMAIN|null[0]
+    enum entry ISSUER // org.samfun.ktprd.bcert/BCertType.ISSUER|null[0]
+    enum entry KEY_FILE_SIGNER // org.samfun.ktprd.bcert/BCertType.KEY_FILE_SIGNER|null[0]
+    enum entry LICENSE_SIGNER // org.samfun.ktprd.bcert/BCertType.LICENSE_SIGNER|null[0]
+    enum entry METERING // org.samfun.ktprd.bcert/BCertType.METERING|null[0]
+    enum entry PC // org.samfun.ktprd.bcert/BCertType.PC|null[0]
+    enum entry PROVISIONING_MODEL_AUTH // org.samfun.ktprd.bcert/BCertType.PROVISIONING_MODEL_AUTH|null[0]
+    enum entry SECURE_TIME_SERVER // org.samfun.ktprd.bcert/BCertType.SECURE_TIME_SERVER|null[0]
+    enum entry SERVER // org.samfun.ktprd.bcert/BCertType.SERVER|null[0]
+    enum entry SERVICE // org.samfun.ktprd.bcert/BCertType.SERVICE|null[0]
+    enum entry SILVERLIGHT // org.samfun.ktprd.bcert/BCertType.SILVERLIGHT|null[0]
+    enum entry UNKNOWN // org.samfun.ktprd.bcert/BCertType.UNKNOWN|null[0]
+
+    final val entries // org.samfun.ktprd.bcert/BCertType.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktprd.bcert/BCertType> // org.samfun.ktprd.bcert/BCertType.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktprd.bcert/BCertType.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktprd.bcert/BCertType.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktprd.bcert/BCertType // org.samfun.ktprd.bcert/BCertType.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktprd.bcert/BCertType> // org.samfun.ktprd.bcert/BCertType.values|values#static(){}[0]
+
+    final object Companion { // org.samfun.ktprd.bcert/BCertType.Companion|null[0]
+        final fun of(kotlin/Int): org.samfun.ktprd.bcert/BCertType // org.samfun.ktprd.bcert/BCertType.Companion.of|of(kotlin.Int){}[0]
+    }
+}
+
+final enum class org.samfun.ktprd.core/PlayreadyCipherType : kotlin/Enum<org.samfun.ktprd.core/PlayreadyCipherType> { // org.samfun.ktprd.core/PlayreadyCipherType|null[0]
+    enum entry CHAINED_LICENSE // org.samfun.ktprd.core/PlayreadyCipherType.CHAINED_LICENSE|null[0]
+    enum entry ECC_256 // org.samfun.ktprd.core/PlayreadyCipherType.ECC_256|null[0]
+    enum entry ECC_256_VIA_SYMMETRIC // org.samfun.ktprd.core/PlayreadyCipherType.ECC_256_VIA_SYMMETRIC|null[0]
+    enum entry ECC_256_WITH_KZ // org.samfun.ktprd.core/PlayreadyCipherType.ECC_256_WITH_KZ|null[0]
+    enum entry INVALID // org.samfun.ktprd.core/PlayreadyCipherType.INVALID|null[0]
+    enum entry RSA_1024 // org.samfun.ktprd.core/PlayreadyCipherType.RSA_1024|null[0]
+    enum entry TEE_TRANSIENT // org.samfun.ktprd.core/PlayreadyCipherType.TEE_TRANSIENT|null[0]
+    enum entry UNKNOWN // org.samfun.ktprd.core/PlayreadyCipherType.UNKNOWN|null[0]
+
+    final val entries // org.samfun.ktprd.core/PlayreadyCipherType.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktprd.core/PlayreadyCipherType> // org.samfun.ktprd.core/PlayreadyCipherType.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktprd.core/PlayreadyCipherType.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktprd.core/PlayreadyCipherType.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktprd.core/PlayreadyCipherType // org.samfun.ktprd.core/PlayreadyCipherType.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktprd.core/PlayreadyCipherType> // org.samfun.ktprd.core/PlayreadyCipherType.values|values#static(){}[0]
+
+    final object Companion { // org.samfun.ktprd.core/PlayreadyCipherType.Companion|null[0]
+        final fun of(kotlin/Int): org.samfun.ktprd.core/PlayreadyCipherType // org.samfun.ktprd.core/PlayreadyCipherType.Companion.of|of(kotlin.Int){}[0]
+    }
+}
+
+final enum class org.samfun.ktprd.core/PlayreadyKeyType : kotlin/Enum<org.samfun.ktprd.core/PlayreadyKeyType> { // org.samfun.ktprd.core/PlayreadyKeyType|null[0]
+    enum entry AES_128_CBC // org.samfun.ktprd.core/PlayreadyKeyType.AES_128_CBC|null[0]
+    enum entry AES_128_CTR // org.samfun.ktprd.core/PlayreadyKeyType.AES_128_CTR|null[0]
+    enum entry AES_128_ECB // org.samfun.ktprd.core/PlayreadyKeyType.AES_128_ECB|null[0]
+    enum entry COCKTAIL // org.samfun.ktprd.core/PlayreadyKeyType.COCKTAIL|null[0]
+    enum entry INVALID // org.samfun.ktprd.core/PlayreadyKeyType.INVALID|null[0]
+    enum entry KEY_EXCHANGE // org.samfun.ktprd.core/PlayreadyKeyType.KEY_EXCHANGE|null[0]
+    enum entry RC4_CIPHER // org.samfun.ktprd.core/PlayreadyKeyType.RC4_CIPHER|null[0]
+    enum entry UNKNOWN // org.samfun.ktprd.core/PlayreadyKeyType.UNKNOWN|null[0]
+
+    final val entries // org.samfun.ktprd.core/PlayreadyKeyType.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktprd.core/PlayreadyKeyType> // org.samfun.ktprd.core/PlayreadyKeyType.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktprd.core/PlayreadyKeyType.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktprd.core/PlayreadyKeyType.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktprd.core/PlayreadyKeyType // org.samfun.ktprd.core/PlayreadyKeyType.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktprd.core/PlayreadyKeyType> // org.samfun.ktprd.core/PlayreadyKeyType.values|values#static(){}[0]
+
+    final object Companion { // org.samfun.ktprd.core/PlayreadyKeyType.Companion|null[0]
+        final fun of(kotlin/Int): org.samfun.ktprd.core/PlayreadyKeyType // org.samfun.ktprd.core/PlayreadyKeyType.Companion.of|of(kotlin.Int){}[0]
+    }
+}
+
+final enum class org.samfun.ktprd.xmr/XmrObjectType : kotlin/Enum<org.samfun.ktprd.xmr/XmrObjectType> { // org.samfun.ktprd.xmr/XmrObjectType|null[0]
+    enum entry ALLOW_PLAYLIST_BURN_POLICY_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.ALLOW_PLAYLIST_BURN_POLICY_CONTAINER|null[0]
+    enum entry ANALOG_VIDEO_OUTPUT_CONFIGURATION // org.samfun.ktprd.xmr/XmrObjectType.ANALOG_VIDEO_OUTPUT_CONFIGURATION|null[0]
+    enum entry ANALOG_VIDEO_OUTPUT_PROTECTION_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.ANALOG_VIDEO_OUTPUT_PROTECTION_CONTAINER|null[0]
+    enum entry APPLICATION_ID_LIST // org.samfun.ktprd.xmr/XmrObjectType.APPLICATION_ID_LIST|null[0]
+    enum entry AUX_KEY // org.samfun.ktprd.xmr/XmrObjectType.AUX_KEY|null[0]
+    enum entry CONTENT_KEY // org.samfun.ktprd.xmr/XmrObjectType.CONTENT_KEY|null[0]
+    enum entry COPY_COUNT // org.samfun.ktprd.xmr/XmrObjectType.COPY_COUNT|null[0]
+    enum entry COPY_COUNT_2 // org.samfun.ktprd.xmr/XmrObjectType.COPY_COUNT_2|null[0]
+    enum entry COPY_ENABLER // org.samfun.ktprd.xmr/XmrObjectType.COPY_ENABLER|null[0]
+    enum entry COPY_ENABLER_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.COPY_ENABLER_CONTAINER|null[0]
+    enum entry COPY_POLICY_2_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.COPY_POLICY_2_CONTAINER|null[0]
+    enum entry COPY_POLICY_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.COPY_POLICY_CONTAINER|null[0]
+    enum entry COPY_PROTECTION // org.samfun.ktprd.xmr/XmrObjectType.COPY_PROTECTION|null[0]
+    enum entry COPY_TO_PC_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.COPY_TO_PC_CONTAINER|null[0]
+    enum entry DIGITAL_AUDIO_OUTPUT_CONFIGURATION // org.samfun.ktprd.xmr/XmrObjectType.DIGITAL_AUDIO_OUTPUT_CONFIGURATION|null[0]
+    enum entry DIGITAL_AUDIO_OUTPUT_PROTECTION_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.DIGITAL_AUDIO_OUTPUT_PROTECTION_CONTAINER|null[0]
+    enum entry DIGITAL_VIDEO_OPL // org.samfun.ktprd.xmr/XmrObjectType.DIGITAL_VIDEO_OPL|null[0]
+    enum entry DIGITAL_VIDEO_PROTECTION_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.DIGITAL_VIDEO_PROTECTION_CONTAINER|null[0]
+    enum entry DOMAIN_ID // org.samfun.ktprd.xmr/XmrObjectType.DOMAIN_ID|null[0]
+    enum entry ECC_DEVICE_KEY // org.samfun.ktprd.xmr/XmrObjectType.ECC_DEVICE_KEY|null[0]
+    enum entry EMBEDDING_BEHAVIOUR // org.samfun.ktprd.xmr/XmrObjectType.EMBEDDING_BEHAVIOUR|null[0]
+    enum entry EXECUTE_POLICY // org.samfun.ktprd.xmr/XmrObjectType.EXECUTE_POLICY|null[0]
+    enum entry EXECUTE_POLICY_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.EXECUTE_POLICY_CONTAINER|null[0]
+    enum entry EXPIRATION // org.samfun.ktprd.xmr/XmrObjectType.EXPIRATION|null[0]
+    enum entry EXPIRATION_AFTER_FIRST_PLAY // org.samfun.ktprd.xmr/XmrObjectType.EXPIRATION_AFTER_FIRST_PLAY|null[0]
+    enum entry EXPIRATION_AFTER_FIRST_STORE // org.samfun.ktprd.xmr/XmrObjectType.EXPIRATION_AFTER_FIRST_STORE|null[0]
+    enum entry EXPIRATION_AFTER_FIRST_USE // org.samfun.ktprd.xmr/XmrObjectType.EXPIRATION_AFTER_FIRST_USE|null[0]
+    enum entry GENERATION_NUMBER // org.samfun.ktprd.xmr/XmrObjectType.GENERATION_NUMBER|null[0]
+    enum entry GLOBAL_POLICY_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.GLOBAL_POLICY_CONTAINER|null[0]
+    enum entry GRACE_PERIOD // org.samfun.ktprd.xmr/XmrObjectType.GRACE_PERIOD|null[0]
+    enum entry INCLUSION_LIST // org.samfun.ktprd.xmr/XmrObjectType.INCLUSION_LIST|null[0]
+    enum entry INVALID // org.samfun.ktprd.xmr/XmrObjectType.INVALID|null[0]
+    enum entry ISSUE_DATE // org.samfun.ktprd.xmr/XmrObjectType.ISSUE_DATE|null[0]
+    enum entry KEY_MATERIAL_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.KEY_MATERIAL_CONTAINER|null[0]
+    enum entry METERING // org.samfun.ktprd.xmr/XmrObjectType.METERING|null[0]
+    enum entry MINIMUM_ENVIRONMENT // org.samfun.ktprd.xmr/XmrObjectType.MINIMUM_ENVIRONMENT|null[0]
+    enum entry MOVE_ENABLER // org.samfun.ktprd.xmr/XmrObjectType.MOVE_ENABLER|null[0]
+    enum entry ND_TX_AUTH // org.samfun.ktprd.xmr/XmrObjectType.ND_TX_AUTH|null[0]
+    enum entry ND_TX_AUTH_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.ND_TX_AUTH_CONTAINER|null[0]
+    enum entry OPTIMIZED_CONTENT_KEY // org.samfun.ktprd.xmr/XmrObjectType.OPTIMIZED_CONTENT_KEY|null[0]
+    enum entry OPTIMIZED_CONTENT_KEY_2 // org.samfun.ktprd.xmr/XmrObjectType.OPTIMIZED_CONTENT_KEY_2|null[0]
+    enum entry OUTER_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.OUTER_CONTAINER|null[0]
+    enum entry OUTPUT_PROTECTION // org.samfun.ktprd.xmr/XmrObjectType.OUTPUT_PROTECTION|null[0]
+    enum entry PLAYBACK_POLICY_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.PLAYBACK_POLICY_CONTAINER|null[0]
+    enum entry PLAYLIST_BURN_COUNT // org.samfun.ktprd.xmr/XmrObjectType.PLAYLIST_BURN_COUNT|null[0]
+    enum entry PLAY_COUNT // org.samfun.ktprd.xmr/XmrObjectType.PLAY_COUNT|null[0]
+    enum entry PLAY_ENABLER // org.samfun.ktprd.xmr/XmrObjectType.PLAY_ENABLER|null[0]
+    enum entry PLAY_ENABLER_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.PLAY_ENABLER_CONTAINER|null[0]
+    enum entry POLICY_METADATA // org.samfun.ktprd.xmr/XmrObjectType.POLICY_METADATA|null[0]
+    enum entry PRIORITY // org.samfun.ktprd.xmr/XmrObjectType.PRIORITY|null[0]
+    enum entry READ_POLICY_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.READ_POLICY_CONTAINER|null[0]
+    enum entry REAL_TIME_EXPIRATION // org.samfun.ktprd.xmr/XmrObjectType.REAL_TIME_EXPIRATION|null[0]
+    enum entry REMOVAL_DATE // org.samfun.ktprd.xmr/XmrObjectType.REMOVAL_DATE|null[0]
+    enum entry RESTRICTED_SOURCE_ID // org.samfun.ktprd.xmr/XmrObjectType.RESTRICTED_SOURCE_ID|null[0]
+    enum entry REVOCATION_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.REVOCATION_CONTAINER|null[0]
+    enum entry REVOCATION_INFORMATION_VERSION // org.samfun.ktprd.xmr/XmrObjectType.REVOCATION_INFORMATION_VERSION|null[0]
+    enum entry REVOCATION_INFORMATION_VERSION_2 // org.samfun.ktprd.xmr/XmrObjectType.REVOCATION_INFORMATION_VERSION_2|null[0]
+    enum entry RINGTONE_ENABLER // org.samfun.ktprd.xmr/XmrObjectType.RINGTONE_ENABLER|null[0]
+    enum entry RINGTONE_POLICY_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.RINGTONE_POLICY_CONTAINER|null[0]
+    enum entry RSA_DEVICE_KEY // org.samfun.ktprd.xmr/XmrObjectType.RSA_DEVICE_KEY|null[0]
+    enum entry RSA_LICENSE_GRANTER_KEY // org.samfun.ktprd.xmr/XmrObjectType.RSA_LICENSE_GRANTER_KEY|null[0]
+    enum entry SECURE_STOP // org.samfun.ktprd.xmr/XmrObjectType.SECURE_STOP|null[0]
+    enum entry SECURE_STOP_2 // org.samfun.ktprd.xmr/XmrObjectType.SECURE_STOP_2|null[0]
+    enum entry SECURITY_LEVEL // org.samfun.ktprd.xmr/XmrObjectType.SECURITY_LEVEL|null[0]
+    enum entry SERIAL_NUMBER // org.samfun.ktprd.xmr/XmrObjectType.SERIAL_NUMBER|null[0]
+    enum entry SETTINGS // org.samfun.ktprd.xmr/XmrObjectType.SETTINGS|null[0]
+    enum entry SIGNATURE // org.samfun.ktprd.xmr/XmrObjectType.SIGNATURE|null[0]
+    enum entry SOURCE_ID // org.samfun.ktprd.xmr/XmrObjectType.SOURCE_ID|null[0]
+    enum entry UNKNOWN_CONTAINER // org.samfun.ktprd.xmr/XmrObjectType.UNKNOWN_CONTAINER|null[0]
+    enum entry UNKNOWN_OBJECT // org.samfun.ktprd.xmr/XmrObjectType.UNKNOWN_OBJECT|null[0]
+    enum entry UPLINK_KID // org.samfun.ktprd.xmr/XmrObjectType.UPLINK_KID|null[0]
+    enum entry UPLINK_KID_2 // org.samfun.ktprd.xmr/XmrObjectType.UPLINK_KID_2|null[0]
+    enum entry UPLINK_X // org.samfun.ktprd.xmr/XmrObjectType.UPLINK_X|null[0]
+    enum entry USER_ID // org.samfun.ktprd.xmr/XmrObjectType.USER_ID|null[0]
+
+    final val entries // org.samfun.ktprd.xmr/XmrObjectType.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.samfun.ktprd.xmr/XmrObjectType> // org.samfun.ktprd.xmr/XmrObjectType.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val value // org.samfun.ktprd.xmr/XmrObjectType.value|{}value[0]
+        final fun <get-value>(): kotlin/Int // org.samfun.ktprd.xmr/XmrObjectType.value.<get-value>|<get-value>(){}[0]
+
+    final fun valueOf(kotlin/String): org.samfun.ktprd.xmr/XmrObjectType // org.samfun.ktprd.xmr/XmrObjectType.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.samfun.ktprd.xmr/XmrObjectType> // org.samfun.ktprd.xmr/XmrObjectType.values|values#static(){}[0]
+
+    final object Companion { // org.samfun.ktprd.xmr/XmrObjectType.Companion|null[0]
+        final fun of(kotlin/Int): org.samfun.ktprd.xmr/XmrObjectType // org.samfun.ktprd.xmr/XmrObjectType.Companion.of|of(kotlin.Int){}[0]
+    }
+}
+
+abstract interface org.samfun.ktprd.cdm/PlayreadyCdmApi { // org.samfun.ktprd.cdm/PlayreadyCdmApi|null[0]
+    abstract suspend fun close(okio/ByteString) // org.samfun.ktprd.cdm/PlayreadyCdmApi.close|close(okio.ByteString){}[0]
+    abstract suspend fun getKeys(okio/ByteString): kotlin.collections/List<org.samfun.ktprd.core/PlayreadyKey> // org.samfun.ktprd.cdm/PlayreadyCdmApi.getKeys|getKeys(okio.ByteString){}[0]
+    abstract suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktprd.core/WrmHeader, kotlin.collections/List<kotlin.uuid/Uuid>? = ...): kotlin/String // org.samfun.ktprd.cdm/PlayreadyCdmApi.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktprd.core.WrmHeader;kotlin.collections.List<kotlin.uuid.Uuid>?){}[0]
+    abstract suspend fun open(): okio/ByteString // org.samfun.ktprd.cdm/PlayreadyCdmApi.open|open(){}[0]
+    abstract suspend fun parseLicense(okio/ByteString, kotlin/String) // org.samfun.ktprd.cdm/PlayreadyCdmApi.parseLicense|parseLicense(okio.ByteString;kotlin.String){}[0]
+}
+
+abstract interface org.samfun.ktprd.revocation/RevocationStore { // org.samfun.ktprd.revocation/RevocationStore|null[0]
+    abstract suspend fun read(kotlin/String): kotlin/ByteArray? // org.samfun.ktprd.revocation/RevocationStore.read|read(kotlin.String){}[0]
+    abstract suspend fun write(kotlin/String, kotlin/ByteArray) // org.samfun.ktprd.revocation/RevocationStore.write|write(kotlin.String;kotlin.ByteArray){}[0]
+
+    final object Companion { // org.samfun.ktprd.revocation/RevocationStore.Companion|null[0]
+        final val None // org.samfun.ktprd.revocation/RevocationStore.Companion.None|{}None[0]
+            final fun <get-None>(): org.samfun.ktprd.revocation/RevocationStore // org.samfun.ktprd.revocation/RevocationStore.Companion.None.<get-None>|<get-None>(){}[0]
+    }
+}
+
+final class org.samfun.ktprd.bcert/Certificate { // org.samfun.ktprd.bcert/Certificate|null[0]
+    final val attributes // org.samfun.ktprd.bcert/Certificate.attributes|{}attributes[0]
+        final fun <get-attributes>(): kotlin.collections/List<org.samfun.ktprd.bcert/CertificateAttribute> // org.samfun.ktprd.bcert/Certificate.attributes.<get-attributes>|<get-attributes>(){}[0]
+    final val certType // org.samfun.ktprd.bcert/Certificate.certType|{}certType[0]
+        final fun <get-certType>(): org.samfun.ktprd.bcert/BCertType? // org.samfun.ktprd.bcert/Certificate.certType.<get-certType>|<get-certType>(){}[0]
+    final val certificateLength // org.samfun.ktprd.bcert/Certificate.certificateLength|{}certificateLength[0]
+        final fun <get-certificateLength>(): kotlin/Int // org.samfun.ktprd.bcert/Certificate.certificateLength.<get-certificateLength>|<get-certificateLength>(){}[0]
+    final val clientId // org.samfun.ktprd.bcert/Certificate.clientId|{}clientId[0]
+        final fun <get-clientId>(): kotlin/ByteArray? // org.samfun.ktprd.bcert/Certificate.clientId.<get-clientId>|<get-clientId>(){}[0]
+    final val expirationDate // org.samfun.ktprd.bcert/Certificate.expirationDate|{}expirationDate[0]
+        final fun <get-expirationDate>(): kotlin/Long? // org.samfun.ktprd.bcert/Certificate.expirationDate.<get-expirationDate>|<get-expirationDate>(){}[0]
+    final val issuerKey // org.samfun.ktprd.bcert/Certificate.issuerKey|{}issuerKey[0]
+        final fun <get-issuerKey>(): kotlin/ByteArray? // org.samfun.ktprd.bcert/Certificate.issuerKey.<get-issuerKey>|<get-issuerKey>(){}[0]
+    final val name // org.samfun.ktprd.bcert/Certificate.name|{}name[0]
+        final fun <get-name>(): kotlin/String? // org.samfun.ktprd.bcert/Certificate.name.<get-name>|<get-name>(){}[0]
+    final val raw // org.samfun.ktprd.bcert/Certificate.raw|{}raw[0]
+        final fun <get-raw>(): kotlin/ByteArray // org.samfun.ktprd.bcert/Certificate.raw.<get-raw>|<get-raw>(){}[0]
+    final val securityLevel // org.samfun.ktprd.bcert/Certificate.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int? // org.samfun.ktprd.bcert/Certificate.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+    final val totalLength // org.samfun.ktprd.bcert/Certificate.totalLength|{}totalLength[0]
+        final fun <get-totalLength>(): kotlin/Int // org.samfun.ktprd.bcert/Certificate.totalLength.<get-totalLength>|<get-totalLength>(){}[0]
+    final val version // org.samfun.ktprd.bcert/Certificate.version|{}version[0]
+        final fun <get-version>(): kotlin/Long // org.samfun.ktprd.bcert/Certificate.version.<get-version>|<get-version>(){}[0]
+
+    final fun attribute(org.samfun.ktprd.bcert/BCertObjectType): org.samfun.ktprd.bcert/CertificateAttribute? // org.samfun.ktprd.bcert/Certificate.attribute|attribute(org.samfun.ktprd.bcert.BCertObjectType){}[0]
+    final fun containsPublicKey(kotlin/ByteArray): kotlin/Boolean // org.samfun.ktprd.bcert/Certificate.containsPublicKey|containsPublicKey(kotlin.ByteArray){}[0]
+    final fun dumps(): kotlin/ByteArray // org.samfun.ktprd.bcert/Certificate.dumps|dumps(){}[0]
+    final fun features(): kotlin.collections/List<org.samfun.ktprd.bcert/BCertFeature> // org.samfun.ktprd.bcert/Certificate.features|features(){}[0]
+    final fun keyByUsage(org.samfun.ktprd.bcert/BCertKeyUsage): kotlin/ByteArray? // org.samfun.ktprd.bcert/Certificate.keyByUsage|keyByUsage(org.samfun.ktprd.bcert.BCertKeyUsage){}[0]
+    final fun keys(): kotlin.collections/List<org.samfun.ktprd.bcert/CertificateKey> // org.samfun.ktprd.bcert/Certificate.keys|keys(){}[0]
+    final fun manufacturerInfo(): org.samfun.ktprd.bcert/ManufacturerInfo? // org.samfun.ktprd.bcert/Certificate.manufacturerInfo|manufacturerInfo(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktprd.bcert/Certificate.toString|toString(){}[0]
+    final suspend fun verifySignature() // org.samfun.ktprd.bcert/Certificate.verifySignature|verifySignature(){}[0]
+
+    final object Companion { // org.samfun.ktprd.bcert/Certificate.Companion|null[0]
+        final fun loads(kotlin/ByteArray): org.samfun.ktprd.bcert/Certificate // org.samfun.ktprd.bcert/Certificate.Companion.loads|loads(kotlin.ByteArray){}[0]
+        final fun loads(kotlin/String): org.samfun.ktprd.bcert/Certificate // org.samfun.ktprd.bcert/Certificate.Companion.loads|loads(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktprd.bcert/CertificateAttribute { // org.samfun.ktprd.bcert/CertificateAttribute|null[0]
+    final val body // org.samfun.ktprd.bcert/CertificateAttribute.body|{}body[0]
+        final fun <get-body>(): kotlin/ByteArray // org.samfun.ktprd.bcert/CertificateAttribute.body.<get-body>|<get-body>(){}[0]
+    final val flags // org.samfun.ktprd.bcert/CertificateAttribute.flags|{}flags[0]
+        final fun <get-flags>(): kotlin/Int // org.samfun.ktprd.bcert/CertificateAttribute.flags.<get-flags>|<get-flags>(){}[0]
+    final val tag // org.samfun.ktprd.bcert/CertificateAttribute.tag|{}tag[0]
+        final fun <get-tag>(): org.samfun.ktprd.bcert/BCertObjectType // org.samfun.ktprd.bcert/CertificateAttribute.tag.<get-tag>|<get-tag>(){}[0]
+
+    final fun toString(): kotlin/String // org.samfun.ktprd.bcert/CertificateAttribute.toString|toString(){}[0]
+}
+
+final class org.samfun.ktprd.bcert/CertificateChain { // org.samfun.ktprd.bcert/CertificateChain|null[0]
+    final val certificates // org.samfun.ktprd.bcert/CertificateChain.certificates|{}certificates[0]
+        final fun <get-certificates>(): kotlin.collections/List<org.samfun.ktprd.bcert/Certificate> // org.samfun.ktprd.bcert/CertificateChain.certificates.<get-certificates>|<get-certificates>(){}[0]
+    final val count // org.samfun.ktprd.bcert/CertificateChain.count|{}count[0]
+        final fun <get-count>(): kotlin/Int // org.samfun.ktprd.bcert/CertificateChain.count.<get-count>|<get-count>(){}[0]
+    final val flags // org.samfun.ktprd.bcert/CertificateChain.flags|{}flags[0]
+        final fun <get-flags>(): kotlin/Long // org.samfun.ktprd.bcert/CertificateChain.flags.<get-flags>|<get-flags>(){}[0]
+    final val name // org.samfun.ktprd.bcert/CertificateChain.name|{}name[0]
+        final fun <get-name>(): kotlin/String? // org.samfun.ktprd.bcert/CertificateChain.name.<get-name>|<get-name>(){}[0]
+    final val securityLevel // org.samfun.ktprd.bcert/CertificateChain.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int? // org.samfun.ktprd.bcert/CertificateChain.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+    final val version // org.samfun.ktprd.bcert/CertificateChain.version|{}version[0]
+        final fun <get-version>(): kotlin/Long // org.samfun.ktprd.bcert/CertificateChain.version.<get-version>|<get-version>(){}[0]
+
+    final fun dumps(): kotlin/ByteArray // org.samfun.ktprd.bcert/CertificateChain.dumps|dumps(){}[0]
+    final fun dumpsBase64(): kotlin/String // org.samfun.ktprd.bcert/CertificateChain.dumpsBase64|dumpsBase64(){}[0]
+    final fun get(kotlin/Int): org.samfun.ktprd.bcert/Certificate // org.samfun.ktprd.bcert/CertificateChain.get|get(kotlin.Int){}[0]
+    final fun prepend(org.samfun.ktprd.bcert/Certificate): org.samfun.ktprd.bcert/CertificateChain // org.samfun.ktprd.bcert/CertificateChain.prepend|prepend(org.samfun.ktprd.bcert.Certificate){}[0]
+    final fun removeLeaf(): org.samfun.ktprd.bcert/CertificateChain // org.samfun.ktprd.bcert/CertificateChain.removeLeaf|removeLeaf(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktprd.bcert/CertificateChain.toString|toString(){}[0]
+    final suspend fun verify(kotlin/Boolean = ..., org.samfun.ktprd.bcert/BCertType? = ..., kotlin/Long = ...) // org.samfun.ktprd.bcert/CertificateChain.verify|verify(kotlin.Boolean;org.samfun.ktprd.bcert.BCertType?;kotlin.Long){}[0]
+
+    final object Companion { // org.samfun.ktprd.bcert/CertificateChain.Companion|null[0]
+        final const val MAX_DEPTH // org.samfun.ktprd.bcert/CertificateChain.Companion.MAX_DEPTH|{}MAX_DEPTH[0]
+            final fun <get-MAX_DEPTH>(): kotlin/Int // org.samfun.ktprd.bcert/CertificateChain.Companion.MAX_DEPTH.<get-MAX_DEPTH>|<get-MAX_DEPTH>(){}[0]
+        final const val NEVER_EXPIRES // org.samfun.ktprd.bcert/CertificateChain.Companion.NEVER_EXPIRES|{}NEVER_EXPIRES[0]
+            final fun <get-NEVER_EXPIRES>(): kotlin/Long // org.samfun.ktprd.bcert/CertificateChain.Companion.NEVER_EXPIRES.<get-NEVER_EXPIRES>|<get-NEVER_EXPIRES>(){}[0]
+
+        final val MICROSOFT_ROOT_ISSUER_KEY // org.samfun.ktprd.bcert/CertificateChain.Companion.MICROSOFT_ROOT_ISSUER_KEY|{}MICROSOFT_ROOT_ISSUER_KEY[0]
+            final fun <get-MICROSOFT_ROOT_ISSUER_KEY>(): kotlin/ByteArray // org.samfun.ktprd.bcert/CertificateChain.Companion.MICROSOFT_ROOT_ISSUER_KEY.<get-MICROSOFT_ROOT_ISSUER_KEY>|<get-MICROSOFT_ROOT_ISSUER_KEY>(){}[0]
+
+        final fun loads(kotlin/ByteArray): org.samfun.ktprd.bcert/CertificateChain // org.samfun.ktprd.bcert/CertificateChain.Companion.loads|loads(kotlin.ByteArray){}[0]
+        final fun loads(kotlin/String): org.samfun.ktprd.bcert/CertificateChain // org.samfun.ktprd.bcert/CertificateChain.Companion.loads|loads(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktprd.bcert/CertificateKey { // org.samfun.ktprd.bcert/CertificateKey|null[0]
+    final val key // org.samfun.ktprd.bcert/CertificateKey.key|{}key[0]
+        final fun <get-key>(): kotlin/ByteArray // org.samfun.ktprd.bcert/CertificateKey.key.<get-key>|<get-key>(){}[0]
+    final val type // org.samfun.ktprd.bcert/CertificateKey.type|{}type[0]
+        final fun <get-type>(): kotlin/Int // org.samfun.ktprd.bcert/CertificateKey.type.<get-type>|<get-type>(){}[0]
+    final val usages // org.samfun.ktprd.bcert/CertificateKey.usages|{}usages[0]
+        final fun <get-usages>(): kotlin.collections/List<org.samfun.ktprd.bcert/BCertKeyUsage> // org.samfun.ktprd.bcert/CertificateKey.usages.<get-usages>|<get-usages>(){}[0]
+}
+
+final class org.samfun.ktprd.bcert/ManufacturerInfo { // org.samfun.ktprd.bcert/ManufacturerInfo|null[0]
+    final val manufacturer // org.samfun.ktprd.bcert/ManufacturerInfo.manufacturer|{}manufacturer[0]
+        final fun <get-manufacturer>(): kotlin/String // org.samfun.ktprd.bcert/ManufacturerInfo.manufacturer.<get-manufacturer>|<get-manufacturer>(){}[0]
+    final val modelName // org.samfun.ktprd.bcert/ManufacturerInfo.modelName|{}modelName[0]
+        final fun <get-modelName>(): kotlin/String // org.samfun.ktprd.bcert/ManufacturerInfo.modelName.<get-modelName>|<get-modelName>(){}[0]
+    final val modelNumber // org.samfun.ktprd.bcert/ManufacturerInfo.modelNumber|{}modelNumber[0]
+        final fun <get-modelNumber>(): kotlin/String // org.samfun.ktprd.bcert/ManufacturerInfo.modelNumber.<get-modelNumber>|<get-modelNumber>(){}[0]
+
+    final fun toString(): kotlin/String // org.samfun.ktprd.bcert/ManufacturerInfo.toString|toString(){}[0]
+}
+
+final class org.samfun.ktprd.cdm/PlayreadyCdm : org.samfun.ktprd.cdm/PlayreadyCdmApi { // org.samfun.ktprd.cdm/PlayreadyCdm|null[0]
+    final val clientVersion // org.samfun.ktprd.cdm/PlayreadyCdm.clientVersion|{}clientVersion[0]
+        final fun <get-clientVersion>(): kotlin/String // org.samfun.ktprd.cdm/PlayreadyCdm.clientVersion.<get-clientVersion>|<get-clientVersion>(){}[0]
+    final val securityLevel // org.samfun.ktprd.cdm/PlayreadyCdm.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int // org.samfun.ktprd.cdm/PlayreadyCdm.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+
+    final suspend fun close(okio/ByteString) // org.samfun.ktprd.cdm/PlayreadyCdm.close|close(okio.ByteString){}[0]
+    final suspend fun getKeys(okio/ByteString): kotlin.collections/List<org.samfun.ktprd.core/PlayreadyKey> // org.samfun.ktprd.cdm/PlayreadyCdm.getKeys|getKeys(okio.ByteString){}[0]
+    final suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktprd.core/WrmHeader, kotlin.collections/List<kotlin.uuid/Uuid>?): kotlin/String // org.samfun.ktprd.cdm/PlayreadyCdm.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktprd.core.WrmHeader;kotlin.collections.List<kotlin.uuid.Uuid>?){}[0]
+    final suspend fun open(): okio/ByteString // org.samfun.ktprd.cdm/PlayreadyCdm.open|open(){}[0]
+    final suspend fun parseLicense(okio/ByteString, kotlin/String) // org.samfun.ktprd.cdm/PlayreadyCdm.parseLicense|parseLicense(okio.ByteString;kotlin.String){}[0]
+
+    final object Companion { // org.samfun.ktprd.cdm/PlayreadyCdm.Companion|null[0]
+        final const val DEFAULT_CLIENT_VERSION // org.samfun.ktprd.cdm/PlayreadyCdm.Companion.DEFAULT_CLIENT_VERSION|{}DEFAULT_CLIENT_VERSION[0]
+            final fun <get-DEFAULT_CLIENT_VERSION>(): kotlin/String // org.samfun.ktprd.cdm/PlayreadyCdm.Companion.DEFAULT_CLIENT_VERSION.<get-DEFAULT_CLIENT_VERSION>|<get-DEFAULT_CLIENT_VERSION>(){}[0]
+        final const val MAX_NUM_OF_SESSIONS // org.samfun.ktprd.cdm/PlayreadyCdm.Companion.MAX_NUM_OF_SESSIONS|{}MAX_NUM_OF_SESSIONS[0]
+            final fun <get-MAX_NUM_OF_SESSIONS>(): kotlin/Int // org.samfun.ktprd.cdm/PlayreadyCdm.Companion.MAX_NUM_OF_SESSIONS.<get-MAX_NUM_OF_SESSIONS>|<get-MAX_NUM_OF_SESSIONS>(){}[0]
+
+        final fun fromDevice(org.samfun.ktprd.core/PlayreadyDevice, kotlin/String = ..., org.samfun.ktprd.revocation/RevocationStore = ...): org.samfun.ktprd.cdm/PlayreadyCdm // org.samfun.ktprd.cdm/PlayreadyCdm.Companion.fromDevice|fromDevice(org.samfun.ktprd.core.PlayreadyDevice;kotlin.String;org.samfun.ktprd.revocation.RevocationStore){}[0]
+    }
+}
+
+final class org.samfun.ktprd.core/EccKey { // org.samfun.ktprd.core/EccKey|null[0]
+    final val privateBytes // org.samfun.ktprd.core/EccKey.privateBytes|{}privateBytes[0]
+        final fun <get-privateBytes>(): kotlin/ByteArray // org.samfun.ktprd.core/EccKey.privateBytes.<get-privateBytes>|<get-privateBytes>(){}[0]
+    final val publicBytes // org.samfun.ktprd.core/EccKey.publicBytes|{}publicBytes[0]
+        final fun <get-publicBytes>(): kotlin/ByteArray // org.samfun.ktprd.core/EccKey.publicBytes.<get-publicBytes>|<get-publicBytes>(){}[0]
+
+    final fun dumps(kotlin/Boolean = ...): kotlin/ByteArray // org.samfun.ktprd.core/EccKey.dumps|dumps(kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // org.samfun.ktprd.core/EccKey.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // org.samfun.ktprd.core/EccKey.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktprd.core/EccKey.toString|toString(){}[0]
+
+    final object Companion { // org.samfun.ktprd.core/EccKey.Companion|null[0]
+        final const val BLOB_SIZE // org.samfun.ktprd.core/EccKey.Companion.BLOB_SIZE|{}BLOB_SIZE[0]
+            final fun <get-BLOB_SIZE>(): kotlin/Int // org.samfun.ktprd.core/EccKey.Companion.BLOB_SIZE.<get-BLOB_SIZE>|<get-BLOB_SIZE>(){}[0]
+        final const val PRIVATE_SIZE // org.samfun.ktprd.core/EccKey.Companion.PRIVATE_SIZE|{}PRIVATE_SIZE[0]
+            final fun <get-PRIVATE_SIZE>(): kotlin/Int // org.samfun.ktprd.core/EccKey.Companion.PRIVATE_SIZE.<get-PRIVATE_SIZE>|<get-PRIVATE_SIZE>(){}[0]
+        final const val PUBLIC_SIZE // org.samfun.ktprd.core/EccKey.Companion.PUBLIC_SIZE|{}PUBLIC_SIZE[0]
+            final fun <get-PUBLIC_SIZE>(): kotlin/Int // org.samfun.ktprd.core/EccKey.Companion.PUBLIC_SIZE.<get-PUBLIC_SIZE>|<get-PUBLIC_SIZE>(){}[0]
+
+        final fun generate(): org.samfun.ktprd.core/EccKey // org.samfun.ktprd.core/EccKey.Companion.generate|generate(){}[0]
+        final fun loads(kotlin/ByteArray): org.samfun.ktprd.core/EccKey // org.samfun.ktprd.core/EccKey.Companion.loads|loads(kotlin.ByteArray){}[0]
+        final fun loads(kotlin/String): org.samfun.ktprd.core/EccKey // org.samfun.ktprd.core/EccKey.Companion.loads|loads(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktprd.core/PlayreadyDevice { // org.samfun.ktprd.core/PlayreadyDevice|null[0]
+    final val encryptionKey // org.samfun.ktprd.core/PlayreadyDevice.encryptionKey|{}encryptionKey[0]
+        final fun <get-encryptionKey>(): org.samfun.ktprd.core/EccKey // org.samfun.ktprd.core/PlayreadyDevice.encryptionKey.<get-encryptionKey>|<get-encryptionKey>(){}[0]
+    final val groupCertificate // org.samfun.ktprd.core/PlayreadyDevice.groupCertificate|{}groupCertificate[0]
+        final fun <get-groupCertificate>(): org.samfun.ktprd.bcert/CertificateChain // org.samfun.ktprd.core/PlayreadyDevice.groupCertificate.<get-groupCertificate>|<get-groupCertificate>(){}[0]
+    final val groupKey // org.samfun.ktprd.core/PlayreadyDevice.groupKey|{}groupKey[0]
+        final fun <get-groupKey>(): org.samfun.ktprd.core/EccKey? // org.samfun.ktprd.core/PlayreadyDevice.groupKey.<get-groupKey>|<get-groupKey>(){}[0]
+    final val name // org.samfun.ktprd.core/PlayreadyDevice.name|{}name[0]
+        final fun <get-name>(): kotlin/String // org.samfun.ktprd.core/PlayreadyDevice.name.<get-name>|<get-name>(){}[0]
+    final val securityLevel // org.samfun.ktprd.core/PlayreadyDevice.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int // org.samfun.ktprd.core/PlayreadyDevice.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+    final val signingKey // org.samfun.ktprd.core/PlayreadyDevice.signingKey|{}signingKey[0]
+        final fun <get-signingKey>(): org.samfun.ktprd.core/EccKey // org.samfun.ktprd.core/PlayreadyDevice.signingKey.<get-signingKey>|<get-signingKey>(){}[0]
+
+    final fun dump(kotlin/String, okio/FileSystem, kotlin/Int = ...) // org.samfun.ktprd.core/PlayreadyDevice.dump|dump(kotlin.String;okio.FileSystem;kotlin.Int){}[0]
+    final fun dump(okio/Path, okio/FileSystem, kotlin/Int = ...) // org.samfun.ktprd.core/PlayreadyDevice.dump|dump(okio.Path;okio.FileSystem;kotlin.Int){}[0]
+    final fun dumps(kotlin/Int = ...): kotlin/ByteArray // org.samfun.ktprd.core/PlayreadyDevice.dumps|dumps(kotlin.Int){}[0]
+    final fun dumpsBase64(): kotlin/String // org.samfun.ktprd.core/PlayreadyDevice.dumpsBase64|dumpsBase64(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktprd.core/PlayreadyDevice.toString|toString(){}[0]
+
+    final object Companion { // org.samfun.ktprd.core/PlayreadyDevice.Companion|null[0]
+        final const val CURRENT_VERSION // org.samfun.ktprd.core/PlayreadyDevice.Companion.CURRENT_VERSION|{}CURRENT_VERSION[0]
+            final fun <get-CURRENT_VERSION>(): kotlin/Int // org.samfun.ktprd.core/PlayreadyDevice.Companion.CURRENT_VERSION.<get-CURRENT_VERSION>|<get-CURRENT_VERSION>(){}[0]
+
+        final fun load(kotlin/String, okio/FileSystem): org.samfun.ktprd.core/PlayreadyDevice // org.samfun.ktprd.core/PlayreadyDevice.Companion.load|load(kotlin.String;okio.FileSystem){}[0]
+        final fun load(okio/Path, okio/FileSystem): org.samfun.ktprd.core/PlayreadyDevice // org.samfun.ktprd.core/PlayreadyDevice.Companion.load|load(okio.Path;okio.FileSystem){}[0]
+        final fun loads(kotlin/ByteArray): org.samfun.ktprd.core/PlayreadyDevice // org.samfun.ktprd.core/PlayreadyDevice.Companion.loads|loads(kotlin.ByteArray){}[0]
+        final fun loads(kotlin/String): org.samfun.ktprd.core/PlayreadyDevice // org.samfun.ktprd.core/PlayreadyDevice.Companion.loads|loads(kotlin.String){}[0]
+        final fun of(org.samfun.ktprd.core/EccKey?, org.samfun.ktprd.core/EccKey, org.samfun.ktprd.core/EccKey, org.samfun.ktprd.bcert/CertificateChain): org.samfun.ktprd.core/PlayreadyDevice // org.samfun.ktprd.core/PlayreadyDevice.Companion.of|of(org.samfun.ktprd.core.EccKey?;org.samfun.ktprd.core.EccKey;org.samfun.ktprd.core.EccKey;org.samfun.ktprd.bcert.CertificateChain){}[0]
+    }
+}
+
+final class org.samfun.ktprd.core/PlayreadyKey { // org.samfun.ktprd.core/PlayreadyKey|null[0]
+    constructor <init>(kotlin.uuid/Uuid, kotlin/ByteArray, org.samfun.ktprd.core/PlayreadyKeyType, org.samfun.ktprd.core/PlayreadyCipherType, kotlin/Int) // org.samfun.ktprd.core/PlayreadyKey.<init>|<init>(kotlin.uuid.Uuid;kotlin.ByteArray;org.samfun.ktprd.core.PlayreadyKeyType;org.samfun.ktprd.core.PlayreadyCipherType;kotlin.Int){}[0]
+
+    final val cipherType // org.samfun.ktprd.core/PlayreadyKey.cipherType|{}cipherType[0]
+        final fun <get-cipherType>(): org.samfun.ktprd.core/PlayreadyCipherType // org.samfun.ktprd.core/PlayreadyKey.cipherType.<get-cipherType>|<get-cipherType>(){}[0]
+    final val key // org.samfun.ktprd.core/PlayreadyKey.key|{}key[0]
+        final fun <get-key>(): kotlin/ByteArray // org.samfun.ktprd.core/PlayreadyKey.key.<get-key>|<get-key>(){}[0]
+    final val keyLength // org.samfun.ktprd.core/PlayreadyKey.keyLength|{}keyLength[0]
+        final fun <get-keyLength>(): kotlin/Int // org.samfun.ktprd.core/PlayreadyKey.keyLength.<get-keyLength>|<get-keyLength>(){}[0]
+    final val keyType // org.samfun.ktprd.core/PlayreadyKey.keyType|{}keyType[0]
+        final fun <get-keyType>(): org.samfun.ktprd.core/PlayreadyKeyType // org.samfun.ktprd.core/PlayreadyKey.keyType.<get-keyType>|<get-keyType>(){}[0]
+    final val kid // org.samfun.ktprd.core/PlayreadyKey.kid|{}kid[0]
+        final fun <get-kid>(): kotlin.uuid/Uuid // org.samfun.ktprd.core/PlayreadyKey.kid.<get-kid>|<get-kid>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // org.samfun.ktprd.core/PlayreadyKey.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // org.samfun.ktprd.core/PlayreadyKey.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktprd.core/PlayreadyKey.toString|toString(){}[0]
+}
+
+final class org.samfun.ktprd.core/WrmHeader { // org.samfun.ktprd.core/WrmHeader|null[0]
+    final val header // org.samfun.ktprd.core/WrmHeader.header|{}header[0]
+        final fun <get-header>(): org.samfun.ktvine.core/PlayreadyHeader // org.samfun.ktprd.core/WrmHeader.header.<get-header>|<get-header>(){}[0]
+    final val keyIds // org.samfun.ktprd.core/WrmHeader.keyIds|{}keyIds[0]
+        final fun <get-keyIds>(): kotlin.collections/List<org.samfun.ktvine.core/SignedKeyId> // org.samfun.ktprd.core/WrmHeader.keyIds.<get-keyIds>|<get-keyIds>(){}[0]
+    final val protocolVersion // org.samfun.ktprd.core/WrmHeader.protocolVersion|{}protocolVersion[0]
+        final fun <get-protocolVersion>(): kotlin/Int // org.samfun.ktprd.core/WrmHeader.protocolVersion.<get-protocolVersion>|<get-protocolVersion>(){}[0]
+    final val version // org.samfun.ktprd.core/WrmHeader.version|{}version[0]
+        final fun <get-version>(): kotlin/String // org.samfun.ktprd.core/WrmHeader.version.<get-version>|<get-version>(){}[0]
+    final val xml // org.samfun.ktprd.core/WrmHeader.xml|{}xml[0]
+        final fun <get-xml>(): kotlin/String // org.samfun.ktprd.core/WrmHeader.xml.<get-xml>|<get-xml>(){}[0]
+
+    final fun toString(): kotlin/String // org.samfun.ktprd.core/WrmHeader.toString|toString(){}[0]
+    final suspend fun verifyChecksum(kotlin.uuid/Uuid, kotlin/ByteArray): kotlin/Boolean // org.samfun.ktprd.core/WrmHeader.verifyChecksum|verifyChecksum(kotlin.uuid.Uuid;kotlin.ByteArray){}[0]
+
+    final object Companion { // org.samfun.ktprd.core/WrmHeader.Companion|null[0]
+        final fun from(kotlin/String): org.samfun.ktprd.core/WrmHeader // org.samfun.ktprd.core/WrmHeader.Companion.from|from(kotlin.String){}[0]
+        final fun from(org.samfun.ktvine.core/PSSH): kotlin.collections/List<org.samfun.ktprd.core/WrmHeader> // org.samfun.ktprd.core/WrmHeader.Companion.from|from(org.samfun.ktvine.core.PSSH){}[0]
+        final fun parse(kotlin/String): org.samfun.ktprd.core/WrmHeader // org.samfun.ktprd.core/WrmHeader.Companion.parse|parse(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktprd.revocation/FileRevocationStore : org.samfun.ktprd.revocation/RevocationStore { // org.samfun.ktprd.revocation/FileRevocationStore|null[0]
+    constructor <init>(kotlin/String, okio/FileSystem) // org.samfun.ktprd.revocation/FileRevocationStore.<init>|<init>(kotlin.String;okio.FileSystem){}[0]
+    constructor <init>(okio/Path, okio/FileSystem) // org.samfun.ktprd.revocation/FileRevocationStore.<init>|<init>(okio.Path;okio.FileSystem){}[0]
+
+    final suspend fun read(kotlin/String): kotlin/ByteArray? // org.samfun.ktprd.revocation/FileRevocationStore.read|read(kotlin.String){}[0]
+    final suspend fun write(kotlin/String, kotlin/ByteArray) // org.samfun.ktprd.revocation/FileRevocationStore.write|write(kotlin.String;kotlin.ByteArray){}[0]
+}
+
+final class org.samfun.ktprd.revocation/InMemoryRevocationStore : org.samfun.ktprd.revocation/RevocationStore { // org.samfun.ktprd.revocation/InMemoryRevocationStore|null[0]
+    constructor <init>() // org.samfun.ktprd.revocation/InMemoryRevocationStore.<init>|<init>(){}[0]
+
+    final suspend fun read(kotlin/String): kotlin/ByteArray? // org.samfun.ktprd.revocation/InMemoryRevocationStore.read|read(kotlin.String){}[0]
+    final suspend fun write(kotlin/String, kotlin/ByteArray) // org.samfun.ktprd.revocation/InMemoryRevocationStore.write|write(kotlin.String;kotlin.ByteArray){}[0]
+}
+
+final class org.samfun.ktprd.revocation/RevocationEntry { // org.samfun.ktprd.revocation/RevocationEntry|null[0]
+    final val listData // org.samfun.ktprd.revocation/RevocationEntry.listData|{}listData[0]
+        final fun <get-listData>(): kotlin/String // org.samfun.ktprd.revocation/RevocationEntry.listData.<get-listData>|<get-listData>(){}[0]
+    final val listId // org.samfun.ktprd.revocation/RevocationEntry.listId|{}listId[0]
+        final fun <get-listId>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationEntry.listId.<get-listId>|<get-listId>(){}[0]
+    final val verified // org.samfun.ktprd.revocation/RevocationEntry.verified|{}verified[0]
+        final fun <get-verified>(): kotlin/Boolean // org.samfun.ktprd.revocation/RevocationEntry.verified.<get-verified>|<get-verified>(){}[0]
+    final val version // org.samfun.ktprd.revocation/RevocationEntry.version|{}version[0]
+        final fun <get-version>(): kotlin/Long // org.samfun.ktprd.revocation/RevocationEntry.version.<get-version>|<get-version>(){}[0]
+}
+
+final class org.samfun.ktprd.revocation/RevocationList { // org.samfun.ktprd.revocation/RevocationList|null[0]
+    final val entries // org.samfun.ktprd.revocation/RevocationList.entries|{}entries[0]
+        final fun <get-entries>(): kotlin.collections/List<org.samfun.ktprd.revocation/RevocationEntry> // org.samfun.ktprd.revocation/RevocationList.entries.<get-entries>|<get-entries>(){}[0]
+
+    final fun entry(kotlin.uuid/Uuid): org.samfun.ktprd.revocation/RevocationEntry? // org.samfun.ktprd.revocation/RevocationList.entry|entry(kotlin.uuid.Uuid){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktprd.revocation/RevocationList.toString|toString(){}[0]
+    final fun versionOf(kotlin.uuid/Uuid): kotlin/Long // org.samfun.ktprd.revocation/RevocationList.versionOf|versionOf(kotlin.uuid.Uuid){}[0]
+
+    final object Companion { // org.samfun.ktprd.revocation/RevocationList.Companion|null[0]
+        final const val CURRENT_LIST_FILE_NAME // org.samfun.ktprd.revocation/RevocationList.Companion.CURRENT_LIST_FILE_NAME|{}CURRENT_LIST_FILE_NAME[0]
+            final fun <get-CURRENT_LIST_FILE_NAME>(): kotlin/String // org.samfun.ktprd.revocation/RevocationList.Companion.CURRENT_LIST_FILE_NAME.<get-CURRENT_LIST_FILE_NAME>|<get-CURRENT_LIST_FILE_NAME>(){}[0]
+
+        final val APP_REVOCATION // org.samfun.ktprd.revocation/RevocationList.Companion.APP_REVOCATION|{}APP_REVOCATION[0]
+            final fun <get-APP_REVOCATION>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationList.Companion.APP_REVOCATION.<get-APP_REVOCATION>|<get-APP_REVOCATION>(){}[0]
+        final val DEVICE_REVOCATION // org.samfun.ktprd.revocation/RevocationList.Companion.DEVICE_REVOCATION|{}DEVICE_REVOCATION[0]
+            final fun <get-DEVICE_REVOCATION>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationList.Companion.DEVICE_REVOCATION.<get-DEVICE_REVOCATION>|<get-DEVICE_REVOCATION>(){}[0]
+        final val PLAYREADY_APPLICATION // org.samfun.ktprd.revocation/RevocationList.Companion.PLAYREADY_APPLICATION|{}PLAYREADY_APPLICATION[0]
+            final fun <get-PLAYREADY_APPLICATION>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationList.Companion.PLAYREADY_APPLICATION.<get-PLAYREADY_APPLICATION>|<get-PLAYREADY_APPLICATION>(){}[0]
+        final val PLAYREADY_RUNTIME // org.samfun.ktprd.revocation/RevocationList.Companion.PLAYREADY_RUNTIME|{}PLAYREADY_RUNTIME[0]
+            final fun <get-PLAYREADY_RUNTIME>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationList.Companion.PLAYREADY_RUNTIME.<get-PLAYREADY_RUNTIME>|<get-PLAYREADY_RUNTIME>(){}[0]
+        final val REV_INFO // org.samfun.ktprd.revocation/RevocationList.Companion.REV_INFO|{}REV_INFO[0]
+            final fun <get-REV_INFO>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationList.Companion.REV_INFO.<get-REV_INFO>|<get-REV_INFO>(){}[0]
+        final val REV_INFO_V2 // org.samfun.ktprd.revocation/RevocationList.Companion.REV_INFO_V2|{}REV_INFO_V2[0]
+            final fun <get-REV_INFO_V2>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationList.Companion.REV_INFO_V2.<get-REV_INFO_V2>|<get-REV_INFO_V2>(){}[0]
+        final val SUPPORTED_LIST_IDS // org.samfun.ktprd.revocation/RevocationList.Companion.SUPPORTED_LIST_IDS|{}SUPPORTED_LIST_IDS[0]
+            final fun <get-SUPPORTED_LIST_IDS>(): kotlin.collections/List<kotlin.uuid/Uuid> // org.samfun.ktprd.revocation/RevocationList.Companion.SUPPORTED_LIST_IDS.<get-SUPPORTED_LIST_IDS>|<get-SUPPORTED_LIST_IDS>(){}[0]
+        final val WMDRM_NETWORK // org.samfun.ktprd.revocation/RevocationList.Companion.WMDRM_NETWORK|{}WMDRM_NETWORK[0]
+            final fun <get-WMDRM_NETWORK>(): kotlin.uuid/Uuid // org.samfun.ktprd.revocation/RevocationList.Companion.WMDRM_NETWORK.<get-WMDRM_NETWORK>|<get-WMDRM_NETWORK>(){}[0]
+
+        final suspend fun merge(kotlin/String, kotlin/String): kotlin/String // org.samfun.ktprd.revocation/RevocationList.Companion.merge|merge(kotlin.String;kotlin.String){}[0]
+        final suspend fun parse(kotlin/ByteArray, kotlin/Boolean = ...): org.samfun.ktprd.revocation/RevocationList // org.samfun.ktprd.revocation/RevocationList.Companion.parse|parse(kotlin.ByteArray;kotlin.Boolean){}[0]
+        final suspend fun parse(kotlin/String, kotlin/Boolean = ...): org.samfun.ktprd.revocation/RevocationList // org.samfun.ktprd.revocation/RevocationList.Companion.parse|parse(kotlin.String;kotlin.Boolean){}[0]
+        final suspend fun versionOf(kotlin/ByteArray, kotlin.uuid/Uuid): kotlin/Long // org.samfun.ktprd.revocation/RevocationList.Companion.versionOf|versionOf(kotlin.ByteArray;kotlin.uuid.Uuid){}[0]
+    }
+}
+
+final class org.samfun.ktprd.soap/LicenseResponse { // org.samfun.ktprd.soap/LicenseResponse|null[0]
+    final val isVerifiable // org.samfun.ktprd.soap/LicenseResponse.isVerifiable|{}isVerifiable[0]
+        final fun <get-isVerifiable>(): kotlin/Boolean // org.samfun.ktprd.soap/LicenseResponse.isVerifiable.<get-isVerifiable>|<get-isVerifiable>(){}[0]
+    final val licenseNonce // org.samfun.ktprd.soap/LicenseResponse.licenseNonce|{}licenseNonce[0]
+        final fun <get-licenseNonce>(): kotlin/String? // org.samfun.ktprd.soap/LicenseResponse.licenseNonce.<get-licenseNonce>|<get-licenseNonce>(){}[0]
+    final val licenses // org.samfun.ktprd.soap/LicenseResponse.licenses|{}licenses[0]
+        final fun <get-licenses>(): kotlin.collections/List<kotlin/String> // org.samfun.ktprd.soap/LicenseResponse.licenses.<get-licenses>|<get-licenses>(){}[0]
+    final val responseId // org.samfun.ktprd.soap/LicenseResponse.responseId|{}responseId[0]
+        final fun <get-responseId>(): kotlin/String? // org.samfun.ktprd.soap/LicenseResponse.responseId.<get-responseId>|<get-responseId>(){}[0]
+    final val revocationInfo // org.samfun.ktprd.soap/LicenseResponse.revocationInfo|{}revocationInfo[0]
+        final fun <get-revocationInfo>(): kotlin/String? // org.samfun.ktprd.soap/LicenseResponse.revocationInfo.<get-revocationInfo>|<get-revocationInfo>(){}[0]
+    final val signingCertificateChain // org.samfun.ktprd.soap/LicenseResponse.signingCertificateChain|{}signingCertificateChain[0]
+        final fun <get-signingCertificateChain>(): org.samfun.ktprd.bcert/CertificateChain? // org.samfun.ktprd.soap/LicenseResponse.signingCertificateChain.<get-signingCertificateChain>|<get-signingCertificateChain>(){}[0]
+    final val transactionId // org.samfun.ktprd.soap/LicenseResponse.transactionId|{}transactionId[0]
+        final fun <get-transactionId>(): kotlin/String? // org.samfun.ktprd.soap/LicenseResponse.transactionId.<get-transactionId>|<get-transactionId>(){}[0]
+
+    final fun toString(): kotlin/String // org.samfun.ktprd.soap/LicenseResponse.toString|toString(){}[0]
+    final fun xmrLicenses(): kotlin.collections/List<org.samfun.ktprd.xmr/XmrLicense> // org.samfun.ktprd.soap/LicenseResponse.xmrLicenses|xmrLicenses(){}[0]
+    final suspend fun verify() // org.samfun.ktprd.soap/LicenseResponse.verify|verify(){}[0]
+
+    final object Companion { // org.samfun.ktprd.soap/LicenseResponse.Companion|null[0]
+        final fun parse(kotlin/String): org.samfun.ktprd.soap/LicenseResponse // org.samfun.ktprd.soap/LicenseResponse.Companion.parse|parse(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktprd.soap/RevocationListVersion { // org.samfun.ktprd.soap/RevocationListVersion|null[0]
+    constructor <init>(kotlin.uuid/Uuid, kotlin/Long) // org.samfun.ktprd.soap/RevocationListVersion.<init>|<init>(kotlin.uuid.Uuid;kotlin.Long){}[0]
+
+    final val listId // org.samfun.ktprd.soap/RevocationListVersion.listId|{}listId[0]
+        final fun <get-listId>(): kotlin.uuid/Uuid // org.samfun.ktprd.soap/RevocationListVersion.listId.<get-listId>|<get-listId>(){}[0]
+    final val version // org.samfun.ktprd.soap/RevocationListVersion.version|{}version[0]
+        final fun <get-version>(): kotlin/Long // org.samfun.ktprd.soap/RevocationListVersion.version.<get-version>|<get-version>(){}[0]
+}
+
+final class org.samfun.ktprd.utils/DrmResult { // org.samfun.ktprd.utils/DrmResult|null[0]
+    final val code // org.samfun.ktprd.utils/DrmResult.code|{}code[0]
+        final fun <get-code>(): kotlin/Int // org.samfun.ktprd.utils/DrmResult.code.<get-code>|<get-code>(){}[0]
+    final val message // org.samfun.ktprd.utils/DrmResult.message|{}message[0]
+        final fun <get-message>(): kotlin/String // org.samfun.ktprd.utils/DrmResult.message.<get-message>|<get-message>(){}[0]
+    final val name // org.samfun.ktprd.utils/DrmResult.name|{}name[0]
+        final fun <get-name>(): kotlin/String // org.samfun.ktprd.utils/DrmResult.name.<get-name>|<get-name>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // org.samfun.ktprd.utils/DrmResult.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // org.samfun.ktprd.utils/DrmResult.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktprd.utils/DrmResult.toString|toString(){}[0]
+
+    final object Companion { // org.samfun.ktprd.utils/DrmResult.Companion|null[0]
+        final fun fromCode(kotlin/Int): org.samfun.ktprd.utils/DrmResult? // org.samfun.ktprd.utils/DrmResult.Companion.fromCode|fromCode(kotlin.Int){}[0]
+        final fun fromCode(kotlin/String): org.samfun.ktprd.utils/DrmResult? // org.samfun.ktprd.utils/DrmResult.Companion.fromCode|fromCode(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktprd.utils/InvalidCertificateChainException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidCertificateChainException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidCertificateChainException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidCertificateException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidCertificateException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidCertificateException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidChecksumException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidChecksumException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidChecksumException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidLicenseResponseException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidLicenseResponseException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidLicenseResponseException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidPrdException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidPrdException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidPrdException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidRevocationListException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidRevocationListException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidRevocationListException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidSoapMessageException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidSoapMessageException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidSoapMessageException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidWrmHeaderException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidWrmHeaderException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidWrmHeaderException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/InvalidXmrLicenseException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/InvalidXmrLicenseException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/InvalidXmrLicenseException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.utils/PlayreadyServerException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/PlayreadyServerException|null[0]
+    constructor <init>(kotlin/String, kotlin/Int?) // org.samfun.ktprd.utils/PlayreadyServerException.<init>|<init>(kotlin.String;kotlin.Int?){}[0]
+
+    final val statusCode // org.samfun.ktprd.utils/PlayreadyServerException.statusCode|{}statusCode[0]
+        final fun <get-statusCode>(): kotlin/Int? // org.samfun.ktprd.utils/PlayreadyServerException.statusCode.<get-statusCode>|<get-statusCode>(){}[0]
+}
+
+final class org.samfun.ktprd.utils/XmrSignatureException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.utils/XmrSignatureException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/XmrSignatureException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class org.samfun.ktprd.xmr/XmrContentKey { // org.samfun.ktprd.xmr/XmrContentKey|null[0]
+    final val cipherType // org.samfun.ktprd.xmr/XmrContentKey.cipherType|{}cipherType[0]
+        final fun <get-cipherType>(): org.samfun.ktprd.core/PlayreadyCipherType // org.samfun.ktprd.xmr/XmrContentKey.cipherType.<get-cipherType>|<get-cipherType>(){}[0]
+    final val encryptedKey // org.samfun.ktprd.xmr/XmrContentKey.encryptedKey|{}encryptedKey[0]
+        final fun <get-encryptedKey>(): kotlin/ByteArray // org.samfun.ktprd.xmr/XmrContentKey.encryptedKey.<get-encryptedKey>|<get-encryptedKey>(){}[0]
+    final val keyType // org.samfun.ktprd.xmr/XmrContentKey.keyType|{}keyType[0]
+        final fun <get-keyType>(): org.samfun.ktprd.core/PlayreadyKeyType // org.samfun.ktprd.xmr/XmrContentKey.keyType.<get-keyType>|<get-keyType>(){}[0]
+    final val kid // org.samfun.ktprd.xmr/XmrContentKey.kid|{}kid[0]
+        final fun <get-kid>(): kotlin.uuid/Uuid // org.samfun.ktprd.xmr/XmrContentKey.kid.<get-kid>|<get-kid>(){}[0]
+}
+
+final class org.samfun.ktprd.xmr/XmrLicense { // org.samfun.ktprd.xmr/XmrLicense|null[0]
+    final val contentKey // org.samfun.ktprd.xmr/XmrLicense.contentKey|{}contentKey[0]
+        final fun <get-contentKey>(): org.samfun.ktprd.xmr/XmrContentKey? // org.samfun.ktprd.xmr/XmrLicense.contentKey.<get-contentKey>|<get-contentKey>(){}[0]
+    final val deviceKey // org.samfun.ktprd.xmr/XmrLicense.deviceKey|{}deviceKey[0]
+        final fun <get-deviceKey>(): kotlin/ByteArray? // org.samfun.ktprd.xmr/XmrLicense.deviceKey.<get-deviceKey>|<get-deviceKey>(){}[0]
+    final val isScalable // org.samfun.ktprd.xmr/XmrLicense.isScalable|{}isScalable[0]
+        final fun <get-isScalable>(): kotlin/Boolean // org.samfun.ktprd.xmr/XmrLicense.isScalable.<get-isScalable>|<get-isScalable>(){}[0]
+    final val objects // org.samfun.ktprd.xmr/XmrLicense.objects|{}objects[0]
+        final fun <get-objects>(): kotlin.collections/List<org.samfun.ktprd.xmr/XmrObject> // org.samfun.ktprd.xmr/XmrLicense.objects.<get-objects>|<get-objects>(){}[0]
+    final val raw // org.samfun.ktprd.xmr/XmrLicense.raw|{}raw[0]
+        final fun <get-raw>(): kotlin/ByteArray // org.samfun.ktprd.xmr/XmrLicense.raw.<get-raw>|<get-raw>(){}[0]
+    final val rightsId // org.samfun.ktprd.xmr/XmrLicense.rightsId|{}rightsId[0]
+        final fun <get-rightsId>(): kotlin/ByteArray // org.samfun.ktprd.xmr/XmrLicense.rightsId.<get-rightsId>|<get-rightsId>(){}[0]
+    final val version // org.samfun.ktprd.xmr/XmrLicense.version|{}version[0]
+        final fun <get-version>(): kotlin/Long // org.samfun.ktprd.xmr/XmrLicense.version.<get-version>|<get-version>(){}[0]
+
+    final fun toString(): kotlin/String // org.samfun.ktprd.xmr/XmrLicense.toString|toString(){}[0]
+    final suspend fun contentKey(org.samfun.ktprd.core/EccKey): org.samfun.ktprd.core/PlayreadyKey // org.samfun.ktprd.xmr/XmrLicense.contentKey|contentKey(org.samfun.ktprd.core.EccKey){}[0]
+    final suspend fun verifyIntegrity(kotlin/ByteArray) // org.samfun.ktprd.xmr/XmrLicense.verifyIntegrity|verifyIntegrity(kotlin.ByteArray){}[0]
+
+    final object Companion { // org.samfun.ktprd.xmr/XmrLicense.Companion|null[0]
+        final fun loads(kotlin/ByteArray): org.samfun.ktprd.xmr/XmrLicense // org.samfun.ktprd.xmr/XmrLicense.Companion.loads|loads(kotlin.ByteArray){}[0]
+        final fun loads(kotlin/String): org.samfun.ktprd.xmr/XmrLicense // org.samfun.ktprd.xmr/XmrLicense.Companion.loads|loads(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktprd.xmr/XmrObject { // org.samfun.ktprd.xmr/XmrObject|null[0]
+    final val body // org.samfun.ktprd.xmr/XmrObject.body|{}body[0]
+        final fun <get-body>(): kotlin/ByteArray // org.samfun.ktprd.xmr/XmrObject.body.<get-body>|<get-body>(){}[0]
+    final val children // org.samfun.ktprd.xmr/XmrObject.children|{}children[0]
+        final fun <get-children>(): kotlin.collections/List<org.samfun.ktprd.xmr/XmrObject> // org.samfun.ktprd.xmr/XmrObject.children.<get-children>|<get-children>(){}[0]
+    final val flags // org.samfun.ktprd.xmr/XmrObject.flags|{}flags[0]
+        final fun <get-flags>(): kotlin/Int // org.samfun.ktprd.xmr/XmrObject.flags.<get-flags>|<get-flags>(){}[0]
+    final val type // org.samfun.ktprd.xmr/XmrObject.type|{}type[0]
+        final fun <get-type>(): org.samfun.ktprd.xmr/XmrObjectType // org.samfun.ktprd.xmr/XmrObject.type.<get-type>|<get-type>(){}[0]
+
+    final fun toString(): kotlin/String // org.samfun.ktprd.xmr/XmrObject.toString|toString(){}[0]
+}
+
+open class org.samfun.ktprd.utils/KtprdException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktprd.utils/KtprdException|null[0]
+    constructor <init>(kotlin/String) // org.samfun.ktprd.utils/KtprdException.<init>|<init>(kotlin.String){}[0]
+}
+
+final object org.samfun.ktprd.bcert/Provisioning { // org.samfun.ktprd.bcert/Provisioning|null[0]
+    final const val NEVER_EXPIRES // org.samfun.ktprd.bcert/Provisioning.NEVER_EXPIRES|{}NEVER_EXPIRES[0]
+        final fun <get-NEVER_EXPIRES>(): kotlin/Long // org.samfun.ktprd.bcert/Provisioning.NEVER_EXPIRES.<get-NEVER_EXPIRES>|<get-NEVER_EXPIRES>(){}[0]
+
+    final fun exportRawKeys(org.samfun.ktprd.core/PlayreadyDevice): kotlin/Pair<kotlin/ByteArray, kotlin/ByteArray> // org.samfun.ktprd.bcert/Provisioning.exportRawKeys|exportRawKeys(org.samfun.ktprd.core.PlayreadyDevice){}[0]
+    final suspend fun createDevice(org.samfun.ktprd.bcert/CertificateChain, org.samfun.ktprd.core/EccKey, org.samfun.ktprd.core/EccKey? = ..., org.samfun.ktprd.core/EccKey? = ...): org.samfun.ktprd.core/PlayreadyDevice // org.samfun.ktprd.bcert/Provisioning.createDevice|createDevice(org.samfun.ktprd.bcert.CertificateChain;org.samfun.ktprd.core.EccKey;org.samfun.ktprd.core.EccKey?;org.samfun.ktprd.core.EccKey?){}[0]
+    final suspend fun newLeafCertificate(org.samfun.ktprd.bcert/CertificateChain, org.samfun.ktprd.core/EccKey, org.samfun.ktprd.core/EccKey, org.samfun.ktprd.core/EccKey, kotlin/ByteArray = ..., kotlin/ByteArray = ..., kotlin/Long = ...): org.samfun.ktprd.bcert/Certificate // org.samfun.ktprd.bcert/Provisioning.newLeafCertificate|newLeafCertificate(org.samfun.ktprd.bcert.CertificateChain;org.samfun.ktprd.core.EccKey;org.samfun.ktprd.core.EccKey;org.samfun.ktprd.core.EccKey;kotlin.ByteArray;kotlin.ByteArray;kotlin.Long){}[0]
+    final suspend fun reprovision(org.samfun.ktprd.core/PlayreadyDevice, org.samfun.ktprd.core/EccKey? = ..., org.samfun.ktprd.core/EccKey? = ...): org.samfun.ktprd.core/PlayreadyDevice // org.samfun.ktprd.bcert/Provisioning.reprovision|reprovision(org.samfun.ktprd.core.PlayreadyDevice;org.samfun.ktprd.core.EccKey?;org.samfun.ktprd.core.EccKey?){}[0]
+    final suspend fun unwrapProtectedGroupKey(kotlin/ByteArray): org.samfun.ktprd.core/EccKey // org.samfun.ktprd.bcert/Provisioning.unwrapProtectedGroupKey|unwrapProtectedGroupKey(kotlin.ByteArray){}[0]
+}
+
+final object org.samfun.ktprd.utils/KtprdLog { // org.samfun.ktprd.utils/KtprdLog|null[0]
+    final fun d(kotlin/Function0<kotlin/String>) // org.samfun.ktprd.utils/KtprdLog.d|d(kotlin.Function0<kotlin.String>){}[0]
+    final fun e(kotlin/Throwable? = ..., kotlin/Function0<kotlin/String>) // org.samfun.ktprd.utils/KtprdLog.e|e(kotlin.Throwable?;kotlin.Function0<kotlin.String>){}[0]
+    final fun reset() // org.samfun.ktprd.utils/KtprdLog.reset|reset(){}[0]
+    final fun setLogger(co.touchlab.kermit/Logger) // org.samfun.ktprd.utils/KtprdLog.setLogger|setLogger(co.touchlab.kermit.Logger){}[0]
+    final fun setMinSeverity(co.touchlab.kermit/Severity) // org.samfun.ktprd.utils/KtprdLog.setMinSeverity|setMinSeverity(co.touchlab.kermit.Severity){}[0]
+    final fun v(kotlin/Function0<kotlin/String>) // org.samfun.ktprd.utils/KtprdLog.v|v(kotlin.Function0<kotlin.String>){}[0]
+    final fun w(kotlin/Function0<kotlin/String>) // org.samfun.ktprd.utils/KtprdLog.w|w(kotlin.Function0<kotlin.String>){}[0]
+}

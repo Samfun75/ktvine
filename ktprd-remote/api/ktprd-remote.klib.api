@@ -1,0 +1,30 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, linuxX64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.samfun75:ktprd-remote>
+final class org.samfun.ktprd.remote/RemotePlayreadyCdm : org.samfun.ktprd.cdm/PlayreadyCdmApi { // org.samfun.ktprd.remote/RemotePlayreadyCdm|null[0]
+    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin/String, kotlin/String, kotlin/Int? = ...) // org.samfun.ktprd.remote/RemotePlayreadyCdm.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.String;kotlin.Int?){}[0]
+
+    final var securityLevel // org.samfun.ktprd.remote/RemotePlayreadyCdm.securityLevel|{}securityLevel[0]
+        final fun <get-securityLevel>(): kotlin/Int? // org.samfun.ktprd.remote/RemotePlayreadyCdm.securityLevel.<get-securityLevel>|<get-securityLevel>(){}[0]
+
+    final suspend fun close(okio/ByteString) // org.samfun.ktprd.remote/RemotePlayreadyCdm.close|close(okio.ByteString){}[0]
+    final suspend fun getKeys(okio/ByteString): kotlin.collections/List<org.samfun.ktprd.core/PlayreadyKey> // org.samfun.ktprd.remote/RemotePlayreadyCdm.getKeys|getKeys(okio.ByteString){}[0]
+    final suspend fun getLicenseChallenge(okio/ByteString, org.samfun.ktprd.core/WrmHeader, kotlin.collections/List<kotlin.uuid/Uuid>?): kotlin/String // org.samfun.ktprd.remote/RemotePlayreadyCdm.getLicenseChallenge|getLicenseChallenge(okio.ByteString;org.samfun.ktprd.core.WrmHeader;kotlin.collections.List<kotlin.uuid.Uuid>?){}[0]
+    final suspend fun open(): okio/ByteString // org.samfun.ktprd.remote/RemotePlayreadyCdm.open|open(){}[0]
+    final suspend fun parseLicense(okio/ByteString, kotlin/String) // org.samfun.ktprd.remote/RemotePlayreadyCdm.parseLicense|parseLicense(okio.ByteString;kotlin.String){}[0]
+    final suspend fun probe() // org.samfun.ktprd.remote/RemotePlayreadyCdm.probe|probe(){}[0]
+}
+
+final class org.samfun.ktprd.remote/RemotePlayreadyCdmException : org.samfun.ktprd.utils/KtprdException { // org.samfun.ktprd.remote/RemotePlayreadyCdmException|null[0]
+    constructor <init>(kotlin/Int, kotlin/String) // org.samfun.ktprd.remote/RemotePlayreadyCdmException.<init>|<init>(kotlin.Int;kotlin.String){}[0]
+
+    final val serverMessage // org.samfun.ktprd.remote/RemotePlayreadyCdmException.serverMessage|{}serverMessage[0]
+        final fun <get-serverMessage>(): kotlin/String // org.samfun.ktprd.remote/RemotePlayreadyCdmException.serverMessage.<get-serverMessage>|<get-serverMessage>(){}[0]
+    final val status // org.samfun.ktprd.remote/RemotePlayreadyCdmException.status|{}status[0]
+        final fun <get-status>(): kotlin/Int // org.samfun.ktprd.remote/RemotePlayreadyCdmException.status.<get-status>|<get-status>(){}[0]
+}
