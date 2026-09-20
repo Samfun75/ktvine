@@ -18,16 +18,16 @@ Gradle (Kotlin DSL):
 
 ```kotlin
 dependencies {
-    implementation("io.github.samfun75:ktvine:1.0.0-RC1")
+    implementation("io.github.samfun75:ktvine:1.0.0-RC2")
     // Optional: talk to a pywidevine-compatible CDM server instead of holding a device.
-    // implementation("io.github.samfun75:ktvine-remote:1.0.0-RC1")
+    // implementation("io.github.samfun75:ktvine-remote:1.0.0-RC2")
     // Optional (JVM only): serve your own CDM over that same protocol.
-    // implementation("io.github.samfun75:ktvine-serve:1.0.0-RC1")
+    // implementation("io.github.samfun75:ktvine-serve:1.0.0-RC2")
 
     // Optional: PlayReady, the same story with a different DRM system.
-    // implementation("io.github.samfun75:ktprd:1.0.0-RC1")
-    // implementation("io.github.samfun75:ktprd-remote:1.0.0-RC1")
-    // implementation("io.github.samfun75:ktprd-serve:1.0.0-RC1")
+    // implementation("io.github.samfun75:ktprd:1.0.0-RC2")
+    // implementation("io.github.samfun75:ktprd-remote:1.0.0-RC2")
+    // implementation("io.github.samfun75:ktprd-serve:1.0.0-RC2")
 }
 ```
 
@@ -165,7 +165,7 @@ so this module picks none for you.
 
 ```kotlin
 dependencies {
-    implementation("io.github.samfun75:ktvine-remote:1.0.0-RC1")
+    implementation("io.github.samfun75:ktvine-remote:1.0.0-RC2")
     implementation("io.ktor:ktor-client-cio:3.0.3") // any Ktor engine you like
 }
 ```
@@ -203,7 +203,7 @@ engines do not span the targets the client does.
 
 ```kotlin
 dependencies {
-    implementation("io.github.samfun75:ktvine-serve:1.0.0-RC1")
+    implementation("io.github.samfun75:ktvine-serve:1.0.0-RC2")
     implementation("io.ktor:ktor-server-cio:3.0.3") // you pick the engine
 }
 ```
@@ -235,7 +235,7 @@ artifact so a Widevine-only consumer pays nothing for it.
 
 ```kotlin
 dependencies {
-    implementation("io.github.samfun75:ktprd:1.0.0-RC1")
+    implementation("io.github.samfun75:ktprd:1.0.0-RC2")
 }
 ```
 

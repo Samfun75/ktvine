@@ -18,7 +18,7 @@ reimplementation from public research, not a port — see "The reference impleme
 
 - Maven coordinates: `io.github.samfun75:ktvine{,-remote,-serve}` and
   `io.github.samfun75:ktprd{,-remote,-serve}`
-- Current version: `1.0.0-RC1` (declared once, in `gradle/libs.versions.toml`)
+- Current version: `1.0.0-RC2` (declared once, in `gradle/libs.versions.toml`)
 - License: Apache-2.0
 - Repo: https://github.com/samfun75/ktvine
 
