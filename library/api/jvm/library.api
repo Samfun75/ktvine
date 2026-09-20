@@ -126,6 +126,7 @@ public final class org/samfun/ktvine/core/PSSH {
 	public static synthetic fun toPlayready$default (Lorg/samfun/ktvine/core/PSSH;Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
 	public fun toString ()Ljava/lang/String;
 	public final fun toWidevine ()V
+	public final fun wrmHeaders ()Ljava/util/List;
 }
 
 public final class org/samfun/ktvine/core/PSSH$Companion {
@@ -138,6 +139,42 @@ public final class org/samfun/ktvine/core/PSSH$Companion {
 	public final fun parseAll (Ljava/lang/String;)Ljava/util/List;
 	public final fun parseAll ([B)Ljava/util/List;
 	public final fun parseKeyIds (Ljava/util/List;)Ljava/util/List;
+}
+
+public final class org/samfun/ktvine/core/PlayreadyHeader {
+	public static final field Companion Lorg/samfun/ktvine/core/PlayreadyHeader$Companion;
+	public static final field GENERATED_VERSION Ljava/lang/String;
+	public static final field NAMESPACE Ljava/lang/String;
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAlgid ()Ljava/lang/String;
+	public final fun getCustomAttributes ()Ljava/lang/String;
+	public final fun getDecryptorSetup ()Ljava/lang/String;
+	public final fun getDsId ()[B
+	public final fun getKeyIds ()Ljava/util/List;
+	public final fun getLaUrl ()Ljava/lang/String;
+	public final fun getLuiUrl ()Ljava/lang/String;
+	public final fun getRaw ()Ljava/lang/String;
+	public final fun getSignedKeyIds ()Ljava/util/List;
+	public final fun getVersion ()Ljava/lang/String;
+	public fun hashCode ()I
+}
+
+public final class org/samfun/ktvine/core/PlayreadyHeader$Companion {
+	public final fun build (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun build$default (Lorg/samfun/ktvine/core/PlayreadyHeader$Companion;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun parse (Ljava/lang/String;)Lorg/samfun/ktvine/core/PlayreadyHeader;
+}
+
+public final class org/samfun/ktvine/core/SignedKeyId {
+	public fun <init> (Lkotlin/uuid/Uuid;Ljava/lang/String;[B)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAlgId ()Ljava/lang/String;
+	public final fun getChecksum ()[B
+	public final fun getValue ()Lkotlin/uuid/Uuid;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class org/samfun/ktvine/crypto/CryptoKt {

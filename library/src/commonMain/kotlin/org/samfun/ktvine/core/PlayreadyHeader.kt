@@ -14,27 +14,63 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
+ * A key id from a `WRMHEADER`, with the algorithm and checksum declared alongside it.
+ *
+ * [value] is held big-endian, matching `cenc:default_KID` and Widevine; the little-endian GUID
+ * form the header stores is converted on the way in and out.
+ */
+public class SignedKeyId(
+    public val value: Uuid,
+    /** `AESCTR`, `AESCBC` or `COCKTAIL`, when the header names one. */
+    public val algId: String?,
+    /** A truncated MAC over the key id under the content key, when the header carries one. */
+    public val checksum: ByteArray?,
+) {
+    override fun toString(): String = "SignedKeyId(value=$value, algId=$algId)"
+
+    override fun equals(other: Any?): Boolean = other is SignedKeyId &&
+        value == other.value &&
+        algId == other.algId &&
+        (checksum?.contentEquals(other.checksum) ?: (other.checksum == null))
+
+    override fun hashCode(): Int {
+        var result = value.hashCode()
+        result = 31 * result + (algId?.hashCode() ?: 0)
+        result = 31 * result + (checksum?.contentHashCode() ?: 0)
+        return result
+    }
+}
+
+/**
  * A parsed PlayReady `WRMHEADER`.
  *
  * Key ids are held big-endian, matching `cenc:default_KID` and Widevine; the little-endian
  * GUID form the header stores is converted on the way in and out.
+ *
+ * [raw] is the document this was parsed from, verbatim. A PlayReady license challenge embeds the
+ * header in its signed payload, so re-serializing it would change bytes the signature covers.
  */
-internal data class PlayreadyHeader(
-    val version: String,
-    val keyIds: List<Uuid>,
-    val algid: String? = null,
-    val laUrl: String? = null,
-    val luiUrl: String? = null,
-    val dsId: ByteArray? = null,
-    val decryptorSetup: String? = null,
-    val customAttributes: String? = null,
+public class PlayreadyHeader(
+    public val version: String,
+    public val signedKeyIds: List<SignedKeyId>,
+    public val algid: String? = null,
+    public val laUrl: String? = null,
+    public val luiUrl: String? = null,
+    public val dsId: ByteArray? = null,
+    public val decryptorSetup: String? = null,
+    public val customAttributes: String? = null,
+    /** The source document, or `null` when this header was assembled rather than parsed. */
+    public val raw: String? = null,
 ) {
-    // dsId is a ByteArray, so the generated data-class implementations would be wrong.
+    /** The key ids alone, for callers that do not care about algorithm or checksum. */
+    public val keyIds: List<Uuid> get() = signedKeyIds.map { it.value }
+
+    // dsId is a ByteArray, so generated implementations would compare it by identity.
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PlayreadyHeader) return false
         return version == other.version &&
-            keyIds == other.keyIds &&
+            signedKeyIds == other.signedKeyIds &&
             algid == other.algid &&
             laUrl == other.laUrl &&
             luiUrl == other.luiUrl &&
@@ -45,7 +81,7 @@ internal data class PlayreadyHeader(
 
     override fun hashCode(): Int {
         var result = version.hashCode()
-        result = 31 * result + keyIds.hashCode()
+        result = 31 * result + signedKeyIds.hashCode()
         result = 31 * result + (algid?.hashCode() ?: 0)
         result = 31 * result + (laUrl?.hashCode() ?: 0)
         result = 31 * result + (luiUrl?.hashCode() ?: 0)
@@ -55,11 +91,11 @@ internal data class PlayreadyHeader(
         return result
     }
 
-    internal companion object {
-        const val NAMESPACE: String = "http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader"
+    public companion object {
+        public const val NAMESPACE: String = "http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader"
 
         /** The version this library emits. */
-        const val GENERATED_VERSION: String = "4.3.0.0"
+        public const val GENERATED_VERSION: String = "4.3.0.0"
 
         private val SUPPORTED = setOf("4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0")
 
@@ -77,7 +113,7 @@ internal data class PlayreadyHeader(
          *
          * @throws ValueException if the document is not a supported `WRMHEADER`
          */
-        fun parse(xml: String): PlayreadyHeader {
+        public fun parse(xml: String): PlayreadyHeader {
             val reader = try {
                 xmlStreaming.newReader(xml)
             } catch (e: Throwable) {
@@ -85,7 +121,8 @@ internal data class PlayreadyHeader(
             }
 
             var version: String? = null
-            val keyIds = mutableListOf<Uuid>()
+            val keyIds = mutableListOf<SignedKeyId>()
+            var documentChecksum: ByteArray? = null
             var algid: String? = null
             var laUrl: String? = null
             var luiUrl: String? = null
@@ -118,21 +155,31 @@ internal data class PlayreadyHeader(
                                         else -> null
                                     }
                                     if (here == expected) {
-                                        reader.getAttributeValue(null, "ALGID")?.let { if (algid == null) algid = it }
+                                        val kidAlgId = reader.getAttributeValue(null, "ALGID")
+                                        kidAlgId?.let { if (algid == null) algid = it }
                                         val value = reader.getAttributeValue(null, "VALUE")
                                             ?: throw ValueException("A <KID> in a v$version header has no VALUE")
-                                        keyIds += decodeKid(value)
+                                        keyIds += SignedKeyId(
+                                            value = decodeKid(value),
+                                            algId = kidAlgId,
+                                            checksum = reader.getAttributeValue(null, "CHECKSUM")
+                                                ?.let { decodeChecksum(it) },
+                                        )
                                     }
                                 }
 
                                 "WRMHEADER/DATA/PROTECTINFO/ALGID" ->
                                     reader.readText()?.let { if (algid == null) algid = it }
 
-                                // 4.0.0.0 puts a single id in the element text.
+                                // 4.0.0.0 puts a single id in the element text, and its algorithm and
+                                // checksum in sibling elements rather than attributes.
                                 "WRMHEADER/DATA/KID" ->
                                     if (version == "4.0.0.0") {
-                                        reader.readText()?.let { keyIds += decodeKid(it) }
+                                        reader.readText()?.let { keyIds += SignedKeyId(decodeKid(it), null, null) }
                                     }
+
+                                "WRMHEADER/DATA/CHECKSUM" ->
+                                    documentChecksum = reader.readText()?.let { decodeChecksum(it) }
 
                                 "WRMHEADER/DATA/LA_URL" -> laUrl = reader.readText()
                                 "WRMHEADER/DATA/LUI_URL" -> luiUrl = reader.readText()
@@ -162,21 +209,30 @@ internal data class PlayreadyHeader(
             val resolved = version ?: throw ValueException("Unsupported PlayReadyHeader, missing version")
             if (resolved !in SUPPORTED) throw ValueException("Unsupported PlayReadyHeader version $resolved")
 
+            // A v4.0.0.0 header states its algorithm and checksum once, outside the <KID>.
+            val signedKeyIds = if (resolved == "4.0.0.0") {
+                keyIds.map { SignedKeyId(it.value, it.algId ?: algid, it.checksum ?: documentChecksum) }
+            } else {
+                keyIds
+            }
+
             return PlayreadyHeader(
                 version = resolved,
-                keyIds = keyIds,
+                signedKeyIds = signedKeyIds,
                 algid = algid,
                 laUrl = laUrl,
                 luiUrl = luiUrl,
                 dsId = dsId,
                 decryptorSetup = decryptorSetup,
                 customAttributes = customAttributes,
+                raw = xml,
             )
         }
 
         /** Elements whose handler above already consumed the matching end tag. */
         private fun consumesElement(path: String, version: String?): Boolean = when (path) {
             "WRMHEADER/DATA/PROTECTINFO/ALGID",
+            "WRMHEADER/DATA/CHECKSUM",
             "WRMHEADER/DATA/LA_URL",
             "WRMHEADER/DATA/LUI_URL",
             "WRMHEADER/DATA/DS_ID",
@@ -186,6 +242,14 @@ internal data class PlayreadyHeader(
 
             "WRMHEADER/DATA/KID" -> version == "4.0.0.0"
             else -> false
+        }
+
+        private fun decodeChecksum(value: String): ByteArray? = try {
+            Base64.decode(value.trim())
+        } catch (e: Throwable) {
+            // A malformed checksum is not worth rejecting a whole header over; it is optional and
+            // only ever used to confirm a key that has already been decrypted.
+            null
         }
 
         private fun decodeKid(value: String): Uuid {
@@ -249,7 +313,7 @@ internal data class PlayreadyHeader(
          * Output is deterministic: fixed element order, no insignificant whitespace, and
          * every interpolated value escaped.
          */
-        fun build(
+        public fun build(
             keyIds: List<Uuid>,
             algid: String,
             laUrl: String? = null,

@@ -143,6 +143,7 @@ final class org.samfun.ktvine.core/PSSH { // org.samfun.ktvine.core/PSSH|null[0]
     final fun toPlayready(kotlin/String? = ..., kotlin/String? = ..., kotlin/ByteArray? = ..., kotlin/String? = ..., kotlin/String? = ...) // org.samfun.ktvine.core/PSSH.toPlayready|toPlayready(kotlin.String?;kotlin.String?;kotlin.ByteArray?;kotlin.String?;kotlin.String?){}[0]
     final fun toString(): kotlin/String // org.samfun.ktvine.core/PSSH.toString|toString(){}[0]
     final fun toWidevine() // org.samfun.ktvine.core/PSSH.toWidevine|toWidevine(){}[0]
+    final fun wrmHeaders(): kotlin.collections/List<kotlin/String> // org.samfun.ktvine.core/PSSH.wrmHeaders|wrmHeaders(){}[0]
 
     final object Companion { // org.samfun.ktvine.core/PSSH.Companion|null[0]
         final val PLAYREADY_SYSTEM_ID // org.samfun.ktvine.core/PSSH.Companion.PLAYREADY_SYSTEM_ID|{}PLAYREADY_SYSTEM_ID[0]
@@ -156,6 +157,59 @@ final class org.samfun.ktvine.core/PSSH { // org.samfun.ktvine.core/PSSH|null[0]
         final fun parseAll(kotlin/String): kotlin.collections/List<org.samfun.ktvine.core/PSSH> // org.samfun.ktvine.core/PSSH.Companion.parseAll|parseAll(kotlin.String){}[0]
         final fun parseKeyIds(kotlin.collections/List<kotlin/Any>): kotlin.collections/List<kotlin.uuid/Uuid> // org.samfun.ktvine.core/PSSH.Companion.parseKeyIds|parseKeyIds(kotlin.collections.List<kotlin.Any>){}[0]
     }
+}
+
+final class org.samfun.ktvine.core/PlayreadyHeader { // org.samfun.ktvine.core/PlayreadyHeader|null[0]
+    constructor <init>(kotlin/String, kotlin.collections/List<org.samfun.ktvine.core/SignedKeyId>, kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/ByteArray? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...) // org.samfun.ktvine.core/PlayreadyHeader.<init>|<init>(kotlin.String;kotlin.collections.List<org.samfun.ktvine.core.SignedKeyId>;kotlin.String?;kotlin.String?;kotlin.String?;kotlin.ByteArray?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
+
+    final val algid // org.samfun.ktvine.core/PlayreadyHeader.algid|{}algid[0]
+        final fun <get-algid>(): kotlin/String? // org.samfun.ktvine.core/PlayreadyHeader.algid.<get-algid>|<get-algid>(){}[0]
+    final val customAttributes // org.samfun.ktvine.core/PlayreadyHeader.customAttributes|{}customAttributes[0]
+        final fun <get-customAttributes>(): kotlin/String? // org.samfun.ktvine.core/PlayreadyHeader.customAttributes.<get-customAttributes>|<get-customAttributes>(){}[0]
+    final val decryptorSetup // org.samfun.ktvine.core/PlayreadyHeader.decryptorSetup|{}decryptorSetup[0]
+        final fun <get-decryptorSetup>(): kotlin/String? // org.samfun.ktvine.core/PlayreadyHeader.decryptorSetup.<get-decryptorSetup>|<get-decryptorSetup>(){}[0]
+    final val dsId // org.samfun.ktvine.core/PlayreadyHeader.dsId|{}dsId[0]
+        final fun <get-dsId>(): kotlin/ByteArray? // org.samfun.ktvine.core/PlayreadyHeader.dsId.<get-dsId>|<get-dsId>(){}[0]
+    final val keyIds // org.samfun.ktvine.core/PlayreadyHeader.keyIds|{}keyIds[0]
+        final fun <get-keyIds>(): kotlin.collections/List<kotlin.uuid/Uuid> // org.samfun.ktvine.core/PlayreadyHeader.keyIds.<get-keyIds>|<get-keyIds>(){}[0]
+    final val laUrl // org.samfun.ktvine.core/PlayreadyHeader.laUrl|{}laUrl[0]
+        final fun <get-laUrl>(): kotlin/String? // org.samfun.ktvine.core/PlayreadyHeader.laUrl.<get-laUrl>|<get-laUrl>(){}[0]
+    final val luiUrl // org.samfun.ktvine.core/PlayreadyHeader.luiUrl|{}luiUrl[0]
+        final fun <get-luiUrl>(): kotlin/String? // org.samfun.ktvine.core/PlayreadyHeader.luiUrl.<get-luiUrl>|<get-luiUrl>(){}[0]
+    final val raw // org.samfun.ktvine.core/PlayreadyHeader.raw|{}raw[0]
+        final fun <get-raw>(): kotlin/String? // org.samfun.ktvine.core/PlayreadyHeader.raw.<get-raw>|<get-raw>(){}[0]
+    final val signedKeyIds // org.samfun.ktvine.core/PlayreadyHeader.signedKeyIds|{}signedKeyIds[0]
+        final fun <get-signedKeyIds>(): kotlin.collections/List<org.samfun.ktvine.core/SignedKeyId> // org.samfun.ktvine.core/PlayreadyHeader.signedKeyIds.<get-signedKeyIds>|<get-signedKeyIds>(){}[0]
+    final val version // org.samfun.ktvine.core/PlayreadyHeader.version|{}version[0]
+        final fun <get-version>(): kotlin/String // org.samfun.ktvine.core/PlayreadyHeader.version.<get-version>|<get-version>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // org.samfun.ktvine.core/PlayreadyHeader.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // org.samfun.ktvine.core/PlayreadyHeader.hashCode|hashCode(){}[0]
+
+    final object Companion { // org.samfun.ktvine.core/PlayreadyHeader.Companion|null[0]
+        final const val GENERATED_VERSION // org.samfun.ktvine.core/PlayreadyHeader.Companion.GENERATED_VERSION|{}GENERATED_VERSION[0]
+            final fun <get-GENERATED_VERSION>(): kotlin/String // org.samfun.ktvine.core/PlayreadyHeader.Companion.GENERATED_VERSION.<get-GENERATED_VERSION>|<get-GENERATED_VERSION>(){}[0]
+        final const val NAMESPACE // org.samfun.ktvine.core/PlayreadyHeader.Companion.NAMESPACE|{}NAMESPACE[0]
+            final fun <get-NAMESPACE>(): kotlin/String // org.samfun.ktvine.core/PlayreadyHeader.Companion.NAMESPACE.<get-NAMESPACE>|<get-NAMESPACE>(){}[0]
+
+        final fun build(kotlin.collections/List<kotlin.uuid/Uuid>, kotlin/String, kotlin/String? = ..., kotlin/String? = ..., kotlin/ByteArray? = ..., kotlin/String? = ..., kotlin/String? = ...): kotlin/String // org.samfun.ktvine.core/PlayreadyHeader.Companion.build|build(kotlin.collections.List<kotlin.uuid.Uuid>;kotlin.String;kotlin.String?;kotlin.String?;kotlin.ByteArray?;kotlin.String?;kotlin.String?){}[0]
+        final fun parse(kotlin/String): org.samfun.ktvine.core/PlayreadyHeader // org.samfun.ktvine.core/PlayreadyHeader.Companion.parse|parse(kotlin.String){}[0]
+    }
+}
+
+final class org.samfun.ktvine.core/SignedKeyId { // org.samfun.ktvine.core/SignedKeyId|null[0]
+    constructor <init>(kotlin.uuid/Uuid, kotlin/String?, kotlin/ByteArray?) // org.samfun.ktvine.core/SignedKeyId.<init>|<init>(kotlin.uuid.Uuid;kotlin.String?;kotlin.ByteArray?){}[0]
+
+    final val algId // org.samfun.ktvine.core/SignedKeyId.algId|{}algId[0]
+        final fun <get-algId>(): kotlin/String? // org.samfun.ktvine.core/SignedKeyId.algId.<get-algId>|<get-algId>(){}[0]
+    final val checksum // org.samfun.ktvine.core/SignedKeyId.checksum|{}checksum[0]
+        final fun <get-checksum>(): kotlin/ByteArray? // org.samfun.ktvine.core/SignedKeyId.checksum.<get-checksum>|<get-checksum>(){}[0]
+    final val value // org.samfun.ktvine.core/SignedKeyId.value|{}value[0]
+        final fun <get-value>(): kotlin.uuid/Uuid // org.samfun.ktvine.core/SignedKeyId.value.<get-value>|<get-value>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // org.samfun.ktvine.core/SignedKeyId.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // org.samfun.ktvine.core/SignedKeyId.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // org.samfun.ktvine.core/SignedKeyId.toString|toString(){}[0]
 }
 
 final class org.samfun.ktvine.utils/DecodeException : org.samfun.ktvine.utils/KtvineException { // org.samfun.ktvine.utils/DecodeException|null[0]

@@ -187,8 +187,19 @@ public class PSSH {
         }
     }
 
-    /** The record-type 0x01 PlayReady header of this box's PRO, as text. */
-    private fun playreadyHeaderXml(): String {
+    /**
+     * Every `WRMHEADER` this box's PlayReady Object carries, as text.
+     *
+     * A PRO may hold several header records; a PlayReady CDM needs each of them, and needs the
+     * text verbatim because a license challenge signs the header it embeds.
+     *
+     * @throws ValueException if this is not a PlayReady box, or its object carries no header
+     */
+    public fun wrmHeaders(): List<String> {
+        if (!_systemId.contentEquals(PLAYREADY_SYSTEM_ID)) {
+            throw ValueException("This is not a PlayReady PSSH")
+        }
+
         val proData = Buffer().write(_content)
         val size = try {
             proData.readIntLe()
@@ -199,18 +210,21 @@ public class PSSH {
             throw ValueException("The PlayReadyObject seems to be corrupt (declares $size bytes, has ${_content.size})")
         }
 
+        val headers = mutableListOf<String>()
         val proRecordCount = proData.readShortLe().toInt() and 0xFFFF
         repeat(proRecordCount) {
             val prrType = proData.readShortLe().toInt() and 0xFFFF
             val prrLength = proData.readShortLe().toInt() and 0xFFFF
             val prrValue = proData.readByteArray(prrLength.toLong())
             // Type 0x03 is the Embedded License Store, which this library does not handle.
-            if (prrType != 0x01) return@repeat
-            return prrValue.decodeToStringUtf16LE()
+            if (prrType == 0x01) headers += prrValue.decodeToStringUtf16LE()
         }
 
-        throw ValueException("no PlayReadyHeader within the object")
+        if (headers.isEmpty()) throw ValueException("no PlayReadyHeader within the object")
+        return headers
     }
+
+    private fun playreadyHeaderXml(): String = wrmHeaders().first()
 
     private fun playreadyKeyIds(): List<Uuid> = PlayreadyHeader.parse(playreadyHeaderXml()).keyIds
 
@@ -433,6 +447,56 @@ public class PSSH {
             }.readByteArray()
         }
 
+        /**
+         * Wrap a bare PlayReady header or object record into a full PlayReady Object.
+         *
+         * Input that already frames itself as a PRO is returned untouched.
+         */
+        private fun normalisePlayreadyObject(data: ByteArray): ByteArray {
+            if (data.size >= PRO_HEADER_SIZE && readIntLe(data, 0) == data.size) return data
+
+            // A bare record: u16le type, u16le length, then the value.
+            if (data.size > PRO_RECORD_HEADER_SIZE) {
+                val type = readShortLe(data, 0)
+                val length = readShortLe(data, 2)
+                if (type in 1..3 && PRO_RECORD_HEADER_SIZE + length == data.size) {
+                    return wrapPlayreadyRecord(type, data.copyOfRange(PRO_RECORD_HEADER_SIZE, data.size))
+                }
+            }
+
+            return wrapPlayreadyRecord(0x01, data)
+        }
+
+        private fun readIntLe(data: ByteArray, offset: Int): Int = (data[offset].toInt() and 0xFF) or
+            ((data[offset + 1].toInt() and 0xFF) shl 8) or
+            ((data[offset + 2].toInt() and 0xFF) shl 16) or
+            ((data[offset + 3].toInt() and 0xFF) shl 24)
+
+        private fun readShortLe(data: ByteArray, offset: Int): Int =
+            (data[offset].toInt() and 0xFF) or ((data[offset + 1].toInt() and 0xFF) shl 8)
+
+        private fun wrapPlayreadyRecord(type: Int, value: ByteArray): ByteArray {
+            if (value.size > 0xFFFF) {
+                throw ValueException("PlayReady record is ${value.size} bytes, over the 65535-byte limit")
+            }
+            val body = Buffer().apply {
+                writeShortLe(1)
+                writeShortLe(type)
+                writeShortLe(value.size)
+                write(value)
+            }.readByteArray()
+            return Buffer().apply {
+                writeIntLe(body.size + 4)
+                write(body)
+            }.readByteArray()
+        }
+
+        /** Bytes of the PRO length field plus its record count. */
+        private const val PRO_HEADER_SIZE = 6
+
+        /** Bytes of a PRO record's type and length fields. */
+        private const val PRO_RECORD_HEADER_SIZE = 4
+
         private val WRMHEADER_CLOSE_TAG = "</WRMHEADER>".encodeToUtf16LE()
 
         private fun decodeBase64OrThrow(data: String): ByteArray = try {
@@ -454,9 +518,11 @@ public class PSSH {
                 return PSSH(WIDEVINE, 0, 0, emptyList(), data)
             }
 
-            // A bare PlayReady header or PlayReady Object. Stored as-is; keyIds() parses it.
+            // A PlayReady Object, a bare object record, or a bare WRMHEADER. The last two are
+            // wrapped into a real PRO so keyIds() has the framing it needs; storing them verbatim
+            // is what used to make a bare header parse and then fail as "corrupt".
             if (data.containsSubarray(WRMHEADER_CLOSE_TAG)) {
-                return PSSH(PLAYREADY_SYSTEM_ID, 0, 0, emptyList(), data)
+                return PSSH(PLAYREADY_SYSTEM_ID, 0, 0, emptyList(), normalisePlayreadyObject(data))
             }
 
             if (strict) {
