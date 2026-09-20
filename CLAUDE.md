@@ -470,9 +470,17 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
    in CI; re-run the live ones by hand after touching the challenge.
 
    **A `ckt:` key in the test server's `cfg=` query is now rejected** with "Invalid config data
-   in ckt" (`0x8004C604`), before the challenge is read. pyplayready 0.8.1 still sends one, so
-   its `test` command fails against the live server today; ktprd omits it. `KTPRD_LICENSE_SERVER`
-   overrides the URL when Microsoft's accepted keys drift again.
+   in ckt" (`0x8004C604`). That `cfg=` string configures Microsoft's test harness — licence
+   persistence, minimum security level, content key type — and is no part of PlayReady, so this
+   says nothing about ktprd's challenge and nothing about any other server. The key type a
+   licence actually carries follows the content header's `ALGID` regardless: Microsoft's
+   `AESCTR` header yields `AES_128_CTR` and Axinom's `AESCBC` one yields `AES_128_CBC`.
+
+   The envelope is parsed before the cfg is validated — a junk body draws "Invalid SOAP request"
+   instead — so drawing this fault at all confirms the challenge was well-formed. pyplayready
+   0.8.1 appends `ckt:` unconditionally (`main.py:126`), so its `test` command fails against the
+   live server today; that is upstream breakage, not a ktprd defect, and worth remembering before
+   trusting it as an oracle. `KTPRD_LICENSE_SERVER` overrides the URL when Microsoft drifts again.
 6. **Scalable / `ECC_256_VIA_SYMMETRIC` licences are verified against a real server.** Axinom's
    CMAF cbcs vectors issue exactly these, and ktprd recovers Axinom's published keys from them
    through `ktvine-keyservice`'s `playready-axinom-*` sources — so the de-interleave and the

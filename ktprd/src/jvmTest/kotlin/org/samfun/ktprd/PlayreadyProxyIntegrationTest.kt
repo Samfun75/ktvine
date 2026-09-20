@@ -27,8 +27,7 @@ import kotlin.test.assertTrue
  */
 class PlayreadyProxyIntegrationTest {
 
-    // A `ckt:` key in the cfg now draws "Invalid config data in ckt" (0x8004c604) before the
-    // challenge is even read; pyplayready 0.8.1 still sends one. Override with KTPRD_LICENSE_SERVER.
+    // `cfg=` configures Microsoft's test harness, not PlayReady; it rejects a `ckt:` key now.
     private val server = System.getenv("KTPRD_LICENSE_SERVER")
         ?: "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg=(persist:false,sl:2000)"
 
