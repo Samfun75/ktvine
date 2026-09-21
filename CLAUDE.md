@@ -32,7 +32,7 @@ gradle.properties             configuration-cache + build-cache ON
 docs/API.md                   conceptual guide; the symbol reference is Dokka-generated
 docs/plans/                   implementation plans — git-ignored, local only
 .github/workflows/gradle.yml  CI: `check` on ubuntu, iosSimulatorArm64Test on macos
-.github/workflows/docs.yml    CI: Dokka HTML to GitHub Pages
+.github/workflows/docs.yml    CI: `dokkaGenerateHtml` (Dokka V2) to GitHub Pages
 .github/workflows/publish.yml CI: publishToMavenCentral on GitHub release
 
 library/src/
@@ -177,6 +177,12 @@ Common commands:
 Note: `check` runs on any JDK now, including 23. It used to need
 `-Dorg.gradle.java.home=<jdk17-or-21>` because binary-compatibility-validator could not read
 class file major version 67; that plugin is gone (see "ABI validation" below).
+
+Note: Dokka runs in **V2 mode** as of `2.2.0`, which refuses the old V1 tasks outright. The
+aggregating task is `dokkaGenerateHtml` (output `build/dokka/html`), not `dokkaHtmlMultiModule`,
+and V2 aggregates only the modules the root project lists in its `dokka(project(...))`
+dependencies — miss one and it is silently absent from the site rather than a build failure.
+`check` does not cover this, so run the docs task by hand after touching the module list.
 
 Note: `publishToMavenCentral` must be run with `--no-configuration-cache`
 (see `publish.yml:23`). Signing is gated on the `PUBLISH` env var being set.

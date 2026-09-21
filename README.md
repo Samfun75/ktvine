@@ -276,7 +276,7 @@ Every public declaration carries KDoc. The generated reference for all six modul
 that explains what a signature cannot. Build the reference locally with:
 
 ```
-./gradlew dokkaHtmlMultiModule   # -> build/dokka/htmlMultiModule/index.html
+./gradlew dokkaGenerateHtml   # -> build/dokka/html/index.html
 ```
 
 ## License

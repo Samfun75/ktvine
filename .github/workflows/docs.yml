@@ -33,9 +33,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Generate API reference
-        # Aggregates every published module; :library:dokkaHtml alone would omit
-        # ktvine-remote and ktvine-serve.
-        run: ./gradlew dokkaHtmlMultiModule
+        # Aggregates every published module, per the root project's `dokka(project(...))` list.
+        run: ./gradlew dokkaGenerateHtml
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
@@ -46,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: build/dokka/htmlMultiModule
+          path: build/dokka/html
 
       - name: Deploy to GitHub Pages
         id: deploy
