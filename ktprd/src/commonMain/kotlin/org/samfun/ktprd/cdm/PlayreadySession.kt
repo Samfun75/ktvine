@@ -11,16 +11,17 @@ import org.samfun.ktvine.crypto.randomBytes
 /**
  * Per-session state.
  *
- * The [xmlKey] is generated when the session opens rather than when a challenge is built, because
- * a license response is decrypted against the key the challenge carried — a session that rolled a
- * new one per challenge could not read its own licenses back.
+ * The [xmlKey] is generated once, on the first challenge, and then retained: a license response is
+ * decrypted against the key its challenge carried, so a session that rolled a new one per challenge
+ * could not read its own licenses back. Deferring it keeps [PlayreadyCdm.open] free of a P-256
+ * scalar multiplication for a session that never builds a challenge.
  */
 internal class PlayreadySession(val number: Int) {
     val lock: Mutex = Mutex()
 
     val id: ByteString = randomBytes(16).toByteString()
 
-    val xmlKey: XmlKey = XmlKey.generate()
+    val xmlKey: XmlKey by lazy { XmlKey.generate() }
 
     /** Recorded when a challenge is built, so [PlayreadyCdm.parseLicense] can refuse without one. */
     var signingKey: EccKey? = null
