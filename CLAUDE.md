@@ -294,10 +294,13 @@ All library exceptions extend `KtvineException : Exception` in `utils/Exceptions
 `InvalidContextException`, `NoKeysLoadedException`, `DeviceMismatchException`,
 `ValueException`, `InvalidBoxException`.
 
-Everything the library throws is now a `KtvineException` — no `require(...)` and no `!!`
-on server-supplied fields. Missing-but-required protobuf fields go through the internal
-`orDecodeError(field)` helper and surface as `DecodeException`. The only remaining `!!`
-are on the hardcoded Google root certificate, which is a compile-time constant.
+Everything the library throws is now a `KtvineException` — no `require(...)`, and nothing
+NPEs on a server-supplied field. Missing-but-required protobuf fields go through the internal
+`orDecodeError(field)` helper and surface as `DecodeException`. `!!` survives in two places, both
+provably unreachable: the hardcoded Google root certificate, which is a compile-time constant, and
+five uses in `LicenseResponse.verify()` that sit behind its own `isVerifiable` guard — that guard
+throws `InvalidLicenseResponseException` before any of them is read. The second group would read
+better as `?:`-bound locals; it is ugliness, not a defect.
 
 Every declared type has a throw site: `NoKeysLoadedException` from `getKeysFromEntitlement`,
 `DeviceMismatchException` from `RemoteCdm.open`. Keep it that way — a declared-but-unthrown

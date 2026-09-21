@@ -279,7 +279,7 @@ public class Cdm internal constructor(
         // Checking `msg != null` alone picks the wrong branch for some certificates.
         val wrapper = decodeExactOrNull(certificate) { SignedMessage.ADAPTER.decode(it) }
         val signedCert = if (wrapper?.msg != null) {
-            decodeExact(wrapper.msg!!.toByteArray(), "certificate as SignedDrmCertificate in SignedMessage") {
+            decodeExact(wrapper.msg.toByteArray(), "certificate as SignedDrmCertificate in SignedMessage") {
                 SignedDrmCertificate.ADAPTER.decode(it)
             }
         } else {

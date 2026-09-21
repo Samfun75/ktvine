@@ -571,7 +571,7 @@ public class PSSH {
                     headerSize = 16L
                 } else if (boxSize == 0L) {
                     // Last box extends to EOF
-                    boxSize = (total - startPos).toLong()
+                    boxSize = total - startPos
                 }
 
                 if (boxSize < headerSize) break
