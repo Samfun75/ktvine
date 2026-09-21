@@ -20,6 +20,13 @@ kotlin {
     // in the published ABI by accident.
     explicitApi()
 
+    // Kotlin's own, not binary-compatibility-validator: that one cannot read class file 67.
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation {
+        // Wire regenerates these; tracking them would make every schema change an ABI break.
+        filters { exclude { byNames.add("org.samfun.ktvine.proto.**") } }
+    }
+
     jvm {
         wire.kotlin {
             android = false

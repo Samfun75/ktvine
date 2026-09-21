@@ -14,6 +14,11 @@ kotlin {
 
     explicitApi()
 
+    // Kotlin's own, not binary-compatibility-validator: that one cannot read class file 67.
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation {
+    }
+
     // JVM only: Ktor's server engines do not span the six targets the client does.
     jvm {
         compilations.configureEach {

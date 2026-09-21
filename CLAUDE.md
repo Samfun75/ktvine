@@ -124,7 +124,7 @@ own opt-in removed. The `DelicateCryptographyApi` opt-ins are unrelated and stay
 the 1.0.0-RC2 dependency refresh. Artifacts built with Kotlin 2.4 carry metadata version 2.4.0,
 and a compiler reads at most one metadata version ahead of itself, so a consumer on Kotlin 2.2
 fails with "Module was compiled with an incompatible version of Kotlin". Kotlin 2.3 is the
-minimum. The published ABI itself did not change — `apiDump` after the upgrade produced no diff.
+minimum. The published ABI itself did not change — the dump after the upgrade produced no diff.
 
 Wire generates protobuf models into `org.samfun.ktvine.proto` with
 `buildersOnly = true`, so generated messages are constructed via named constructor
@@ -174,11 +174,9 @@ Common commands:
 .\gradlew.bat :ktprd-serve:jvmTest                 # ktprd's client against ktprd's server
 ```
 
-Note: the local default JDK matters. `apiCheck`/`apiDump` run through
-binary-compatibility-validator, which cannot read class file major version 67 — a JDK 23
-default fails `check` with "Unsupported class file major version 67" before any code is at
-fault. CI uses JDK 21; locally, pass
-`-Dorg.gradle.java.home=<jdk17-or-21>` if the default is newer.
+Note: `check` runs on any JDK now, including 23. It used to need
+`-Dorg.gradle.java.home=<jdk17-or-21>` because binary-compatibility-validator could not read
+class file major version 67; that plugin is gone (see "ABI validation" below).
 
 Note: `publishToMavenCentral` must be run with `--no-configuration-cache`
 (see `publish.yml:23`). Signing is gated on the `PUBLISH` env var being set.
@@ -400,6 +398,32 @@ Mapping: `cdm.py` → `cdm/PlayreadyCdm.kt`, `device/*.py` → `core/PlayreadyDe
 is Apache-2.0, so paths, JSON field names and status codes are matched while the Kotlin and
 its messages are ktvine's own. Keep it that way when extending it.
 
+## ABI validation
+
+`explicitApi()` plus **Kotlin's own ABI validation**, configured per module as
+`kotlin { abiValidation { ... } }` behind `@OptIn(ExperimentalAbiValidation::class)`. Tasks are
+`checkKotlinAbi` (wired into `check` automatically) and `updateKotlinAbi`; dumps live in each
+module's `api/`, as before.
+
+This replaced the `binary-compatibility-validator` plugin during the 1.0.0-RC2 dependency
+refresh, for one concrete reason: bcv cannot read class file major version 67, so `check` failed
+outright on a JDK 23 with "Unsupported class file major version 67" and every local run needed
+`-Dorg.gradle.java.home` pointed at an older JDK. The built-in validator has no such limit.
+
+Two things the switch changed in the dumps, both improvements, so do not "fix" them back:
+
+- **Each multiplatform module gained `api/android/<module>.api`.** bcv never dumped the Android
+  target at all; it is real published API and is now tracked.
+- **Six entries left `ktprd/api/jvm/ktprd.api`** — four `const val`s declared inside an
+  `internal companion object` and two compiler-generated `synthetic` constructors. The JVM emits
+  an internal `const val` as a public static field, which bcv could not tell apart from real API;
+  the built-in validator resolves Kotlin visibility properly. Nothing public was lost.
+- The two JVM-only serve modules lost an empty `*.klib.api`, which bcv produced for targets they
+  do not have.
+
+The klib dump needs no opting in any more either — bcv wanted
+`klib { enabled = true }`, and the built-in validator always dumps klib targets.
+
 ## Crypto notes
 
 `aesCmac` is **implemented in `commonMain` per RFC 4493**, not taken from a provider. No
@@ -560,7 +584,7 @@ reason; its chain terminates at a made-up root, so it is good for everything exc
 - The version lives once, in `gradle/libs.versions.toml` (`ktvine = "..."`). The README
   install snippet must match; `publish.yml` fails the release if it or the tag disagrees.
 - `explicitApi()` is on: every public declaration needs an explicit visibility and return
-  type. `apiCheck` compares the ABI against each module's `api/`; run `./gradlew apiDump` after
-  an intentional API change.
+  type. `checkKotlinAbi` compares the ABI against each module's `api/` and runs as part of
+  `check`; run `./gradlew updateKotlinAbi` after an intentional API change.
 - ktlint runs in `check`. Run `./gradlew ktlintFormat` before committing.
 - Dependency versions belong in `gradle/libs.versions.toml`, never inline.

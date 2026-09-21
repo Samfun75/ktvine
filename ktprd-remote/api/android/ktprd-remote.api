@@ -1,0 +1,18 @@
+public final class org/samfun/ktprd/remote/RemotePlayreadyCdm : org/samfun/ktprd/cdm/PlayreadyCdmApi {
+	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getKeys (Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getLicenseChallenge (Lokio/ByteString;Lorg/samfun/ktprd/core/WrmHeader;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getSecurityLevel ()Ljava/lang/Integer;
+	public fun open (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun parseLicense (Lokio/ByteString;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun probe (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class org/samfun/ktprd/remote/RemotePlayreadyCdmException : org/samfun/ktprd/utils/KtprdException {
+	public fun <init> (ILjava/lang/String;)V
+	public final fun getServerMessage ()Ljava/lang/String;
+	public final fun getStatus ()I
+}
+
