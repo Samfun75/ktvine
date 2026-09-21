@@ -140,7 +140,7 @@ dokka {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
+    publishToMavenCentral(automaticRelease = true)
 
     if (System.getenv("PUBLISH") != null) {
         println("✅ Signing all publications.")
