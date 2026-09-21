@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.soap
 
 import org.samfun.ktprd.bcert.CertificateChain
@@ -13,7 +11,6 @@ import org.samfun.ktvine.crypto.aesCbcEncryptNoPadding
 import org.samfun.ktvine.crypto.pkcs7Pad
 import org.samfun.ktvine.utils.toLittleEndianByteArray
 import kotlin.io.encoding.Base64
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** A revocation list the client claims to already hold, and at which version. */
@@ -195,11 +192,7 @@ internal object ChallengeBuilder {
  * 16 bytes are the IV, the low 16 the key. The whole point is ElGamal-encrypted to the server's
  * WMRM key, which is how the server derives the same pair.
  */
-internal class XmlKey private constructor(
-    val point: EcPoint,
-    val iv: ByteArray,
-    val key: ByteArray,
-) {
+internal class XmlKey private constructor(val point: EcPoint, val iv: ByteArray, val key: ByteArray) {
     companion object {
         fun generate(): XmlKey {
             val point = P256.publicPoint(ElGamal.randomScalar())

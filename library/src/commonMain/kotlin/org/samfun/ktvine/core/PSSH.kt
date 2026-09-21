@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktvine.core
 
 import okio.Buffer
@@ -21,7 +19,6 @@ import org.samfun.ktvine.utils.uuidFromByteArray
 import org.samfun.ktvine.utils.uuidFromByteString
 import org.samfun.ktvine.utils.uuidFromHexByteString
 import kotlin.io.encoding.Base64
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
@@ -327,9 +324,7 @@ public class PSSH {
     public fun setKeyIdsAny(keyIds: List<Any>): Unit = setKeyIds(parseKeyIds(keyIds))
 
     /** Export the PSSH object as a full PSSH box in Base64 form. */
-    public fun exportBase64(): String {
-        return Base64.encode(export())
-    }
+    public fun exportBase64(): String = Base64.encode(export())
 
     /** Export the PSSH object as a full PSSH box in bytes form. */
     public fun export(): ByteArray {

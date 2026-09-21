@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
-
 package org.samfun.ktprd.cdm
 
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -25,8 +23,6 @@ import org.samfun.ktvine.crypto.randomBytes
 import org.samfun.ktvine.utils.InvalidSessionException
 import org.samfun.ktvine.utils.TooManySessionsException
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

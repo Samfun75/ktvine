@@ -1,11 +1,8 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.cdm
 
 import okio.ByteString
 import org.samfun.ktprd.core.PlayreadyKey
 import org.samfun.ktprd.core.WrmHeader
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

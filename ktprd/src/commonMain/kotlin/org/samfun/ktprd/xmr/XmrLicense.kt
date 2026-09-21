@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.xmr
 
 import org.samfun.ktprd.core.EccKey
@@ -17,7 +15,6 @@ import org.samfun.ktvine.crypto.constantTimeEquals
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.uuidFromLittleEndian
 import kotlin.io.encoding.Base64
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

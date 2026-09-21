@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.remote
 
 import io.ktor.client.HttpClient
@@ -23,7 +21,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** The wire format `RemotePlayreadyCdm` speaks, pinned against a mock server. */

@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.revocation
 
 import nl.adaptivity.xmlutil.EventType
@@ -15,7 +13,6 @@ import org.samfun.ktprd.utils.InvalidRevocationListException
 import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.uuidFromLittleEndian
 import kotlin.io.encoding.Base64
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** One revocation list inside a `RevInfo` document. */
@@ -42,9 +39,7 @@ public class RevocationEntry internal constructor(
  * newer ones sends them back. Keeping them is optional but a server may refuse a client that
  * claims nothing.
  */
-public class RevocationList internal constructor(
-    public val entries: List<RevocationEntry>,
-) {
+public class RevocationList internal constructor(public val entries: List<RevocationEntry>) {
     public fun entry(listId: Uuid): RevocationEntry? = entries.firstOrNull { it.listId == listId }
 
     /** The version of [listId] this document declares, or `0` when it declares none. */

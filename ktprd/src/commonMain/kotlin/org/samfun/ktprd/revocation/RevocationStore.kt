@@ -40,10 +40,7 @@ public class InMemoryRevocationStore : RevocationStore {
  * [fileSystem] is explicit because `FileSystem.SYSTEM` is not part of okio's common API; pass it
  * from a platform source set, or a fake in tests.
  */
-public class FileRevocationStore(
-    private val directory: Path,
-    private val fileSystem: FileSystem,
-) : RevocationStore {
+public class FileRevocationStore(private val directory: Path, private val fileSystem: FileSystem) : RevocationStore {
     public constructor(directory: String, fileSystem: FileSystem) : this(directory.toPath(), fileSystem)
 
     override suspend fun read(name: String): ByteArray? {

@@ -3,10 +3,7 @@ package org.samfun.ktprd.serve
 import org.samfun.ktprd.core.PlayreadyDevice
 
 /** A caller of the served CDM, and the devices they may use. */
-public class PlayreadyServeUser(
-    public val username: String,
-    public val devices: Set<String>,
-)
+public class PlayreadyServeUser(public val username: String, public val devices: Set<String>)
 
 /**
  * What a served PlayReady CDM offers and to whom.

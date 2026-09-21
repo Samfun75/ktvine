@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.remote
 
 import io.ktor.client.HttpClient
@@ -36,14 +34,11 @@ import org.samfun.ktprd.utils.KtprdLog
 import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.DeviceMismatchException
 import org.samfun.ktvine.utils.toUUID
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** A remote PlayReady CDM server rejected a request. [status] is the HTTP status it replied with. */
-public class RemotePlayreadyCdmException(
-    public val status: Int,
-    public val serverMessage: String,
-) : KtprdException("Remote PlayReady CDM returned $status: $serverMessage")
+public class RemotePlayreadyCdmException(public val status: Int, public val serverMessage: String) :
+    KtprdException("Remote PlayReady CDM returned $status: $serverMessage")
 
 /**
  * A [PlayreadyCdmApi] backed by a `pyplayready serve`-compatible server.

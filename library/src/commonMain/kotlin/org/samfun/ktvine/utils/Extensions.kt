@@ -1,11 +1,8 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktvine.utils
 
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import kotlin.io.encoding.Base64
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** Encode this string as UTF-16LE, two bytes per code unit. */

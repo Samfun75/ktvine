@@ -8,10 +8,7 @@ import org.samfun.ktvine.core.Device
  * @param username used only for logging; it is never sent to the caller
  * @param devices names of the devices this user may use, as keyed in [ServeConfig.devices]
  */
-public class ServeUser(
-    public val username: String,
-    public val devices: Set<String>,
-)
+public class ServeUser(public val username: String, public val devices: Set<String>)
 
 /**
  * What a [ktvineCdm] route serves: which devices exist, and who may use them.

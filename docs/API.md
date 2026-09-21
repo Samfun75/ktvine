@@ -153,9 +153,11 @@ cannot honour.
 `commonMain` is pure Kotlin. Targets are JVM, Android, iOS (x64, arm64, simulator arm64)
 and linuxX64.
 
-- `kotlin.uuid.Uuid` is still experimental in Kotlin 2.2 and appears in this library's public
-  API, so **consumers must opt in** (`@OptIn(ExperimentalUuidApi::class)` or the compiler
-  flag).
+- **Kotlin 2.3 is the minimum for a consumer.** These artifacts are built with Kotlin 2.4 and
+  carry metadata version 2.4.0; an older compiler refuses them outright. The ABI is otherwise
+  unchanged from RC1.
+- `kotlin.uuid.Uuid` appears in this library's public API and is **stable as of Kotlin 2.4**, so
+  the opt-in earlier releases required is no longer needed.
 - `Device.load` / `Device.dump` take an okio `FileSystem` explicitly, because
   `FileSystem.SYSTEM` is not part of okio's common API. Pass it from a platform source set.
 - AES-CMAC is implemented in-tree per RFC 4493, because no cryptography-kotlin provider
@@ -223,7 +225,7 @@ oracle.
 
 ## Multiplatform notes for ktprd
 
-The same six targets, and the same two consumer-facing consequences — `Uuid` opt-in, and an
+The same six targets, and the same consumer-facing consequence — an
 explicit okio `FileSystem` for anything that touches files.
 
 - **P-256 is implemented in-tree**, on `com.ionspin.kotlin:bignum`. cryptography-kotlin offers

@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktvine.core
 
 import nl.adaptivity.xmlutil.EventType
@@ -10,7 +8,6 @@ import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.toLittleEndianByteArray
 import org.samfun.ktvine.utils.uuidFromLittleEndian
 import kotlin.io.encoding.Base64
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

@@ -38,9 +38,11 @@ Two things to know before you start:
 
 - **The `Cdm` API is `suspend`.** Call it from a coroutine. A `Cdm` is safe to share
   between coroutines.
-- **`kotlin.uuid.Uuid` appears in the public API** and is still experimental in Kotlin 2.2,
-  so you must opt in — `@OptIn(ExperimentalUuidApi::class)`, or the
-  `-opt-in=kotlin.uuid.ExperimentalUuidApi` compiler flag.
+- **These artifacts are built with Kotlin 2.4**, so your project needs Kotlin 2.3 or newer to
+  read them. On an older compiler the dependency fails with "Module was compiled with an
+  incompatible version of Kotlin"; stay on `1.0.0-RC1` if you cannot move yet.
+- **`kotlin.uuid.Uuid` appears in the public API.** It is stable as of Kotlin 2.4, so no opt-in
+  is needed any more — earlier releases of ktvine required one.
 
 The per-symbol API reference is generated with Dokka and published at
 <https://samfun75.github.io/ktvine/>; [docs/API.md](docs/API.md) is the conceptual guide.

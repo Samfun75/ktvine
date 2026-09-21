@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.serve
 
 import io.ktor.http.ContentType
@@ -34,7 +32,6 @@ import org.samfun.ktprd.core.WrmHeader
 import org.samfun.ktvine.utils.KtvineException
 import org.samfun.ktvine.utils.toHexString
 import org.samfun.ktvine.utils.toLittleEndianByteArray
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

@@ -170,11 +170,7 @@ public class Certificate internal constructor(
         val clientId: ByteArray,
     )
 
-    internal class SignatureInfo(
-        val signatureType: Int,
-        val signature: ByteArray,
-        val signatureKey: ByteArray,
-    )
+    internal class SignatureInfo(val signatureType: Int, val signature: ByteArray, val signatureKey: ByteArray)
 
     internal fun basicInfo(): BasicInfo? {
         val body = attribute(BCertObjectType.BASIC)?.body ?: return null

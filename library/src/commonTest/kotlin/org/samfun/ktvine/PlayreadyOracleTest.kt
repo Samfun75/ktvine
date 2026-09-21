@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktvine
 
 import org.samfun.ktvine.core.PSSH
@@ -10,7 +8,6 @@ import org.samfun.ktvine.utils.toLEU32
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

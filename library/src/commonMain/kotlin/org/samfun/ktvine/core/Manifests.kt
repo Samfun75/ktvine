@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktvine.core
 
 import nl.adaptivity.xmlutil.EventType
@@ -7,7 +5,6 @@ import nl.adaptivity.xmlutil.allText
 import nl.adaptivity.xmlutil.xmlStreaming
 import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.toUUID
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.core
 
 import org.samfun.ktprd.crypto.aesEcbEncrypt
@@ -12,7 +10,6 @@ import org.samfun.ktvine.core.SignedKeyId
 import org.samfun.ktvine.crypto.constantTimeEquals
 import org.samfun.ktvine.utils.ValueException
 import org.samfun.ktvine.utils.toLittleEndianByteArray
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
@@ -25,10 +22,7 @@ import kotlin.uuid.Uuid
  * [xml] is the document verbatim. A challenge embeds it inside signed bytes, so re-serializing it
  * — even into equivalent XML — would change what the signature covers.
  */
-public class WrmHeader private constructor(
-    public val xml: String,
-    public val header: PlayreadyHeader,
-) {
+public class WrmHeader private constructor(public val xml: String, public val header: PlayreadyHeader) {
     public val version: String get() = header.version
 
     public val keyIds: List<SignedKeyId> get() = header.signedKeyIds

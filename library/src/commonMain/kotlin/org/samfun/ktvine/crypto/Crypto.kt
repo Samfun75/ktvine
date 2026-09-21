@@ -64,7 +64,7 @@ private const val CMAC_RB = 0x87
  *
  * Implemented here rather than via `AES.CMAC` because no provider offers CMAC on every
  * target: BouncyCastle covers JVM/Android and OpenSSL3 covers Linux, but neither Apple
- * provider in cryptography-kotlin 0.5.0 has it. CMAC is CBC-MAC with a tweaked final
+ * provider in cryptography-kotlin had it as of 0.5.0. CMAC is CBC-MAC with a tweaked final
  * block, so AES-CBC — which every provider does have — is enough to build it.
  */
 public suspend fun aesCmac(key: ByteArray, data: ByteArray): ByteArray {

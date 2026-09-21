@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktvine.remote
 
 import io.ktor.client.HttpClient
@@ -35,14 +33,11 @@ import org.samfun.ktvine.utils.DecodeException
 import org.samfun.ktvine.utils.DeviceMismatchException
 import org.samfun.ktvine.utils.KtvineException
 import org.samfun.ktvine.utils.ValueException
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** A remote CDM server rejected a request. [status] is the status field from its JSON body. */
-public class RemoteCdmException(
-    public val status: Int,
-    public val serverMessage: String,
-) : KtvineException("Remote CDM returned $status: $serverMessage")
+public class RemoteCdmException(public val status: Int, public val serverMessage: String) :
+    KtvineException("Remote CDM returned $status: $serverMessage")
 
 /**
  * A [CdmApi] backed by a pywidevine-compatible CDM server (`pywidevine serve`).

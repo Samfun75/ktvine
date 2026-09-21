@@ -14,13 +14,6 @@ kotlin {
 
     explicitApi()
 
-    compilerOptions {
-        optIn.addAll(
-            "kotlin.uuid.ExperimentalUuidApi",
-            "kotlin.time.ExperimentalTime",
-        )
-    }
-
     // JVM only: Ktor's server engines do not span the six targets the client does.
     jvm {
         compilations.configureEach {

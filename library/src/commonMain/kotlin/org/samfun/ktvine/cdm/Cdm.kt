@@ -51,7 +51,6 @@ import org.samfun.ktvine.utils.kidToUuid
 import org.samfun.ktvine.utils.orDecodeError
 import org.samfun.ktvine.utils.toHexString
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 /**
  * Widevine CDM helper that can:
@@ -69,7 +68,6 @@ import kotlin.time.ExperimentalTime
  *
  * This class is Kotlin Multiplatform and uses the same protobuf models as pywidevine.
  */
-@OptIn(ExperimentalTime::class)
 public class Cdm internal constructor(
     private val deviceType: DeviceTypes,
     private val clientId: ClientIdentification,
@@ -581,9 +579,8 @@ public class Cdm internal constructor(
         macContext: ByteArray,
         key: ByteArray,
     ): Triple<ByteArray, ByteArray, ByteArray> {
-        suspend fun derive(context: ByteArray, counter: Int): ByteArray {
-            return aesCmac(key, byteArrayOf(counter.toByte()) + context)
-        }
+        suspend fun derive(context: ByteArray, counter: Int): ByteArray =
+            aesCmac(key, byteArrayOf(counter.toByte()) + context)
 
         val encKey = derive(encContext, 1)
         val macKeyServer = derive(macContext, 1) + derive(macContext, 2)

@@ -18,7 +18,6 @@ import org.samfun.ktvine.utils.toLittleEndianByteArray
 import kotlin.io.encoding.Base64
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
@@ -33,7 +32,6 @@ import kotlin.uuid.Uuid
  * `<SignedInfo>` spans out of the transmitted document, so it fails unless the bytes the challenge
  * builder hashed are exactly the bytes it sent.
  */
-@OptIn(ExperimentalUuidApi::class)
 class TestLicenseServer {
 
     private val privateScalar = ElGamal.randomScalar()

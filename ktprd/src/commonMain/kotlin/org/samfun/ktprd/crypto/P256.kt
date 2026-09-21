@@ -9,11 +9,7 @@ import org.samfun.ktvine.utils.ValueException
  *
  * [x] and [y] are meaningless when [isInfinity] is true.
  */
-internal class EcPoint private constructor(
-    val x: BigInteger,
-    val y: BigInteger,
-    val isInfinity: Boolean,
-) {
+internal class EcPoint private constructor(val x: BigInteger, val y: BigInteger, val isInfinity: Boolean) {
     fun encode(): ByteArray {
         if (isInfinity) throw ValueException("Cannot encode the point at infinity")
         return P256.toFixed32(x) + P256.toFixed32(y)
@@ -40,7 +36,7 @@ internal class EcPoint private constructor(
 /**
  * NIST P-256 (secp256r1) field and group arithmetic.
  *
- * Written here because cryptography-kotlin 0.5.0 exposes no point arithmetic on any target — only
+ * Written here because cryptography-kotlin exposed no point arithmetic as of 0.5.0 — only
  * ECDSA and ECDH, and ECDH yields just the shared secret's X coordinate. PlayReady's ElGamal key
  * exchange needs whole points, so the curve is implemented in common code and pinned by NIST
  * vectors, the same call the in-tree AES-CMAC made for the same reason.

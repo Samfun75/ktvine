@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktvine.core
 
 import org.samfun.ktvine.crypto.aesCbcDecryptNoPadding
@@ -8,7 +6,6 @@ import org.samfun.ktvine.proto.License
 import org.samfun.ktvine.utils.kidToUuid
 import org.samfun.ktvine.utils.orDecodeError
 import org.samfun.ktvine.utils.toHexString
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**

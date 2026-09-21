@@ -1,9 +1,6 @@
-@file:OptIn(ExperimentalUuidApi::class)
-
 package org.samfun.ktprd.core
 
 import org.samfun.ktvine.utils.toHexString
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** How the content key is meant to be applied to the media. */

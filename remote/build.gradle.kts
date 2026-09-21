@@ -16,13 +16,6 @@ kotlin {
 
     explicitApi()
 
-    compilerOptions {
-        optIn.addAll(
-            "kotlin.uuid.ExperimentalUuidApi",
-            "kotlin.time.ExperimentalTime",
-        )
-    }
-
     jvm()
 
     androidLibrary {

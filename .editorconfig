@@ -17,6 +17,9 @@ ktlint_code_style = intellij_idea
 ktlint_standard_property-naming = disabled
 ktlint_standard_function-naming = disabled
 
+# PSSH's mutable holders are read through differently-named accessors by design.
+ktlint_standard_backing-property-naming = disabled
+
 # Test names are backtick-quoted sentences.
 ktlint_standard_max-line-length = enabled
 

@@ -106,7 +106,7 @@ ktprd-serve/src/…/Routing.kt                Route.ktprdCdm — JVM only, for t
 
 ## Build system
 
-Kotlin `2.2.20`, AGP `8.13.0`, Gradle `8.14.3`, JDK target 11 for Android
+Kotlin `2.4.20`, AGP `8.13.2`, Gradle `8.14.5`, JDK target 11 for Android
 compilations. Plugins: `kotlinMultiplatform`, `com.android.kotlin.multiplatform.library`
 (the newer AGP KMP plugin, not `com.android.library`), `com.squareup.wire`,
 `com.vanniktech.maven.publish`.
@@ -115,9 +115,16 @@ compilations. Plugins: `kotlinMultiplatform`, `com.android.kotlin.multiplatform.
 `linuxX64`.** All are enabled, and the CI matrix runs `linuxX64Test` on ubuntu and
 `iosSimulatorArm64Test` on macos. `commonMain` is pure Kotlin — no JDK types.
 
-`kotlin.uuid.Uuid` and `kotlin.time.Clock` are still experimental in Kotlin 2.2, and `Uuid`
-appears in the public API, so the build opts in project-wide via `compilerOptions.optIn`
-and **consumers must opt in too**.
+`kotlin.uuid.Uuid` and `kotlin.time.Clock` are **stable as of Kotlin 2.4**, so the project-wide
+`compilerOptions.optIn` and every `@file:OptIn` for them have been removed, and **a consumer no
+longer needs to opt in** — verified by compiling `ktvine-keyservice` against the library with its
+own opt-in removed. The `DelicateCryptographyApi` opt-ins are unrelated and stay.
+
+**The Kotlin upgrade raised the consumer floor**, which is the one consumer-visible consequence of
+the 1.0.0-RC2 dependency refresh. Artifacts built with Kotlin 2.4 carry metadata version 2.4.0,
+and a compiler reads at most one metadata version ahead of itself, so a consumer on Kotlin 2.2
+fails with "Module was compiled with an incompatible version of Kotlin". Kotlin 2.3 is the
+minimum. The published ABI itself did not change — `apiDump` after the upgrade produced no diff.
 
 Wire generates protobuf models into `org.samfun.ktvine.proto` with
 `buildersOnly = true`, so generated messages are constructed via named constructor
@@ -127,7 +134,7 @@ compilation and `false` for JVM.
 Dependencies (commonMain):
 - `api(wire-runtime)` — this is what transitively exposes **okio** (`ByteString`,
   `Buffer`) to the whole codebase, including consumers. Nothing declares okio directly.
-- `implementation(bundles.cryptography)` — whyoleg cryptography-kotlin `0.5.0`:
+- `implementation(bundles.cryptography)` — whyoleg cryptography-kotlin `0.6.0`:
   `core` + `provider-optimal`. BouncyCastle was dropped once AES-CMAC moved in-tree; the
   plain JDK provider covers everything else.
 - `implementation(coroutines-core)` — only for `kotlinx.coroutines.sync.Mutex`, which
@@ -396,7 +403,7 @@ its messages are ktvine's own. Keep it that way when extending it.
 ## Crypto notes
 
 `aesCmac` is **implemented in `commonMain` per RFC 4493**, not taken from a provider. No
-cryptography-kotlin 0.5.0 provider offers AES-CMAC on every target: BouncyCastle covers
+cryptography-kotlin provider offered AES-CMAC on every target as of `0.5.0`: BouncyCastle covers
 JVM/Android, OpenSSL3 covers linuxX64, but neither Apple provider has it at all. CMAC is
 CBC-MAC with a tweaked final block, so it is built on AES-CBC, which every provider does
 have. It is pinned by the four RFC 4493 vectors in `AesCmacTest` (in `commonTest`, so they run on
@@ -407,7 +414,7 @@ Everything else comes from `cryptography-provider-optimal`: RSA-PSS/SHA-1, RSA-O
 AES-CBC, HMAC-SHA256, and `CryptographyRandom` for all randomness.
 
 **`:ktprd` does the same thing again for P-256, and for the same reason.** cryptography-kotlin
-0.5.0 offers ECDSA and ECDH P-256 on all six targets but exposes **no point arithmetic** — no
+`0.5.0` offered ECDSA and ECDH P-256 on all six targets but exposed **no point arithmetic** — no
 add, no arbitrary scalar multiply — and ECDH yields only the shared secret's X coordinate,
 while ElGamal decryption needs the full point `C2 − d·C1`. `cryptography-bigint` is a transport
 type with no operators. So `crypto/P256.kt` implements the curve on `com.ionspin.kotlin:bignum`,
@@ -423,6 +430,20 @@ JVM. Get the curve wrong and every derived key is wrong, exactly as with `aesCma
 **It is not constant-time**, because `bignum` is not (neither is ECPy, which pyplayready uses).
 That is acceptable for a client-side CDM holding its own keys locally and is stated in KDoc;
 do not let it drift into a context where it is not.
+
+**Both claims were re-checked against cryptography-kotlin `0.6.0` and both still hold** — do not
+spend the afternoon re-deriving this:
+
+- `0.6.0` *does* add an `AES.CMAC` algorithm to the core API, which looks like the in-tree
+  `aesCmac` could go. It cannot: `provider-optimal` resolves to the JDK provider on the JVM, and
+  asking it for that algorithm throws `NoSuchAlgorithmException: Algorithm AESCMAC not available`.
+  Only BouncyCastle implements AESCMAC on the JVM, and BouncyCastle is the dependency that was
+  dropped when CMAC moved in-tree. A declared algorithm is not an implemented one.
+- `0.6.0`'s `EC` surface is still key formats, `ECDH` and `ECDSA` — no point addition and no
+  arbitrary scalar multiply. ElGamal decryption needs the full point `C2 − d·C1`, so `P256`,
+  `Ecdsa` and `ElGamal` stay in-tree. (`EC.PrivateKey.Format.RAW` does now exist, so provider
+  ECDSA on a raw scalar may be possible; it is not worth splitting into two key representations
+  while the point math has to exist anyway.)
 
 ## Known issues to be aware of when editing
 
