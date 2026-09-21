@@ -13,6 +13,9 @@ plugins {
 group = "io.github.samfun75"
 version = libs.versions.ktvine.get()
 
+// Published artifact name, and what the Dokka site calls this module.
+val artifactId = "ktvine"
+
 kotlin {
     applyDefaultHierarchyTemplate()
 
@@ -130,6 +133,12 @@ wire {
     }
 }
 
+// Pinned to the coordinate so a future project rename cannot silently move the doc URLs.
+dokka {
+    moduleName.set(artifactId)
+    modulePath.set(artifactId)
+}
+
 mavenPublishing {
     publishToMavenCentral()
 
@@ -140,10 +149,10 @@ mavenPublishing {
         println("⚠️ Skipping signing (JitPack or no signing keys).")
     }
 
-    coordinates(group.toString(), "ktvine", version.toString())
+    coordinates(group.toString(), artifactId, version.toString())
 
     pom {
-        name = "ktvine"
+        name = artifactId
         description = "A KMP library for widevine DRM ported from python lib pywidevine"
         inceptionYear = "2025"
         url = "https://github.com/samfun75/ktvine/"

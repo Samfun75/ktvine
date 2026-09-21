@@ -9,6 +9,9 @@ plugins {
 group = "io.github.samfun75"
 version = libs.versions.ktvine.get()
 
+// Published artifact name, and what the Dokka site calls this module.
+val artifactId = "ktvine-serve"
+
 kotlin {
     applyDefaultHierarchyTemplate()
 
@@ -52,6 +55,12 @@ kotlin {
     }
 }
 
+// Pinned to the coordinate so a future project rename cannot silently move the doc URLs.
+dokka {
+    moduleName.set(artifactId)
+    modulePath.set(artifactId)
+}
+
 mavenPublishing {
     publishToMavenCentral()
 
@@ -59,10 +68,10 @@ mavenPublishing {
         signAllPublications()
     }
 
-    coordinates(group.toString(), "ktvine-serve", version.toString())
+    coordinates(group.toString(), artifactId, version.toString())
 
     pom {
-        name = "ktvine-serve"
+        name = artifactId
         description = "Ktor routing that serves a ktvine CDM over pywidevine's serve protocol"
         inceptionYear = "2025"
         url = "https://github.com/samfun75/ktvine/"
