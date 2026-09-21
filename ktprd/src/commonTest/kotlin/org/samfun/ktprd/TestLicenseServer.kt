@@ -155,7 +155,7 @@ class TestLicenseServer {
     }
 
     private suspend fun respond(xmrLicense: ByteArray, sign: Boolean, revocationInfo: String?): String {
-        val signer = if (sign) TestDevice.responseSigner() else null
+        val signer = if (sign) TestDevice.sharedResponseSigner() else null
 
         val licenseResponse = buildString {
             append("<LicenseResponse>")

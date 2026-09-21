@@ -461,6 +461,15 @@ JVM. Get the curve wrong and every derived key is wrong, exactly as with `aesCma
 That is acceptable for a client-side CDM holding its own keys locally and is stated in KDoc;
 do not let it drift into a context where it is not.
 
+**And it is slow on Kotlin/Native**, where there is no JIT to rescue `bignum`. A scalar
+multiplication that is imperceptible on the JVM is not on an iOS simulator, and a test that does a
+couple of dozen of them blows `runTest`'s 60-second default and fails as
+`UncompletedCoroutinesError` — which reads like a hang, not like arithmetic. Two rules follow:
+a native test that generates keys must pass `timeout = NATIVE_TIMEOUT`, and test key material must
+be generated once and shared (`TestDevice.shared()`), never per test. `PlayreadyCdm.open()` is
+free of scalar multiplication for the same reason — `PlayreadySession.xmlKey` is `by lazy`, so a
+session that never builds a challenge never pays for a key.
+
 **Both claims were re-checked against cryptography-kotlin `0.6.0` and both still hold** — do not
 spend the afternoon re-deriving this:
 

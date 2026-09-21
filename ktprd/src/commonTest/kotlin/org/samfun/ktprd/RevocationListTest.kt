@@ -59,7 +59,7 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test a RevInfo manifest yields the sequence number it declares`() = runTest {
+    fun `test a RevInfo manifest yields the sequence number it declares`() = runTest(timeout = NATIVE_TIMEOUT) {
         val document = revInfo(RevocationList.REV_INFO_V2 to revInfoPayload(sequenceNumber = 42))
 
         val parsed = RevocationList.parse(document, verify = false)
@@ -69,7 +69,7 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test a runtime list yields its own version`() = runTest {
+    fun `test a runtime list yields its own version`() = runTest(timeout = NATIVE_TIMEOUT) {
         val document = revInfo(
             RevocationList.PLAYREADY_RUNTIME to playreadyListPayload(RevocationList.PLAYREADY_RUNTIME, 7),
             RevocationList.PLAYREADY_APPLICATION to playreadyListPayload(RevocationList.PLAYREADY_APPLICATION, 9),
@@ -82,7 +82,7 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test the legacy network list is carried but never vouched for`() = runTest {
+    fun `test the legacy network list is carried but never vouched for`() = runTest(timeout = NATIVE_TIMEOUT) {
         val document = revInfo(RevocationList.WMDRM_NETWORK to byteArrayOf(1, 2, 3, 4))
 
         val entry = RevocationList.parse(document, verify = false).entry(RevocationList.WMDRM_NETWORK)
@@ -92,7 +92,7 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test merging keeps the newer version of each list`() = runTest {
+    fun `test merging keeps the newer version of each list`() = runTest(timeout = NATIVE_TIMEOUT) {
         val current = revInfo(
             RevocationList.REV_INFO_V2 to revInfoPayload(sequenceNumber = 5),
             RevocationList.PLAYREADY_RUNTIME to playreadyListPayload(RevocationList.PLAYREADY_RUNTIME, 3),
@@ -111,7 +111,7 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test a document that is not a RevInfo is refused`() = runTest {
+    fun `test a document that is not a RevInfo is refused`() = runTest(timeout = NATIVE_TIMEOUT) {
         assertFailsWith<InvalidRevocationListException> {
             RevocationList.parse("<NotRevInfo></NotRevInfo>", verify = false)
         }
@@ -121,12 +121,12 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test reading a stored version tolerates a document it cannot parse`() = runTest {
+    fun `test reading a stored version tolerates a document it cannot parse`() = runTest(timeout = NATIVE_TIMEOUT) {
         assertEquals(0L, RevocationList.versionOf("nonsense".encodeToByteArray(), RevocationList.REV_INFO_V2))
     }
 
     @Test
-    fun `test a byte order mark does not stop a document parsing`() = runTest {
+    fun `test a byte order mark does not stop a document parsing`() = runTest(timeout = NATIVE_TIMEOUT) {
         val document = revInfo(RevocationList.REV_INFO_V2 to revInfoPayload(sequenceNumber = 11))
         val withBom = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + document.encodeToByteArray()
 
@@ -134,7 +134,7 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test a challenge advertises the versions the store already holds`() = runTest {
+    fun `test a challenge advertises the versions the store already holds`() = runTest(timeout = NATIVE_TIMEOUT) {
         val store = InMemoryRevocationStore()
         store.write(
             RevocationList.CURRENT_LIST_FILE_NAME,
@@ -151,28 +151,29 @@ class RevocationListTest {
     }
 
     @Test
-    fun `test revocation data a license came with is kept for the next challenge`() = runTest {
-        val store = InMemoryRevocationStore()
-        val server = TestLicenseServer()
-        val cdm = cdmWith(store, server)
+    fun `test revocation data a license came with is kept for the next challenge`() =
+        runTest(timeout = NATIVE_TIMEOUT) {
+            val store = InMemoryRevocationStore()
+            val server = TestLicenseServer()
+            val cdm = cdmWith(store, server)
 
-        val sessionId = cdm.open()
-        val response = server.issueLicense(
-            cdm.getLicenseChallenge(sessionId, header()),
-            kid,
-            revocationInfo = revInfo(
-                RevocationList.PLAYREADY_RUNTIME to playreadyListPayload(RevocationList.PLAYREADY_RUNTIME, 30),
-            ),
-        )
-        cdm.parseLicense(sessionId, response)
+            val sessionId = cdm.open()
+            val response = server.issueLicense(
+                cdm.getLicenseChallenge(sessionId, header()),
+                kid,
+                revocationInfo = revInfo(
+                    RevocationList.PLAYREADY_RUNTIME to playreadyListPayload(RevocationList.PLAYREADY_RUNTIME, 30),
+                ),
+            )
+            cdm.parseLicense(sessionId, response)
 
-        val stored = store.read(RevocationList.CURRENT_LIST_FILE_NAME)
-        assertNotNull(stored, "the server sent revocation data and nothing kept it")
-        assertEquals(30L, RevocationList.versionOf(stored, RevocationList.PLAYREADY_RUNTIME))
+            val stored = store.read(RevocationList.CURRENT_LIST_FILE_NAME)
+            assertNotNull(stored, "the server sent revocation data and nothing kept it")
+            assertEquals(30L, RevocationList.versionOf(stored, RevocationList.PLAYREADY_RUNTIME))
 
-        val next = cdm.getLicenseChallenge(cdm.open(), header(), listOf(RevocationList.PLAYREADY_RUNTIME))
-        assertTrue(next.contains("<Version>30</Version>"))
-    }
+            val next = cdm.getLicenseChallenge(cdm.open(), header(), listOf(RevocationList.PLAYREADY_RUNTIME))
+            assertTrue(next.contains("<Version>30</Version>"))
+        }
 
     private fun header(): WrmHeader = WrmHeader.parse(PlayreadyHeader.build(keyIds = listOf(kid), algid = "AESCTR"))
 
@@ -180,7 +181,7 @@ class RevocationListTest {
         store: InMemoryRevocationStore,
         server: TestLicenseServer = TestLicenseServer(),
     ): PlayreadyCdm {
-        val device = TestDevice.create()
+        val device = TestDevice.shared()
         return PlayreadyCdm(
             securityLevel = device.securityLevel,
             certificateChain = device.groupCertificate,

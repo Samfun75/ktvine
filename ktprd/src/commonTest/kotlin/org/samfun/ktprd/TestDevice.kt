@@ -18,6 +18,8 @@ import org.samfun.ktprd.crypto.sha256
 import org.samfun.ktprd.utils.ByteWriter
 import org.samfun.ktprd.utils.align4
 import org.samfun.ktvine.crypto.randomBytes
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Builds a throwaway PlayReady device with no real provisioning material.
@@ -26,7 +28,20 @@ import org.samfun.ktvine.crypto.randomBytes
  * needs a device it can manufacture. The chain here terminates at a made-up root, which is fine
  * for everything except [CertificateChain.verify] — a CDM never verifies its own chain.
  */
+/** `runTest`'s 60s default is not enough for P-256 on bignum without a JIT. */
+val NATIVE_TIMEOUT: Duration = 5.minutes
+
 object TestDevice {
+
+    private var sharedDevice: PlayreadyDevice? = null
+    private var sharedSigner: Pair<CertificateChain, EccKey>? = null
+
+    /** Generating one costs several P-256 scalar multiplications, which Kotlin/Native feels. */
+    suspend fun shared(): PlayreadyDevice = sharedDevice ?: create().also { sharedDevice = it }
+
+    /** As [shared]: no test depends on the signer's identity, only on it being consistent. */
+    suspend fun sharedResponseSigner(): Pair<CertificateChain, EccKey> =
+        sharedSigner ?: responseSigner().also { sharedSigner = it }
 
     suspend fun create(securityLevel: Int = 3000): PlayreadyDevice {
         val rootKey = EccKey.generate()

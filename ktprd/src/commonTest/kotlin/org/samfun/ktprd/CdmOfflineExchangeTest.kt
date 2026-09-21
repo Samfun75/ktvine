@@ -40,7 +40,7 @@ class CdmOfflineExchangeTest {
     )
 
     private suspend fun cdmFor(server: TestLicenseServer): PlayreadyCdm {
-        val device = TestDevice.create()
+        val device = TestDevice.shared()
         return PlayreadyCdm(
             securityLevel = device.securityLevel,
             certificateChain = device.groupCertificate,
@@ -51,7 +51,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test a full exchange yields the content key the server issued`() = runTest {
+    fun `test a full exchange yields the content key the server issued`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
 
@@ -72,7 +72,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test a signed license response verifies before its keys are trusted`() = runTest {
+    fun `test a signed license response verifies before its keys are trusted`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
 
@@ -85,7 +85,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test a tampered signed response is refused`() = runTest {
+    fun `test a tampered signed response is refused`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
 
@@ -100,7 +100,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test the challenge declares the protocol version its header calls for`() = runTest {
+    fun `test the challenge declares the protocol version its header calls for`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val sessionId = cdm.open()
@@ -114,7 +114,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test the header is embedded verbatim rather than re-serialized`() = runTest {
+    fun `test the header is embedded verbatim rather than re-serialized`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val sessionId = cdm.open()
@@ -129,7 +129,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test advertised revocation lists appear in the challenge`() = runTest {
+    fun `test advertised revocation lists appear in the challenge`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val sessionId = cdm.open()
@@ -145,7 +145,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test a server fault surfaces as a named DRM error`() = runTest {
+    fun `test a server fault surfaces as a named DRM error`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val sessionId = cdm.open()
@@ -164,7 +164,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test parsing a license without a challenge is refused`() = runTest {
+    fun `test parsing a license without a challenge is refused`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val sessionId = cdm.open()
@@ -173,7 +173,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test an unknown session is refused by every call`() = runTest {
+    fun `test an unknown session is refused by every call`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val bogus = ByteString.of(*ByteArray(16))
@@ -184,7 +184,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test the session cap is the number of sessions and not one more`() = runTest {
+    fun `test the session cap is the number of sessions and not one more`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
 
@@ -196,7 +196,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test each session gets its own identifier and key set`() = runTest {
+    fun `test each session gets its own identifier and key set`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
 
@@ -212,7 +212,7 @@ class CdmOfflineExchangeTest {
     }
 
     @Test
-    fun `test a content key checks out against the header checksum`() = runTest {
+    fun `test a content key checks out against the header checksum`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val sessionId = cdm.open()
@@ -240,7 +240,7 @@ class CdmOfflineExchangeTest {
             "</KIDS></PROTECTINFO></DATA></WRMHEADER>"
 
     @Test
-    fun `test the issued key id round trips as a little endian GUID`() = runTest {
+    fun `test the issued key id round trips as a little endian GUID`() = runTest(timeout = NATIVE_TIMEOUT) {
         val server = TestLicenseServer()
         val cdm = cdmFor(server)
         val sessionId = cdm.open()
