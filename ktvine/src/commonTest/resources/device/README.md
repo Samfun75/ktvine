@@ -13,7 +13,7 @@ device/
 ## widevine/
 
 A real Widevine device, loaded through the test classpath by `TestFixtures` (paths are
-relative to `library/src/commonTest/resources`, e.g. `device/widevine/google_avd.wvd`).
+relative to `ktvine/src/commonTest/resources`, e.g. `device/widevine/google_avd.wvd`).
 
 | File | What it is | Used by |
 |---|---|---|

@@ -1,7 +1,9 @@
+import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.mavenPublish)
     alias(libs.plugins.dokka)
 }
@@ -19,8 +21,15 @@ kotlin {
     abiValidation {
     }
 
-    // JVM only: Ktor's server engines do not span the six targets the client does.
-    jvm {
+    jvm()
+
+    androidLibrary {
+        namespace = "io.github.samfun75.ktvine.remote"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+
+        withHostTestBuilder {}.configure {}
+
         compilations.configureEach {
             compileTaskProvider.configure {
                 compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
@@ -28,12 +37,19 @@ kotlin {
         }
     }
 
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+    linuxX64()
+
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":library"))
-                // Routing only: the caller brings the engine, mirroring how :remote takes a client.
-                api(libs.ktor.server.core)
+                api(project(":ktvine"))
+                // Only the engine-agnostic client: the caller supplies the HttpClient, so
+                // this module never picks an engine on their behalf.
+                api(libs.ktor.client.core)
+                // Runtime JSON only — no @Serializable classes, so no compiler plugin.
                 implementation(libs.serialization.json)
             }
         }
@@ -41,15 +57,15 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.coroutines.test)
-                // :library keeps this implementation-scoped, so the throwaway device needs it here.
-                implementation(libs.bundles.cryptography)
-                implementation(libs.ktor.server.test.host)
-                implementation(libs.ktor.client.core)
-                // Cross-testing this server against ktvine's own client.
-                implementation(project(":remote"))
+                implementation(libs.ktor.client.mock)
             }
         }
     }
+}
+
+// Nothing else builds the metadata artifact publishing depends on.
+tasks.named("check") {
+    dependsOn("compileCommonMainKotlinMetadata")
 }
 
 mavenPublishing {
@@ -59,11 +75,11 @@ mavenPublishing {
         signAllPublications()
     }
 
-    coordinates(group.toString(), "ktvine-serve", version.toString())
+    coordinates(group.toString(), "ktvine-remote", version.toString())
 
     pom {
-        name = "ktvine-serve"
-        description = "Ktor routing that serves a ktvine CDM over pywidevine's serve protocol"
+        name = "ktvine-remote"
+        description = "Ktor-based client for a pywidevine-compatible remote CDM server"
         inceptionYear = "2025"
         url = "https://github.com/samfun75/ktvine/"
         licenses {

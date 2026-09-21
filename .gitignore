@@ -19,12 +19,12 @@ xcuserdata
 *.prd
 *.dat
 client_id.bin
-library/src/commonTest/kotlin/org/samfun/ktvine/device/
+ktvine/src/commonTest/kotlin/org/samfun/ktvine/device/
 # Ignore everything under the fixtures tree except the tracked READMEs.
-library/src/commonTest/resources/device/**
-!library/src/commonTest/resources/device/
-!library/src/commonTest/resources/device/**/
-!library/src/commonTest/resources/device/**/README.md
+ktvine/src/commonTest/resources/device/**
+!ktvine/src/commonTest/resources/device/
+!ktvine/src/commonTest/resources/device/**/
+!ktvine/src/commonTest/resources/device/**/README.md
 
 # Implementation plans — session working notes, kept local
 docs/plans/

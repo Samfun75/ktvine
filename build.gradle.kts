@@ -22,9 +22,9 @@ subprojects {
 
 // Dokka V2 aggregates only what the root declares; without these the site would be empty.
 dependencies {
-    dokka(project(":library"))
-    dokka(project(":remote"))
-    dokka(project(":serve"))
+    dokka(project(":ktvine"))
+    dokka(project(":ktvine-remote"))
+    dokka(project(":ktvine-serve"))
     dokka(project(":ktprd"))
     dokka(project(":ktprd-remote"))
     dokka(project(":ktprd-serve"))

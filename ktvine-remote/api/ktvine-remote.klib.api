@@ -5,7 +5,7 @@
 // - Show manifest properties: true
 // - Show declarations: true
 
-// Library unique name: <io.github.samfun75:remote>
+// Library unique name: <io.github.samfun75:ktvine-remote>
 final class org.samfun.ktvine.remote/RemoteCdm : org.samfun.ktvine.cdm/CdmApi { // org.samfun.ktvine.remote/RemoteCdm|null[0]
     constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin/String, kotlin/String, kotlin/Int? = ..., kotlin/Int? = ...) // org.samfun.ktvine.remote/RemoteCdm.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.String;kotlin.Int?;kotlin.Int?){}[0]
 

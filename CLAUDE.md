@@ -35,7 +35,7 @@ docs/plans/                   implementation plans — git-ignored, local only
 .github/workflows/docs.yml    CI: `dokkaGenerateHtml` (Dokka V2) to GitHub Pages
 .github/workflows/publish.yml CI: publishToMavenCentral on GitHub release
 
-library/src/
+ktvine/src/
   commonMain/proto/license_protocol.proto   Widevine protobuf schema (proto2, 754 lines)
   commonMain/kotlin/org/samfun/ktvine/
     cdm/Cdm.kt            Cdm — session lifecycle, challenge, license parsing
@@ -62,11 +62,11 @@ library/src/
   jvmTest/…/DeviceJvmTest.kt        WVD parse/build against fixtures
   androidHostTest/…/DeviceAndroidTest.kt  same, on the Android host JVM
 
-remote/src/
+ktvine-remote/src/
   commonMain/…/RemoteCdm.kt         CdmApi over pywidevine's serve.py HTTP protocol
   commonTest/…/RemoteCdmTest.kt     wire-format tests against Ktor MockEngine
 
-serve/src/                          JVM only: Ktor server engines are not as portable
+ktvine-serve/src/                          JVM only: Ktor server engines are not as portable
   commonMain/…/ServeConfig.kt       devices, users, forced privacy, Server header
   commonMain/…/Routing.kt           Route.ktvineCdm — the serve protocol, routing only
   commonTest/…/ServeRoutingTest.kt  the wire contract plus ktvine's own client end to end
@@ -554,7 +554,7 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
 
 ## Secrets and fixtures
 
-`library/src/commonTest/resources/device/` holds real DRM provisioning material in two
+`ktvine/src/commonTest/resources/device/` holds real DRM provisioning material in two
 subfolders: `widevine/` (`google_avd.wvd`, `google_avd.b64.txt`, `client_id.bin`,
 `private_key.pem` — a real Widevine device) and `playready/` (six SL3000 PlayReady devices,
 each `*.prd` + `bgroupcert.dat` + `zgpriv.dat`). `.gitignore` excludes the whole tree except
@@ -571,7 +571,7 @@ Tests load fixtures from the test classpath through `TestFixtures` in
 line and returns `null` when a fixture is absent, so a checkout without them still goes
 green without hiding the fact. `:ktprd` has its own copy of `TestFixtures` — `:library`'s is
 not published — and its build points a test-resource directory at
-`library/src/commonTest/resources` rather than duplicating the secret store.
+`ktvine/src/commonTest/resources` rather than duplicating the secret store.
 
 Anything that has to run on iOS or linuxX64 cannot use those fixtures at all, since they are
 JVM-classpath-only. `:ktprd`'s `TestDevice` manufactures a throwaway device for exactly that

@@ -5,7 +5,7 @@
 // - Show manifest properties: true
 // - Show declarations: true
 
-// Library unique name: <io.github.samfun75:library>
+// Library unique name: <io.github.samfun75:ktvine>
 final enum class org.samfun.ktvine.core/DeviceTypes : kotlin/Enum<org.samfun.ktvine.core/DeviceTypes> { // org.samfun.ktvine.core/DeviceTypes|null[0]
     enum entry ANDROID // org.samfun.ktvine.core/DeviceTypes.ANDROID|null[0]
     enum entry CHROME // org.samfun.ktvine.core/DeviceTypes.CHROME|null[0]

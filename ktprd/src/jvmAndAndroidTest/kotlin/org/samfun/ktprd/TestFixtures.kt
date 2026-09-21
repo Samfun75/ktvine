@@ -9,7 +9,7 @@ package org.samfun.ktprd
  * passing on an empty input.
  */
 object TestFixtures {
-    const val ROOT: String = "library/src/commonTest/resources"
+    const val ROOT: String = "ktvine/src/commonTest/resources"
 
     fun readOrNull(path: String): ByteArray? = TestFixtures::class.java
         .getResourceAsStream("/$path")

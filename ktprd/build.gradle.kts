@@ -48,7 +48,7 @@ kotlin {
             dependencies {
                 // PSSH/PlayReady-Object framing, the UTF-16LE codec, GUID helpers, AES-CMAC and
                 // the exception base are all shared with the Widevine side rather than forked.
-                api(project(":library"))
+                api(project(":ktvine"))
                 // :library scopes cryptography as `implementation`, so its types are not on our
                 // classpath through that dependency.
                 implementation(libs.bundles.cryptography)
@@ -62,7 +62,7 @@ kotlin {
         val commonTest by getting {
             // The PlayReady device fixtures are real provisioning material and git-ignored; they
             // are read from where they already live rather than copied into a second secret store.
-            resources.srcDir(rootProject.file("library/src/commonTest/resources"))
+            resources.srcDir(rootProject.file("ktvine/src/commonTest/resources"))
 
             dependencies {
                 implementation(libs.kotlin.test)
