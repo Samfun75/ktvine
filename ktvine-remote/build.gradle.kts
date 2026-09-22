@@ -18,13 +18,20 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     explicitApi()
+    jvmToolchain(21)
 
     // Kotlin's own, not binary-compatibility-validator: that one cannot read class file 67.
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
     abiValidation {
     }
 
-    jvm()
+    jvm {
+        compilations.configureEach {
+            compileTaskProvider.configure {
+                compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
+            }
+        }
+    }
 
     androidLibrary {
         namespace = "io.github.samfun75.ktvine.remote"

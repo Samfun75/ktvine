@@ -22,6 +22,7 @@ kotlin {
     // Every public declaration must state its visibility and return type, so nothing lands
     // in the published ABI by accident.
     explicitApi()
+    jvmToolchain(21)
 
     // Kotlin's own, not binary-compatibility-validator: that one cannot read class file 67.
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
@@ -33,6 +34,11 @@ kotlin {
     jvm {
         wire.kotlin {
             android = false
+        }
+        compilations.configureEach {
+            compileTaskProvider.configure {
+                compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
+            }
         }
     }
 

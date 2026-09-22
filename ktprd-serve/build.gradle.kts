@@ -16,6 +16,7 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     explicitApi()
+    jvmToolchain(21)
 
     // Kotlin's own, not binary-compatibility-validator: that one cannot read class file 67.
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
