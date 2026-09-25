@@ -119,6 +119,12 @@ kotlin {
                 implementation(libs.androidx.test.runner)
             }
         }
+        val iosTest by getting {
+            dependencies {
+                implementation(libs.cryptography.provider.apple)
+                implementation(libs.cryptography.provider.cryptokit)
+            }
+        }
     }
 }
 

@@ -36,6 +36,8 @@ serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-jso
 cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptography" }
 cryptography-provider-optimal = { module = "dev.whyoleg.cryptography:cryptography-provider-optimal", version.ref = "cryptography" }
 cryptography-provider-jdk-bc = { module = "dev.whyoleg.cryptography:cryptography-provider-jdk-bc", version.ref = "cryptography" }
+cryptography-provider-apple = { module = "dev.whyoleg.cryptography:cryptography-provider-apple", version.ref = "cryptography" }
+cryptography-provider-cryptokit = { module = "dev.whyoleg.cryptography:cryptography-provider-cryptokit", version.ref = "cryptography" }
 bignum = { module = "com.ionspin.kotlin:bignum", version.ref = "bignum" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 

@@ -69,13 +69,13 @@ jobs:
       - name: Confirm JVM, Android host and linuxX64 tests actually ran
         if: matrix.id == 'check'
         run: |
-          bash .github/scripts/assert-tests-ran.sh jvmTest build/test-results/jvmTest/ $REQUIRED_TESTS
+          bash .github/scripts/assert-tests-ran.sh jvmTest build/test-results/jvmTest/ $REQUIRED_TESTS CryptoProviderJvmTest
           bash .github/scripts/assert-tests-ran.sh testAndroidHostTest build/test-results/testAndroidHostTest/ $REQUIRED_TESTS
-          bash .github/scripts/assert-tests-ran.sh linuxX64Test build/test-results/linuxX64Test/ $REQUIRED_TESTS
+          bash .github/scripts/assert-tests-ran.sh linuxX64Test build/test-results/linuxX64Test/ $REQUIRED_TESTS CryptoProviderLinuxTest
 
       - name: Confirm iOS tests actually ran
         if: matrix.id == 'ios'
-        run: bash .github/scripts/assert-tests-ran.sh iosSimulatorArm64Test build/test-results/iosSimulatorArm64Test/ $REQUIRED_TESTS
+        run: bash .github/scripts/assert-tests-ran.sh iosSimulatorArm64Test build/test-results/iosSimulatorArm64Test/ $REQUIRED_TESTS CryptoProviderIosTest
 
       - name: Upload test reports
         if: failure()
@@ -124,7 +124,7 @@ jobs:
           script: ./gradlew connectedAndroidDeviceTest -PdeviceTestMinSdk=30 --stacktrace
 
       - name: Confirm device tests actually ran
-        run: bash .github/scripts/assert-tests-ran.sh "Android device" androidTest-results/connected/ $REQUIRED_TESTS
+        run: bash .github/scripts/assert-tests-ran.sh "Android device" androidTest-results/connected/ $REQUIRED_TESTS CryptoProviderAndroidTest
 
       - name: Upload test reports
         if: failure()
