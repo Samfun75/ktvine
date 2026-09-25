@@ -31,7 +31,8 @@ gradle/libs.versions.toml     version catalog — the only place to bump deps
 gradle.properties             configuration-cache + build-cache ON
 docs/API.md                   conceptual guide; the symbol reference is Dokka-generated
 docs/plans/                   implementation plans — git-ignored, local only
-.github/workflows/gradle.yml  CI: `check` on ubuntu, iosSimulatorArm64Test on macos
+.github/workflows/gradle.yml  CI: `check` on ubuntu, iOS on macos, Android on an API 30 emulator
+.github/scripts/assert-tests-ran.sh   fails a job whose test task ran nothing or missed a required class
 .github/workflows/docs.yml    CI: `dokkaGenerateHtml` (Dokka V2) to GitHub Pages
 .github/workflows/publish.yml CI: publishToMavenCentral on GitHub release
 
@@ -54,6 +55,9 @@ ktvine/src/
   commonTest/…/AesCmacTest.kt       RFC 4493 CMAC + AES-CBC/HMAC vectors (runs on all targets)
   commonTest/…/PSSHTest.kt          PSSH round-trips (pure, no fixtures)
   commonTest/…/DeviceCommonTest.kt  Device negative cases
+  commonTest/…/CryptoProviderTest.kt  every algorithm asked of the Default provider, as KATs
+  {jvm,androidDevice,ios,linuxX64}Test/…/CryptoProvider{Jvm,Android,Ios,Linux}Test.kt
+                                    which provider each platform resolves, and why it must
   commonTest/resources/device/{widevine,playready}/  BINARY FIXTURES — see "Secrets" below
   commonTest/resources/playlist/    *.mpd / *.m3u8 manifests used by tests
   jvmAndAndroidTest/…/TestFixtures.kt  classpath fixture loader shared by both JVM test sets
@@ -61,6 +65,7 @@ ktvine/src/
   jvmTest/…/CdmProxyIntegrationTest.kt  end-to-end vs proxy.widevine.com (NETWORK, opt-in)
   jvmTest/…/DeviceJvmTest.kt        WVD parse/build against fixtures
   androidHostTest/…/DeviceAndroidTest.kt  same, on the Android host JVM
+ktvine/consumer-rules.pro           R8 keep rules for BouncyCastle, published in the AAR
 
 ktvine-remote/src/
   commonMain/…/RemoteCdm.kt         CdmApi over pywidevine's serve.py HTTP protocol
@@ -135,8 +140,10 @@ Dependencies (commonMain):
 - `api(wire-runtime)` — this is what transitively exposes **okio** (`ByteString`,
   `Buffer`) to the whole codebase, including consumers. Nothing declares okio directly.
 - `implementation(bundles.cryptography)` — whyoleg cryptography-kotlin `0.6.0`:
-  `core` + `provider-optimal`. BouncyCastle was dropped once AES-CMAC moved in-tree; the
-  plain JDK provider covers everything else.
+  `core` + `provider-optimal`. BouncyCastle was dropped once AES-CMAC moved in-tree, and the
+  plain JDK provider covers everything else **on the JVM only** — see "Per-target providers".
+- `androidMain` adds `implementation(cryptography-provider-jdk-bc)`, which puts BouncyCastle back
+  on Android and only there, plus `consumer-rules.pro` for the R8 keep rules it needs.
 - `implementation(coroutines-core)` — only for `kotlinx.coroutines.sync.Mutex`, which
   guards `Cdm`'s session state.
 - `implementation(xmlutil-core)` — PlayReady headers and DASH manifests are parsed with a
@@ -172,6 +179,8 @@ Common commands:
 .\gradlew.bat :ktprd:jvmTest                       # hermetic; excludes *IntegrationTest
 .\gradlew.bat :ktprd:integrationTest               # NETWORK: test.playready.microsoft.com
 .\gradlew.bat :ktprd-serve:jvmTest                 # ktprd's client against ktprd's server
+
+.\gradlew.bat connectedAndroidDeviceTest -PdeviceTestMinSdk=30   # commonTest on a device/emulator
 ```
 
 Note: `check` runs on any JDK now, including 23. It used to need
@@ -444,7 +453,52 @@ native too) and, indirectly, by the live proxy test — get it wrong and every d
 wrong.
 
 Everything else comes from `cryptography-provider-optimal`: RSA-PSS/SHA-1, RSA-OAEP/SHA-1,
-AES-CBC, HMAC-SHA256, and `CryptographyRandom` for all randomness.
+AES-CBC, HMAC-SHA256, and `CryptographyRandom` for all randomness. `:ktprd` adds AES-ECB, SHA-1
+and SHA-256 from the same provider.
+
+### Per-target providers
+
+`CryptographyProvider.Default` is a different provider on every target, and a missing algorithm
+fails only at runtime on that target:
+
+| Target | `Default.name` | Notes | Pinned by |
+|---|---|---|---|
+| JVM | `JDK` | SunJCE / SunRsaSign; `RSASSA-PSS` needs JDK 11+, which the JVM 11 floor implies | `CryptoProviderJvmTest` |
+| Android | `JDK (BC)` | via `cryptography-provider-jdk-bc` in `androidMain` | `CryptoProviderAndroidTest` |
+| iOS | `Composite(CryptoKit,Apple)` | CryptoKit first, then CommonCrypto / Security | `CryptoProviderIosTest` |
+| linuxX64 | `OpenSSL3 (3.6.0)` | prebuilt and statically linked, so a consumer needs no system `libcrypto` | `CryptoProviderLinuxTest` |
+
+**On iOS, every challenge depends on the second provider in that composite.** CryptoKit has the
+digests, HMAC and AES-GCM, but no RSA and no AES-CBC or AES-ECB, so RSA-PSS, RSA-OAEP and both AES
+modes all come from the Apple provider. `CryptoProviderIosTest` fails if either side of that
+split moves.
+
+The platform tests pin *which* provider serves each target, and `CryptoProviderTest` pins that it
+serves every algorithm correctly. Two of them are canaries that fail when the platform changes
+rather than when ktvine does. `CryptoProviderAndroidTest` fails if Android's platform JCA ever
+gains `RSASSA-PSS`, at which point `jdk-bc` may be droppable; it was still absent on API 36.
+`CryptoProviderJvmTest` fails if BouncyCastle ever reaches the JVM classpath.
+
+**Android's platform JCA (Conscrypt) has no `RSASSA-PSS`**, which cryptography-kotlin's JDK provider
+asks for by that name, so every license challenge failed with
+`NoSuchAlgorithmException: RSASSA-PSS Signature not available`. Every other algorithm is present.
+No JVM-hosted suite could catch it, `testAndroidHostTest` included: that runs on the desktop
+JDK, which has PSS. It was found in a consumer app, and only an Android device reproduces it.
+
+`provider-jdk-bc` works through a `DefaultJdkSecurityProvider` ServiceLoader hook, so on Android
+**BouncyCastle serves every algorithm, not just PSS**, and it is the Default for the consumer's
+whole app too. Two consequences:
+
+- **R8 strips BouncyCastle without keep rules.** `BouncyCastleProvider` registers its SPIs by
+  class-name string. A minified release build failed with `no such algorithm: RSA for provider BC`
+  until `consumer-rules.pro` was published through `optimization.consumerKeepRules`. A debug build
+  never shows this.
+- A second `DefaultJdkSecurityProvider` on a consumer's classpath makes the JDK provider throw
+  "Multiple default JDK security providers found". Only `jdk-bc` registers one today.
+
+`CryptoProviderTest` asks the Default provider for every algorithm above, against published
+known-answer vectors, and runs on all five runtimes: JVM, Android host, Android device, linuxX64
+and the iOS simulator.
 
 **`:ktprd` does the same thing again for P-256, and for the same reason.** cryptography-kotlin
 `0.5.0` offered ECDSA and ECDH P-256 on all six targets but exposed **no point arithmetic** — no
@@ -480,7 +534,8 @@ spend the afternoon re-deriving this:
   `aesCmac` could go. It cannot: `provider-optimal` resolves to the JDK provider on the JVM, and
   asking it for that algorithm throws `NoSuchAlgorithmException: Algorithm AESCMAC not available`.
   Only BouncyCastle implements AESCMAC on the JVM, and BouncyCastle is the dependency that was
-  dropped when CMAC moved in-tree. A declared algorithm is not an implemented one.
+  dropped when CMAC moved in-tree. A declared algorithm is not an implemented one. (Android now
+  has BouncyCastle again, but CMAC stays in-tree because iOS still has no provider for it.)
 - `0.6.0`'s `EC` surface is still key formats, `ECDH` and `ECDSA` — no point addition and no
   arbitrary scalar multiply. ElGamal decryption needs the full point `C2 − d·C1`, so `P256`,
   `Ecdsa` and `ElGamal` stay in-tree. (`EC.PrivateKey.Format.RAW` does now exist, so provider
@@ -492,14 +547,15 @@ spend the afternoon re-deriving this:
 Ordered roughly by severity. Everything the improvement plan tracked is done and the API
 is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
 
-1. **Every target is now verified at runtime.** linuxX64 passes the full `commonTest` suite
-   under WSL, and **iOS passes it on a GitHub Actions `macos-latest` runner** — the RFC 4493
-   CMAC vectors, a complete offline license exchange and the XML parser all execute on the
-   simulator. The `iosSimulatorArm64Test` job carries a gate that fails when the task reports
-   zero executed tests or when `AesCmacTest` / `CdmOfflineLicenseTest` / `PlayreadyOracleTest` /
-   `P256Test` / `CdmOfflineExchangeTest` are missing: a Gradle test task that runs nothing still
-   exits green, which is how iOS looked "passing" while being unverified. Do not remove that
-   gate, and add to it whenever a new load-bearing native path appears.
+1. **Every runnable target executes the full `commonTest` suite, in CI.** The same 216 tests
+   (ktvine 120, ktvine-remote 13, ktprd 69, ktprd-remote 14) run on the JVM, the Android host
+   JVM, an Android emulator, linuxX64 and the iOS simulator, and each of those but the Android
+   host adds its own `CryptoProvider*Test` on top. `iosArm64` needs a physical device
+   and `iosX64` an Intel simulator, so CI only links their test binaries. A Gradle test task that
+   runs nothing still exits green, which is how iOS once looked "passing" while unverified, so
+   every test job runs `assert-tests-ran.sh`. It fails on zero executed tests, or when any
+   class in the workflow's `REQUIRED_TESTS` is missing. Do not remove the gate, and add to
+   `REQUIRED_TESTS` whenever a new load-bearing path appears.
 2. **`RemoteCdm` is verified against a live `pywidevine serve` 1.8.0.** Every endpoint was
    exercised end to end — open/close, both service-certificate calls, challenge, parse and
    get_keys — recovering all eight of Google's published keys through the server, with and
@@ -516,14 +572,29 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
    — that a server does echo it, and that signing with the device key is right. The proto
    says a request's algorithm comes from its certificate, which is why this does not use
    `macKeyClient`; revisit only with a real renewal to observe.
-4. **Only `linuxX64Test` and the JVM/Android suites run locally.** `check` now also builds
+4. **The Android device suite is `commonTest` itself, and has three constraints.** Only the
+   host-JVM suite used to run for Android, and it runs on the desktop JDK's providers. That is
+   how RSASSA-PSS going missing on ART went unnoticed.
+   - **Test names must not contain an apostrophe or a comma.** D8 rejects those in a method name
+     at every dex version. Spaces are legal only from DEX 040 (API 30), so device-test runs pass
+     `-PdeviceTestMinSdk=30`, which raises each Android module's minSdk. Nothing else sets it;
+     never pass it to a publish. It also means the suite cannot run on an API 26–29 device.
+   - **The fixtures must stay out of the test APK.** Sharing the `test` tree packages
+     `commonTest`'s resources, which are the real DRM provisioning material. `ktvine` and `ktprd`
+     exclude `device/**` via `packaging`; keep that on any module whose tests see those resources.
+   - **On Windows, `connectedAndroidDeviceTest` runs 0 tests against a TCP-attached emulator.**
+     UTP's device provider fails with "Invalid file path" on a `127.0.0.1:<port>` serial. An
+     `emulator-5554` from a locally launched AVD works. Otherwise `adb install -r -t` the APK
+     from `build/outputs/apk/androidTest/` and run `adb shell am instrument -w <pkg>.test/androidx.test.runner.AndroidJUnitRunner`.
+5. **Everything but iOS runs locally.** linuxX64's test binaries cross-link on Windows and run
+   under WSL, and the Android suite runs on any local emulator. `check` now also builds
    the metadata artifact, so a JDK-only reference in `commonMain` fails the build instead of
    silently breaking publishing — that hole is closed, do not reopen it by dropping the
    `compileCommonMainKotlinMetadata` dependency from `check`.
 
 ### ktprd specifically
 
-5. **The challenge is verified against two real license servers.** `:ktprd:integrationTest`
+6. **The challenge is verified against two real license servers.** `:ktprd:integrationTest`
    recovers Microsoft's published Tears of Steel key
    (`6f651ae1-dbe4-4434-bcb4-690d1564c41c`) from `test.playready.microsoft.com` at SL150, SL2000
    and SL3000, and the key passes the content header's own `CHECKSUM`. `ktvine-keyservice` adds
@@ -544,21 +615,21 @@ is frozen at `1.0.0`; what remains is unverifiable rather than unwritten.
    0.8.1 appends `ckt:` unconditionally (`main.py:126`), so its `test` command fails against the
    live server today; that is upstream breakage, not a ktprd defect, and worth remembering before
    trusting it as an oracle. `KTPRD_LICENSE_SERVER` overrides the URL when Microsoft drifts again.
-6. **Scalable / `ECC_256_VIA_SYMMETRIC` licences are verified against a real server.** Axinom's
+7. **Scalable / `ECC_256_VIA_SYMMETRIC` licences are verified against a real server.** Axinom's
    CMAF cbcs vectors issue exactly these, and ktprd recovers Axinom's published keys from them
    through `ktvine-keyservice`'s `playready-axinom-*` sources — so the de-interleave and the
    AES-ECB unwrap chain are observed, not just synthetic. They are *not* covered by an automated
    test in this repo; the coverage lives next door.
-7. **`RemotePlayreadyCdm` has not been cross-tested against a live `pyplayready serve`.** Its
+8. **`RemotePlayreadyCdm` has not been cross-tested against a live `pyplayready serve`.** Its
    wire format is covered by `MockEngine` tests and end to end against `:ktprd-serve`, which is
    exactly the coverage that missed two real defects on the Widevine side. Run both directions
    by hand — ktprd's client against pyplayready's server and back — after any wire change, and
    record the result here as item 2 does for `RemoteCdm`.
-8. **Revocation list signatures are only partly checked.** `RLVI`/`RLV2` and the PlayReady
+9. **Revocation list signatures are only partly checked.** `RLVI`/`RLV2` and the PlayReady
    runtime and application lists verify against a CRL-signer chain or a bare appended key; the
    legacy WMDRM network list cannot be verified at all and reports `verified = false` rather
    than pretending. `DEVICE_REVOCATION` and `APP_REVOCATION` payloads are carried, not parsed.
-9. **A `WRMHEADER` names one track's KIDs, not the presentation's.** A multi-key DASH stream
+10. **A `WRMHEADER` names one track's KIDs, not the presentation's.** A multi-key DASH stream
    carries one content header per AdaptationSet and needs one exchange each; a Widevine PSSH
    names them all and needs one. Nothing in ktprd is wrong here, but a caller that requests only
    the first header silently gets one key out of three — which is exactly what
