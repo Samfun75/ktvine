@@ -11,6 +11,12 @@ on:
 permissions:
   contents: read
 
+# Load-bearing classes every test job must show it executed; a task that runs nothing still exits green.
+env:
+  REQUIRED_TESTS: >-
+    AesCmacTest CdmOfflineLicenseTest PlayreadyOracleTest CryptoProviderTest
+    P256Test CdmOfflineExchangeTest RemoteCdmTest RemotePlayreadyCdmTest
+
 jobs:
   build:
     name: ${{ matrix.name }}
@@ -19,13 +25,15 @@ jobs:
       matrix:
         include:
           # `check` covers jvmTest, testAndroidHostTest, linuxX64Test, ktlintCheck and the ABI check.
-          - name: check (jvm, android, linux)
+          - name: check (jvm, android host, linux)
+            id: check
             os: ubuntu-latest
             target: check
-          # Apple targets can only be run on macOS.
-          - name: iosSimulatorArm64Test
+          # iosArm64 needs a physical device and iosX64 an Intel simulator, so those two only link.
+          - name: iOS (simulator arm64 tests, arm64 and x64 link)
+            id: ios
             os: macos-latest
-            target: iosSimulatorArm64Test
+            target: iosSimulatorArm64Test linkDebugTestIosArm64 linkDebugTestIosX64
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -52,62 +60,79 @@ jobs:
 
       # Diagnostic on the iOS job: confirm a simulator runtime exists before relying on it.
       - name: List available simulators
-        if: matrix.target == 'iosSimulatorArm64Test'
+        if: matrix.id == 'ios'
         run: xcrun simctl list runtimes
 
       - name: Build
         run: ./gradlew ${{ matrix.target }} --stacktrace
 
-      # A green iOS run with zero executed tests is a false pass - the whole point of this
-      # job is to prove the crypto/XML paths run on-device, so assert they actually did.
-      # Kept to bash 3.2 features: macOS runners have no globstar.
-      - name: Confirm iOS tests actually ran
-        if: matrix.target == 'iosSimulatorArm64Test'
+      - name: Confirm JVM, Android host and linuxX64 tests actually ran
+        if: matrix.id == 'check'
         run: |
-          echo "--- test-results directories present ---"
-          find . -type d -path '*build/test-results*' 2>/dev/null | head -20
+          bash .github/scripts/assert-tests-ran.sh jvmTest build/test-results/jvmTest/ $REQUIRED_TESTS
+          bash .github/scripts/assert-tests-ran.sh testAndroidHostTest build/test-results/testAndroidHostTest/ $REQUIRED_TESTS
+          bash .github/scripts/assert-tests-ran.sh linuxX64Test build/test-results/linuxX64Test/ $REQUIRED_TESTS
 
-          reports=$(find . -type f -path '*build/test-results/iosSimulatorArm64Test/*' -name 'TEST-*.xml' 2>/dev/null)
-          if [ -z "$reports" ]; then
-            echo "::error::no iosSimulatorArm64Test result files were produced"
-            exit 1
-          fi
-
-          # A heredoc terminator cannot be indented, and a pipe would lose $total to a
-          # subshell, so the list goes through a file.
-          echo "$reports" > "$RUNNER_TEMP/ios-reports.txt"
-          total=0
-          while IFS= read -r f; do
-            [ -n "$f" ] || continue
-            tests=$(grep -o 'tests="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*' || echo 0)
-            skipped=$(grep -o 'skipped="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*' || echo 0)
-            total=$(( total + ${tests:-0} - ${skipped:-0} ))
-            echo "  $(basename "$f"): ${tests:-0} tests, ${skipped:-0} skipped"
-          done < "$RUNNER_TEMP/ios-reports.txt"
-
-          echo "iOS tests actually executed: $total"
-          if [ "$total" -eq 0 ]; then
-            echo "::error::iosSimulatorArm64Test produced result files but ran 0 tests"
-            exit 1
-          fi
-
-          # These are the paths iOS was unverified on: CMAC, a full offline licence, and XML for
-          # Widevine; the hand-written P-256 curve and a full PlayReady exchange for ktprd.
-          for expect in AesCmacTest CdmOfflineLicenseTest PlayreadyOracleTest P256Test CdmOfflineExchangeTest; do
-            if ! echo "$reports" | grep -q "$expect"; then
-              echo "::error::$expect did not run on iOS - it is a load-bearing native check"
-              exit 1
-            fi
-            echo "  ran on iOS: $expect"
-          done
+      - name: Confirm iOS tests actually ran
+        if: matrix.id == 'ios'
+        run: bash .github/scripts/assert-tests-ran.sh iosSimulatorArm64Test build/test-results/iosSimulatorArm64Test/ $REQUIRED_TESTS
 
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-${{ matrix.os }}
+          name: test-reports-${{ matrix.id }}
           path: |
             **/build/reports/tests/
             **/build/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # The host-JVM Android suite runs on the desktop JDK's providers, so only ART shows what Android ships.
+  android-device:
+    name: Android device (emulator)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # API 30 is the lowest level the suite can dex for; see deviceTestMinSdk in the module builds.
+      - name: Run device tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          disable-animations: true
+          script: ./gradlew connectedAndroidDeviceTest -PdeviceTestMinSdk=30 --stacktrace
+
+      - name: Confirm device tests actually ran
+        run: bash .github/scripts/assert-tests-ran.sh "Android device" androidTest-results/connected/ $REQUIRED_TESTS
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-android-device
+          path: |
+            **/build/reports/androidTests/
+            **/build/outputs/androidTest-results/
           retention-days: 7
           if-no-files-found: ignore
