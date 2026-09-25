@@ -47,6 +47,11 @@ kotlin {
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
+        optimization {
+            consumerKeepRules.publish = true
+            consumerKeepRules.file("consumer-rules.pro")
+        }
+
         withJava() // enable java compilation support
         withHostTestBuilder {}.configure {}
         withDeviceTestBuilder {
@@ -77,6 +82,12 @@ kotlin {
                 implementation(libs.coroutines.core)
                 implementation(libs.kermit)
                 implementation(libs.xmlutil.core)
+            }
+        }
+        val androidMain by getting {
+            dependencies {
+                // Android's platform JCA has no RSASSA-PSS, which every license challenge is signed with.
+                implementation(libs.cryptography.provider.jdk.bc)
             }
         }
         val commonTest by getting {

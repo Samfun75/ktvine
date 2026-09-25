@@ -34,13 +34,18 @@ dependencies {
 These are Kotlin Multiplatform libraries, published for JVM, Android, iOS (x64, arm64,
 simulator arm64) and linuxX64. The two `-serve` artifacts are JVM only.
 
-Two things to know before you start:
+A few things to know before you start:
 
 - **The `Cdm` API is `suspend`.** Call it from a coroutine. A `Cdm` is safe to share
   between coroutines.
 - **These artifacts are built with Kotlin 2.4**, so your project needs Kotlin 2.3 or newer to
   read them. On an older compiler the dependency fails with "Module was compiled with an
   incompatible version of Kotlin"; stay on `1.0.0-RC1` if you cannot move yet.
+- **On Android, ktvine brings BouncyCastle with it.** Android's own security provider has no
+  RSASSA-PSS, which every license challenge is signed with, so the Android artifact depends on
+  `cryptography-provider-jdk-bc` and ships the R8 keep rules it needs. You do not need to add a
+  provider yourself. It does make BouncyCastle the `CryptographyProvider.Default` for your whole
+  app, and adds about 0.7 MB to a minified APK.
 - **`kotlin.uuid.Uuid` appears in the public API.** It is stable as of Kotlin 2.4, so no opt-in
   is needed any more — earlier releases of ktvine required one.
 
