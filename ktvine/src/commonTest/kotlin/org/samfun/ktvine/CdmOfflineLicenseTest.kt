@@ -164,7 +164,7 @@ class CdmOfflineLicenseTest {
     }
 
     @Test
-    fun `test a license for another session's request is rejected`() = runTest {
+    fun `test a license answering a request from another session is rejected`() = runTest {
         val device = throwawayDevice()
         val cdm = Cdm.fromDevice(device.device)
 

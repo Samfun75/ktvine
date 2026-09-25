@@ -36,9 +36,16 @@ kotlin {
     androidLibrary {
         namespace = "io.github.samfun75.ktvine.remote"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        // Only device-test runs set this: D8 cannot dex test names containing spaces below API 30.
+        minSdk = providers.gradleProperty("deviceTestMinSdk").orNull?.toInt()
+            ?: libs.versions.android.minSdk.get().toInt()
 
         withHostTestBuilder {}.configure {}
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
 
         compilations.configureEach {
             compileTaskProvider.configure {
@@ -68,6 +75,11 @@ kotlin {
                 implementation(libs.kotlin.test)
                 implementation(libs.coroutines.test)
                 implementation(libs.ktor.client.mock)
+            }
+        }
+        val androidDeviceTest by getting {
+            dependencies {
+                implementation(libs.androidx.test.runner)
             }
         }
     }

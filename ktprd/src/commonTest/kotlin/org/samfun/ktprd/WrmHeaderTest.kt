@@ -57,7 +57,7 @@ class WrmHeaderTest {
     }
 
     @Test
-    fun `test each algorithm rejects the other algorithm's checksum`() = runTest {
+    fun `test each algorithm rejects a checksum made by the other`() = runTest {
         assertFalse(WrmHeader.parse(header("AESCTR", cocktailChecksum)).verifyChecksum(kid, contentKey))
         assertFalse(WrmHeader.parse(header("COCKTAIL", aesctrChecksum)).verifyChecksum(kid, contentKey))
     }

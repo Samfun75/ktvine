@@ -45,7 +45,9 @@ kotlin {
     androidLibrary {
         namespace = "io.github.samfun75.ktvine"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        // Only device-test runs set this: D8 cannot dex test names containing spaces below API 30.
+        minSdk = providers.gradleProperty("deviceTestMinSdk").orNull?.toInt()
+            ?: libs.versions.android.minSdk.get().toInt()
 
         optimization {
             consumerKeepRules.publish = true
@@ -56,6 +58,12 @@ kotlin {
         withHostTestBuilder {}.configure {}
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
+        packaging {
+            // commonTest's resources hold the git-ignored DRM fixtures, and nothing on a device reads them.
+            resources.excludes += "device/**"
         }
 
         compilations.configureEach {
@@ -105,6 +113,11 @@ kotlin {
         }
         val androidHostTest by getting {
             dependsOn(jvmAndAndroidTest)
+        }
+        val androidDeviceTest by getting {
+            dependencies {
+                implementation(libs.androidx.test.runner)
+            }
         }
     }
 }
